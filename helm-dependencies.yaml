@@ -1,3 +1,19 @@
+# NOTE: each dependency may have an optional registry path and optional containers dictionary
+# with a value to merge and positional args to define image (required), and optional tag, registry:
+# - name: foo-charts
+#   registry:
+#     # key name to override containers registry, e.g. tools.image.repository;
+#     # overrides for all containers, omit if no need to rewrite registry path
+#     repository: custom.io/prod
+#   containers:
+#     app.foo.spec.containers.frontend:
+#       # results in custom.io/prod/foo:v1.1
+#       uri: foo            # image
+#       ver: v1.1           # tag
+#     tools.image:
+#       # results in custom.io/prod/bar:v1.2.3, if tools.image.tag takes v1.2.3 from the charts
+#       image: bar
+#     #backend.image - no overrides, ends up with given chart values
 apiVersion: v2
 name: Handle terraform-kubernetes-addons helm chart dependencies update
 version: 1.0.0
@@ -44,6 +60,16 @@ dependencies:
   - name: ingress-nginx
     version: 4.3.0
     repository: https://kubernetes.github.io/ingress-nginx
+    containers:
+      controller.admissionWebhooks.patch.image:
+        image: ingress-nginx/kube-webhook-certgen
+        tag: v1.1.1
+      defaultBackend.image:
+        image: defaultbackend-amd64
+        tag: "1.5"
+      controller.image:
+        image: ingress-nginx/controller
+        tag: v1.0.4
   - name: istio-operator
     version: 1.7.0
     repository: https://clusterfrak-dynamics.github.io/istio/ # FIXME: dead link

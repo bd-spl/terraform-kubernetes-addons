@@ -7,6 +7,8 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].version
+      registry               = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].registry, {})
+      containers             = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].containers, {})
       namespace              = "ingress-nginx"
       use_nlb                = false
       use_nlb_ip             = false
@@ -158,10 +160,37 @@ resource "helm_release" "ingress-nginx" {
   reuse_values          = local.ingress-nginx["reuse_values"]
   skip_crds             = local.ingress-nginx["skip_crds"]
   verify                = local.ingress-nginx["verify"]
+
   values = [
     local.ingress-nginx["use_nlb_ip"] ? local.values_ingress-nginx_nlb_ip : local.ingress-nginx["use_nlb"] ? local.values_ingress-nginx_nlb : local.ingress-nginx["use_l7"] ? local.values_ingress-nginx_l7 : local.values_ingress-nginx_l4,
     local.ingress-nginx["extra_values"],
   ]
+
+  # image overrides
+  dynamic "set" {
+    for_each = local.ingress-nginx["containers"]
+    content {
+        name = "${set.key}.${keys(set.value)[0]}"
+        value = set.value[keys(set.value)[0]]
+      }
+  }
+  # optional tag overrides
+  dynamic "set" {
+    for_each = { for c, v in local.ingress-nginx["containers"] : c => v if length(v) > 1 }
+    content {
+        name = "${set.key}.${keys(set.value)[1]}"
+        value = set.value[keys(set.value)[1]]
+      }
+  }
+  # optional registry overrides
+  dynamic "set" {
+    for_each = local.ingress-nginx["registry"] == {} ? {} : local.ingress-nginx["containers"]
+    content {
+        name = "${set.key}.${keys(local.ingress-nginx["registry"])[0]}"
+        value = values(local.ingress-nginx["registry"])[0]
+      }
+  }
+
   namespace = kubernetes_namespace.ingress-nginx.*.metadata.0.name[count.index]
 
   depends_on = [
