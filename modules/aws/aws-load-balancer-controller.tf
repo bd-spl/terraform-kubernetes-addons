@@ -6,6 +6,7 @@ locals {
       chart                     = local.helm_dependencies[index(local.helm_dependencies.*.name, "aws-load-balancer-controller")].name
       repository                = local.helm_dependencies[index(local.helm_dependencies.*.name, "aws-load-balancer-controller")].repository
       chart_version             = local.helm_dependencies[index(local.helm_dependencies.*.name, "aws-load-balancer-controller")].version
+      registry                  = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "aws-load-balancer-controller")].registry, {})
       namespace                 = "aws-load-balancer-controller"
       service_account_name      = "aws-load-balancer-controller"
       create_iam_resources_irsa = true
@@ -14,6 +15,8 @@ locals {
       default_network_policy    = true
       allowed_cidrs             = ["0.0.0.0/0"]
       name_prefix               = "${var.cluster-name}-awslbc"
+      rewrite                   = false
+      prepare_images            = false
     },
     var.aws-load-balancer-controller
   )
@@ -84,6 +87,46 @@ resource "helm_release" "aws-load-balancer-controller" {
     local.values_aws-load-balancer-controller,
     local.aws-load-balancer-controller["extra_values"]
   ]
+
+  # TODO: make this a snippet or template to use it for all addons in the repo
+  # simple image or tag overrides, no src registry data provided
+  dynamic "set" {
+    for_each = { for c, v in local.aws-load-balancer-controller["containers"] : c => v if lookup(v, "registry", null) == null ? true : false }
+    content {
+      name = "${set.key}.${keys(set.value)[0]}"
+      value = set.value[keys(set.value)[0]]
+    }
+  }
+  # image overrides, with rewriting possible registry path included in the image URI, based on 'registry' pattern
+  # FIXME: assumes postional args: key0 should be an image
+  dynamic "set" {
+    for_each = { for c, v in local.aws-load-balancer-controller["containers"] : c => v if lookup(v, "registry", null) != null ? true : false }
+    content {
+        name = "${set.key}.${keys(set.value)[0]}"
+        value = (lookup(set.value, "registry", null) == null || lookup(local.aws-load-balancer-controller["registry"], {}) == {} || !lookup(local.aws-load-balancer-controller["rewrite"], false)) ? set.value[keys(set.value)[0]] : replace(
+          set.value[keys(set.value)[0]],
+          "${set.value["registry"]}/",
+          "${values(local.aws-load-balancer-controller["registry"])[0]}/")
+      }
+  }
+  # optional data (like tag) overrides, ignoring special source registry values
+  # FIXME: assumes postional args: key1 should be a tag
+  dynamic "set" {
+    for_each = { for c, v in local.aws-load-balancer-controller["containers"] : c => v if (length(v) > 2 || length(v) == 2 && (lookup(v, "registry", null) == null ? true : false)) }
+    content {
+        name = keys(set.value)[1] == "registry" ? "${set.key}.${keys(set.value)[2]}" : "${set.key}.${keys(set.value)[1]}"
+        value = keys(set.value)[1] == "registry" ? set.value[keys(set.value)[2]] : set.value[keys(set.value)[1]]
+      }
+  }
+  # optional registry overrides
+  dynamic "set" {
+    for_each = (!lookup(local.aws-load-balancer-controller["rewrite"], false) || lookup(local.aws-load-balancer-controller["registry"], {}) == {}) ? {} : local.aws-load-balancer-controller["containers"]
+    content {
+        name = "${set.key}.${keys(local.aws-load-balancer-controller["registry"])[0]}"
+        value = values(local.aws-load-balancer-controller["registry"])[0]
+      }
+  }
+
   namespace = kubernetes_namespace.aws-load-balancer-controller.*.metadata.0.name[count.index]
 }
 
@@ -164,3 +207,38 @@ resource "kubernetes_network_policy" "aws-load-balancer-controller_allow_control
     policy_types = ["Ingress"]
   }
 }
+
+# TODO: make this a snippet to use it for all addons in the repo
+# assumes positional arguments exist for containers data to have it prepared: image (key 0), tag (key 1), and source registry
+# image data can inlcude registry and/or tag, which will be handled properly
+# FIXME: unsorted dicts may confuse image with tag, so preparing commands will retry a reversed key1:key0 combination
+resource "null_resource" "aws_lbc_prepare_images" {
+  for_each = { for c, v in local.aws-load-balancer-controller["containers"] : c => v if length(v) > 2 && lookup(v, "registry", null) != null ? true : false }
+
+  triggers = {
+    registry     = jsonencode(lookup(var.aws-load-balancer-controller, "registry", null))
+    containers   = jsonencode(lookup(var.aws-load-balancer-controller, "containers", null))
+    filemd5      = filemd5("modules/aws/aws-load-balancer-controller.tf")
+  }
+
+  # NOTE: for private EKS cluster we need to pull, tag and push required images to private ECR
+  # requires podman logged in for dst ECR registry, and image:tag destination should exist in that registry
+  provisioner "local-exec" {
+    command = lookup(local.aws-load-balancer-controller, "prepare_images") ? "echo skip prepare images for ${each.key}" : <<EOF
+      IMG=${replace(each.value[keys(each.value)[0]], "${each.value["registry"]}/", "")}
+      TAG=${each.value[keys(each.value)[1]]}
+      SRC=${each.value["registry"]}/$\{IMG%:*\}:$TAG
+      podman pull $SRC
+      if [ $? -ne 0 ]; then
+        IMG=${replace(each.value[keys(each.value)[1]], "${each.value["registry"]}/", "")}
+        TAG=${each.value[keys(each.value)[0]]}
+        SRC=${each.value["registry"]}/$\{IMG%:*\}:$TAG
+        podman pull $SRC
+      fi
+      DST=${values(local.aws-load-balancer-controller["registry"])[0]}/$\{IMG%:*\}:$TAG
+      podman tag $(podman inspect $SRC -f json --format={{.Id}} 2>/dev/null) $DST
+      podman push $DST
+  EOF
+  }
+}
+
