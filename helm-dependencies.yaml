@@ -1,51 +1,55 @@
-# NOTE: each dependency may have an optional registry and image prepare settings for containers.
-# The former contains registry value overwrite path, which can be also used as a destination registry
-# for prepared images, if requested.
-# The latter provides helm values override paths for image/tag data.
-# When requested to prepare images (pull from src, retag, push to dst), it also may contain 'registry'
-# key containing the source registry to pull from, for each container being prepared.
+# NOTE: each dependency may have an optional image prepare settings and a list of containers.
+# There are optional source or registry path to overwrite for helm and/or to prepared images
+# (retag and push to ECR). It also can provide helm values override paths for image/tag data
+# (mandatory when prepare images requested).
 # Example:
 # - name: foo-charts
-#   # omit it, if no need to rewrite containers registries paths, nor prepare images
-#   registry:
-#     # key name path to override containers registry, e.g. tools.image.repository,
-#     # if requested to do so, and/or to push prepared images to that destination
-#     repository: custom.io/prod
+#   # If not requested, the optional registry data will get overwritten for helm values
+#   # with the value specified for each container, alongside the image and tag values.
+#   # When requested, the registry data used as a source only, so its helm value will
+#   # be rewritten with a ECR repo path prepared for each container.
+#   prepare_images: true
 #
-#   # NOTE: unsetting both flags, makes the above registry data ignored
-#   # if unset, no pull/retag/push will be happening for images
-#   prepare_images: true  # requested to prepare images
-#
-#   # if unset, containers will not take helm set overrides for repository paths
-#   rewrite: true         # requested to rewrite the containers registry paths
-#
+#   # foo-charts specific paths to override with helm set CLI (performs deep-merge)
 #   containers:
-#     # foo-charts specific paths to override with helm set CLI (performs deep-merge)
+#     # This results in custom.io/prod/foo:v1.1 pulled, retagged as <ECR repo>/foo:v1.1,
+#     # pushed to ECR, then rewritten via helm set overrides CLI
 #     app.foo.spec.containers.frontend:
-#       # results in custom.io/dev/foo:v.1.1 pulled, retagged as custom.io/prod/foo:v1.1,
-#       # pushed, then rewritten via helm set overrides CLI
-#       uri: foo            # image set from helm as app.foo.spec.containers.frontend.uri
-#       ver: v1.1           # tag set for helm as app.foo.spec.containers.frontend.ver
+#       name:
+#         uri: foo # sets image for helm as app.foo.spec.containers.frontend.uri
+#       ver:
+#         version: v1.1 # sets tag for helm as app.foo.spec.containers.frontend.version
+#       # path to rewrite, also a source to pull from to prepare images
+#       registry:
+#         # rewrites app.foo.spec.containers.frontend.repository, which takes
+#         # <ECR repo> path, when prepared for the image, or custom.io/prod - if not.
+#         repository: custom.io/prod
 #
-#       # source to pull from, helm override will be instead set as:
-#       # app.foo.spec.containers.frontend.repository: custom.io/prod
-#       registry: custom.io/dev
+#       # ignored, if no prepare images requested, or above registry data provided.
+#       # use this instead of 'registry', if image name helm value already includes the
+#       # registry path, and there is no registry value for helm. Then the registry path
+#       # in the name will get overwritten by the prepared ECR repositroy replacing this
+#       # src value there.
+#       source: custom.io/prod  # cannot end with a slash /
 #
+#     # Images cannot be prepared for those due to incomplete data
 #     tools.image:
-#       # cannot retag and push it as the tag and src registry defaults are not known here.
-#       # helm will use custom.io/prod/bar:v1.2.3, if tools.image.tag takes v1.2.3 from the charts values
-#       # and if prepare_images unset. Otherwise (prepare_images: true), would use default values for registry and tag
-#       image: bar
+#       # cannot prepare it as the tag and registry helm values defaults are unknown.
+#       # helm will have overriden with <some registry>/bar:<some tag>
+#       name:
+#         image: bar # sets image for helm as tools.image.image
 #
 #     extra.image:
-#       tag: 123 # only overwrites the image tag, keeping its name and registry unchanged
+#       # cannot prepare it as the name and registry helm values defaults are unknown.
+#       # helm will have overriden with <some registry>/<some image>:123
+#       ver:
+#         tag: 123 # sets tag for helm as extra.image.tag
 #
 #     extra2.image:
 #       # cannot prepare it because the helm default tag is unknown.
-#       # helm will use custom.io/prod/baz:v1.2.3, given that extra2.image.tag takes v1.2.3 from the charts vaues
-#       image_uri: custom.io/dev/baz  # image path gets rewritten for registry.repository, based on below pattern
-#       # is ignored, extra2.image.repository will instead become overwritten as requested
-#       registry: custom.io/dev  # also specifies the registry path rewrite pattern for image_uri
+#       name:
+#         image_uri: custom.io/dev/baz  # image path gets rewritten for registry.repository, based on below pattern
+#       source: custom.io/dev  # will be ignored
 #
 apiVersion: v2
 name: Handle terraform-kubernetes-addons helm chart dependencies update
@@ -71,9 +75,11 @@ dependencies:
     repository: https://aws.github.io/eks-charts
     containers:
       image:
-        repository: 602401143452.dkr.ecr.us-west-2.amazonaws.com/amazon/aws-load-balancer-controller
-        tag: v2.4.2
-        registry: 602401143452.dkr.ecr.us-west-2.amazonaws.com/amazon
+        name:
+          repository: 602401143452.dkr.ecr.us-west-2.amazonaws.com/amazon/aws-load-balancer-controller
+        ver:
+          tag: v2.4.2
+        source: 602401143452.dkr.ecr.us-west-2.amazonaws.com/amazon
   - name: aws-node-termination-handler
     version: 0.19.3
     repository: https://aws.github.io/eks-charts
@@ -100,16 +106,22 @@ dependencies:
     repository: https://kubernetes.github.io/ingress-nginx
     containers:
       controller.admissionWebhooks.patch.image:
-        image: ingress-nginx/kube-webhook-certgen
-        tag: v1.1.1
+        name:
+          image: ingress-nginx/kube-webhook-certgen
+        tag:
+          tag: v1.1.1
         registry: registry.k8s.io
       defaultBackend.image:
-        image: defaultbackend-amd64
-        tag: "1.5"
+        name:
+          image: defaultbackend-amd64
+        ver:
+          tag: "1.5"
         registry: registry.k8s.io
       controller.image:
-        image: ingress-nginx/controller
-        tag: v1.0.4
+        name:
+          image: ingress-nginx/controller
+        ver:
+          tag: v1.0.4
         registry: registry.k8s.io
   - name: istio-operator
     version: 1.7.0

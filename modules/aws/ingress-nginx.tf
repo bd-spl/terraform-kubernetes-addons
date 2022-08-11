@@ -17,8 +17,6 @@ locals {
       default_network_policy = true
       ingress_cidrs          = ["0.0.0.0/0"]
       allowed_cidrs          = ["0.0.0.0/0"]
-      rewrite                = false
-      prepare_images         = false
     },
     var.ingress-nginx
   )
@@ -168,50 +166,35 @@ resource "helm_release" "ingress-nginx" {
     local.ingress-nginx["extra_values"],
   ]
 
-  # TODO: make this a snippet or template to use it for all addons in the repo
-  # simple image or tag overrides, no src registry data provided
+  # image overrides
   dynamic "set" {
-    for_each = { for c, v in local.ingress-nginx["containers"] : c => v if lookup(v, "registry", null) == null ? true : false }
+    for_each = local.ingress-nginx["containers"]
     content {
-      name = "${set.key}.${keys(set.value)[0]}"
+      name  = "${set.key}.${keys(set.value)[0]}"
       value = set.value[keys(set.value)[0]]
     }
   }
-  # image overrides, with rewriting possible registry path included in the image URI, based on 'registry' pattern
-  # FIXME: assumes postional args: key0 should be an image
+  # optional tag overrides
   dynamic "set" {
-    for_each = { for c, v in local.ingress-nginx["containers"] : c => v if lookup(v, "registry", null) != null ? true : false }
+    for_each = { for c, v in local.ingress-nginx["containers"] : c => v if length(v) > 1 }
     content {
-        name = "${set.key}.${keys(set.value)[0]}"
-        value = (lookup(set.value, "registry", null) == null || lookup(local.ingress-nginx["registry"], {}) == {} || !lookup(local.ingress-nginx["rewrite"], false)) ? set.value[keys(set.value)[0]] : replace(
-          set.value[keys(set.value)[0]],
-          "${set.value["registry"]}/",
-          "${values(local.ingress-nginx["registry"])[0]}/")
-      }
-  }
-  # optional data (like tag) overrides, ignoring special source registry values
-  # FIXME: assumes postional args: key1 should be a tag
-  dynamic "set" {
-    for_each = { for c, v in local.ingress-nginx["containers"] : c => v if (length(v) > 2 || length(v) == 2 && (lookup(v, "registry", null) == null ? true : false)) }
-    content {
-        name = keys(set.value)[1] == "registry" ? "${set.key}.${keys(set.value)[2]}" : "${set.key}.${keys(set.value)[1]}"
-        value = keys(set.value)[1] == "registry" ? set.value[keys(set.value)[2]] : set.value[keys(set.value)[1]
-      }
+      name  = "${set.key}.${keys(set.value)[1]}"
+      value = set.value[keys(set.value)[1]]
+    }
   }
   # optional registry overrides
   dynamic "set" {
-    for_each = (!lookup(local.ingress-nginx["rewrite"], false) || lookup(local.ingress-nginx["registry"], {}) == {}) ? {} : local.ingress-nginx["containers"]
+    for_each = local.ingress-nginx["registry"] == {} ? {} : local.ingress-nginx["containers"]
     content {
-        name = "${set.key}.${keys(local.ingress-nginx["registry"])[0]}"
-        value = values(local.ingress-nginx["registry"])[0]
-      }
+      name  = "${set.key}.${keys(local.ingress-nginx["registry"])[0]}"
+      value = values(local.ingress-nginx["registry"])[0]
+    }
   }
 
   namespace = kubernetes_namespace.ingress-nginx.*.metadata.0.name[count.index]
 
   depends_on = [
-    kubectl_manifest.prometheus-operator_crds,
-    helm_release.aws-load-balancer-controller
+    kubectl_manifest.prometheus-operator_crds
   ]
 }
 
