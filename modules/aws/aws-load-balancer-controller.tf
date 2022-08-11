@@ -266,7 +266,8 @@ resource "null_resource" "aws_lbc_prepare_images" {
   for_each = { for c, v in local.aws-load-balancer-controller["containers"] : c => v if length(v) > 2 && lookup(v, "registry", null) != null ? true : false }
 
   triggers = {
-    containers = jsonencode(each)
+    data = jsonencode(each.value)
+    path = jsonencode(each.key)
   }
 
   # NOTE: for private EKS cluster we need to pull, tag and push required images to private ECR
