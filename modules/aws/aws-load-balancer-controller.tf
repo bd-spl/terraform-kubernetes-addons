@@ -169,7 +169,7 @@ resource "helm_release" "aws-load-balancer-controller" {
   namespace = kubernetes_namespace.aws-load-balancer-controller.*.metadata.0.name[count.index]
 
   depends_on = [
-    aws_ecr_repository.this
+    skopeo_copy.this
   ]
 }
 
