@@ -20,7 +20,6 @@ locals {
       ecr_immutable_tag         = false
       ecr_encryption_type       = "AES256"
       #ecr_kms_key - optional
-
     },
     var.aws-load-balancer-controller
   )
@@ -99,56 +98,71 @@ resource "helm_release" "aws-load-balancer-controller" {
       for c, v in local.aws-load-balancer-controller["containers"] :
       c => v if(
         lookup(v, "ver", null) != null
-      ) ? true : false
+      ) # ? true : false
     }
     content {
       name  = "${set.key}.${keys(set.value["ver"])[0]}"
       value = set.value["ver"][keys(set.value["ver"])[0]]
     }
   }
-  # simple image overrides, no source data provided
+  # simple image overrides, no source data provided, i.e.
+  # names in containers data refer shortnames only
   dynamic "set" {
     for_each = {
       for c, v in local.aws-load-balancer-controller["containers"] :
       c => v if(
         lookup(v, "source", null) == null && lookup(v, "name", null) != null
-      ) ? true : false
+      ) # ? true : false
     }
     content {
       name  = "${set.key}.${keys(set.value["name"])[0]}"
       value = set.value["name"][keys(set.value["name"])[0]]
     }
   }
-  # simple registry overrides, based on prepare images was requested or not
+  # registry overrides, based on prepare images was requested or not
   dynamic "set" {
     for_each = {
+      # returns a dict of {c => [v, image_shortname]}
       for c, v in local.aws-load-balancer-controller["containers"] :
-      c => v if(
-        !local.aws-load-balancer-controller["prepare_images"] &&
-        lookup(v, "registry", null) != null
-      ) ? true : false
+      c => [
+        # convert possible full image names into shortnames
+        # tag is optional, fallback to latest
+        v, replace(replace(v["name"][keys(v["name"])[0]],
+          "${v["source"]}/", ""),
+        ":${lookup(v, "ver", { "tag" : "latest" })[keys(lookup(v, "ver", ["tag"]))[0]]}", "")
+        ] if(
+        lookup(v, "registry", null) != null && lookup(v, "name", null) != null
+      ) # ? true : false
     }
     content {
-      name  = "${set.key}.${keys(set.value["registry"])[0]}"
-      value = local.aws-load-balancer-controller["prepare_images"] ? split("/", aws_ecr_repository.this[0].repository_url)[0] : set.value["registry"][keys(set.value["registry"])[0]]
+      name = "${set.key}.${keys(set.value[0]["registry"])[0]}"
+      value = local.aws-load-balancer-controller["prepare_images"] ? split(
+        "/", aws_ecr_repository.this[set.value[1]].repository_url
+      )[0] : set.value[0]["registry"][keys(set.value[0]["registry"])[0]]
     }
   }
   # image overrides when preparing it, with rewriting possible registry path included
   # in the image name, based on 'source' pattern
   dynamic "set" {
     for_each = {
+      # returns a dict of {c => [v, prepared_image_shortname]}
       for c, v in local.aws-load-balancer-controller["containers"] :
-      c => v if(
+      c => [
+        v, replace(replace(v["name"][keys(v["name"])[0]],
+          "${v["source"]}/", ""),
+        ":${lookup(v, "ver", { "tag" : "latest" })[keys(lookup(v, "ver", ["tag"]))[0]]}", "")
+        ] if(
         lookup(v, "source", null) != null &&
+        lookup(v, "name", null) != null &&
         local.aws-load-balancer-controller["prepare_images"]
-      ) ? true : false
+      ) # ? true : false
     }
     content {
-      name = "${set.key}.${keys(set.value["name"])[0]}"
+      name = "${set.key}.${keys(set.value[0]["name"])[0]}"
       value = replace(
-        set.value["name"][keys(set.value["name"])[0]],
-        set.value["source"],
-      split("/", aws_ecr_repository.this[0].repository_url)[0])
+        set.value[0]["name"][keys(set.value[0]["name"])[0]],
+        set.value[0]["source"],
+      split("/", aws_ecr_repository.this[set.value[1]].repository_url)[0])
     }
   }
 
@@ -240,16 +254,19 @@ resource "kubernetes_network_policy" "aws-load-balancer-controller_allow_control
 # Prepare ECR repos for images, strip registry/tag off the images names
 # image data can inlcude registry and/or tag, which will be handled properly
 # TODO: make this a snippet to use it for all addons in the repo
-
 resource "aws_ecr_repository" "this" {
   for_each = {
-    for c, v in local.aws-load-balancer-controller["containers"] :
-    c => v if(
-      local.aws-load-balancer-controller["prepare_images"] && length(v) > 2 && (lookup(v, "registry", null) != null)
-    ) ? true : false
+    for _, v in local.aws-load-balancer-controller["containers"] :
+    # returns a dict of {shortname => null]}
+    replace(replace(v["name"][keys(v["name"])[0]],
+      "${lookup(v, "registry", v["source"])}/", ""),
+      ":${lookup(v, "ver", { "tag" : "latest" })[keys(lookup(v, "ver", ["tag"]))[0]]}", "") => null if(
+      lookup(v, "name", null) != null &&
+      local.aws-load-balancer-controller["prepare_images"] &&
+      (lookup(v, "registry", null) != null || lookup(v, "source", null) != null)
+    ) # ? true : false
   }
-  name = replace(replace(each.value["name"][keys(each.value["name"])[0]],
-  "${each.value["registry"]}/", ""), ":${each.value["ver"][keys(each.value["ver"])[0]]}", "")
+  name                 = each.key
   image_tag_mutability = local.aws-load-balancer-controller["ecr_immutable_tag"] ? "IMMUTABLE" : "MUTABLE"
 
   image_scanning_configuration {
@@ -262,8 +279,37 @@ resource "aws_ecr_repository" "this" {
   }
 }
 
-resource "null_resource" "aws_lbc_prepare_images" {
-  for_each = { for c, v in local.aws-load-balancer-controller["containers"] : c => v if length(v) > 2 && lookup(v, "registry", null) != null ? true : false }
+resource "skopeo_copy" "this" {
+  for_each = {
+    for _, v in local.aws-load-balancer-controller["containers"] :
+    # returns a dict of {shortname => [src_reigstry, parsed_tag]}
+    replace(replace(v["name"][keys(v["name"])[0]],
+      "${lookup(v, "registry", v["source"])}/", ""),
+      ":${lookup(v, "ver", { "tag" : "latest" })[keys(lookup(v, "ver", ["tag"]))[0]]}", "") => [
+      lookup(v, "source", null) != null ? v["source"] : v["registry"][keys(v["registry"])[0]],
+      lookup(v, "ver", { "tag" : "latest" })[keys(lookup(v, "ver", ["tag"]))[0]]
+      ] if(
+      lookup(v, "name", null) != null &&
+      local.aws-load-balancer-controller["prepare_images"] &&
+      (lookup(v, "registry", null) != null || lookup(v, "source", null) != null)
+    ) # ? true : false
+  }
+  source_image      = "docker://${each.value[0]}/${each.key}:${each.value[1]}"
+  destination_image = "docker://${aws_ecr_repository.this[each.key].repository_url}:${each.value[1]}"
+  keep_image        = true
+
+  depends_on = [
+    aws_ecr_repository.this
+  ]
+}
+
+/*resource "null_resource" "aws_lbc_prepare_images" {
+  for_each = {
+    for c, v in local.aws-load-balancer-controller["containers"] :
+    c => v if (
+      length(v) > 2 && lookup(v, "registry", null) != null
+      )# ? true : false
+    }
 
   triggers = {
     data = jsonencode(each.value)
@@ -277,9 +323,9 @@ resource "null_resource" "aws_lbc_prepare_images" {
       ORIG="${lookup(each.value, "source", null) != null ? each.value["source"] : each.value["registry"][keys(each.value["registry"])[0]]}/"
       NAME="${each.value["name"][keys(each.value["name"])[0]]}"
       IMG=$(sed -r "s,$NAME,$ORIG,g" <<< $NAME)
-      TAG="${each.value[keys(each.value)[1]]}"
+      TAG="${each.value["ver"][keys(each.value["ver"])[0]]}"
       SRC="$\{ORIG}$\{IMG%:*\}:$TAG"
-      REG="${split("/", aws_ecr_repository.this[0].repository_url)[0]}"
+      REG="${split("/", aws_ecr_repository[???].repository_url)[0]}"
       echo podman pull "$SRC"
       DST="$\{REG}/$\{IMG%:*\}:$TAG"
       echo podman tag $(podman inspect "$SRC" -f json --format={{.Id}} 2>/dev/null) "$DST"
@@ -290,5 +336,4 @@ resource "null_resource" "aws_lbc_prepare_images" {
   depends_on = [
     aws_ecr_repository.this
   ]
-}
-
+}*/
