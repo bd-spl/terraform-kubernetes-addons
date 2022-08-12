@@ -76,10 +76,10 @@ dependencies:
     containers:
       image:
         name:
-          repository: 602401143452.dkr.ecr.us-west-2.amazonaws.com/amazon/aws-load-balancer-controller
+          repository: docker.io/amazon/aws-alb-ingress-controller
         ver:
-          tag: v2.4.2
-        source: 602401143452.dkr.ecr.us-west-2.amazonaws.com/amazon
+          tag: v2.4.3
+        source: docker.io/amazon
   - name: aws-node-termination-handler
     version: 0.19.3
     repository: https://aws.github.io/eks-charts
