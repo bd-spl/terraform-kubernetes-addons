@@ -15,7 +15,7 @@ locals {
       default_network_policy    = true
       allowed_cidrs             = ["0.0.0.0/0"]
       name_prefix               = "${var.cluster-name}-awslbc"
-      prepare_images            = false
+      ecr_prepare_images        = false
       ecr_scan_on_push          = false
       ecr_immutable_tag         = false
       ecr_encryption_type       = "AES256"
@@ -136,8 +136,8 @@ resource "helm_release" "aws-load-balancer-controller" {
     }
     content {
       name = "${set.key}.${keys(set.value[0]["registry"])[0]}"
-      value = local.aws-load-balancer-controller["prepare_images"] ? split(
-        "/", aws_ecr_repository.this[set.value[1]].repository_url
+      value = local.aws-load-balancer-controller["ecr_prepare_images"] ? split(
+        "/", aws_ecr_repository.this["aws-load-balancer-controller.${set.value[1]}"].repository_url
       )[0] : set.value[0]["registry"][keys(set.value[0]["registry"])[0]]
     }
   }
@@ -154,7 +154,7 @@ resource "helm_release" "aws-load-balancer-controller" {
         ] if(
         lookup(v, "source", null) != null &&
         lookup(v, "name", null) != null &&
-        local.aws-load-balancer-controller["prepare_images"]
+        local.aws-load-balancer-controller["ecr_prepare_images"]
       ) # ? true : false
     }
     content {
@@ -162,7 +162,7 @@ resource "helm_release" "aws-load-balancer-controller" {
       value = replace(
         set.value[0]["name"][keys(set.value[0]["name"])[0]],
         set.value[0]["source"],
-      split("/", aws_ecr_repository.this[set.value[1]].repository_url)[0])
+      split("/", aws_ecr_repository.this["aws-load-balancer-controller.${set.value[1]}"].repository_url)[0])
     }
   }
 
@@ -251,6 +251,7 @@ resource "kubernetes_network_policy" "aws-load-balancer-controller_allow_control
   }
 }
 
+/*
 # Prepare ECR repos for images, strip registry/tag off the images names
 # image data can inlcude registry and/or tag, which will be handled properly
 # TODO: make this a snippet to use it for all addons in the repo
@@ -262,7 +263,7 @@ resource "aws_ecr_repository" "this" {
       "${lookup(v, "registry", v["source"])}/", ""),
       ":${lookup(v, "ver", { "tag" : "latest" })[keys(lookup(v, "ver", ["tag"]))[0]]}", "") => null if(
       lookup(v, "name", null) != null &&
-      local.aws-load-balancer-controller["prepare_images"] &&
+      local.aws-load-balancer-controller["ecr_prepare_images"] &&
       (lookup(v, "registry", null) != null || lookup(v, "source", null) != null)
     ) # ? true : false
   }
@@ -290,7 +291,7 @@ resource "skopeo_copy" "this" {
       lookup(v, "ver", { "tag" : "latest" })[keys(lookup(v, "ver", ["tag"]))[0]]
       ] if(
       lookup(v, "name", null) != null &&
-      local.aws-load-balancer-controller["prepare_images"] &&
+      local.aws-load-balancer-controller["ecr_prepare_images"] &&
       (lookup(v, "registry", null) != null || lookup(v, "source", null) != null)
     ) # ? true : false
   }
@@ -301,39 +302,4 @@ resource "skopeo_copy" "this" {
   depends_on = [
     aws_ecr_repository.this
   ]
-}
-
-/*resource "null_resource" "aws_lbc_prepare_images" {
-  for_each = {
-    for c, v in local.aws-load-balancer-controller["containers"] :
-    c => v if (
-      length(v) > 2 && lookup(v, "registry", null) != null
-      )# ? true : false
-    }
-
-  triggers = {
-    data = jsonencode(each.value)
-    path = jsonencode(each.key)
-  }
-
-  # NOTE: for private EKS cluster we need to pull, tag and push required images to private ECR
-  # requires podman logged in for dst ECR registry, and image:tag destination should exist in that registry
-  provisioner "local-exec" {
-    command = local.aws-load-balancer-controller["prepare_images"] ? "echo skip prepare images for ${each.key}" : <<EOF
-      ORIG="${lookup(each.value, "source", null) != null ? each.value["source"] : each.value["registry"][keys(each.value["registry"])[0]]}/"
-      NAME="${each.value["name"][keys(each.value["name"])[0]]}"
-      IMG=$(sed -r "s,$NAME,$ORIG,g" <<< $NAME)
-      TAG="${each.value["ver"][keys(each.value["ver"])[0]]}"
-      SRC="$\{ORIG}$\{IMG%:*\}:$TAG"
-      REG="${split("/", aws_ecr_repository[???].repository_url)[0]}"
-      echo podman pull "$SRC"
-      DST="$\{REG}/$\{IMG%:*\}:$TAG"
-      echo podman tag $(podman inspect "$SRC" -f json --format={{.Id}} 2>/dev/null) "$DST"
-      echo podman push "$DST"
-  EOF
-  }
-
-  depends_on = [
-    aws_ecr_repository.this
-  ]
-}*/
+} */

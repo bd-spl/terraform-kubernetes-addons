@@ -8,7 +8,13 @@
 #   # with the value specified for each container, alongside the image and tag values.
 #   # When requested, the registry data used as a source only, so its helm value will
 #   # be rewritten with a ECR repo path prepared for each container.
-#   prepare_images: true
+#   ecr_prepare_images: true
+#
+#   # (optinal) extra settings for managed ECR repos
+#   ecr_immutable_tag: false
+#   ecr_scan_on_push: false
+#   ecr_encryption_type: KMS
+#   ecr_kms_key: my-kms-key
 #
 #   # foo-charts specific paths to override with helm set CLI (performs deep-merge)
 #   containers:
@@ -30,6 +36,7 @@
 #       # registry path, and there is no registry value for helm. Then the registry path
 #       # in the name will get overwritten by the prepared ECR repositroy replacing this
 #       # src value there.
+#       # NOTE: to rewrite helm 'source' value, define it as {registry: {source: ...}}
 #       source: custom.io/prod  # cannot end with a slash /
 #
 #     # Images cannot be prepared for those due to incomplete data
@@ -110,19 +117,22 @@ dependencies:
           image: ingress-nginx/kube-webhook-certgen
         tag:
           tag: v1.1.1
-        registry: registry.k8s.io
+        registry:
+          registry: registry.k8s.io
       defaultBackend.image:
         name:
           image: defaultbackend-amd64
         ver:
           tag: "1.5"
-        registry: registry.k8s.io
+        registry:
+          registry: registry.k8s.io
       controller.image:
         name:
           image: ingress-nginx/controller
         ver:
           tag: v1.0.4
-        registry: registry.k8s.io
+        registry:
+          registry: registry.k8s.io
   - name: istio-operator
     version: 1.7.0
     repository: https://clusterfrak-dynamics.github.io/istio/ # FIXME: dead link
@@ -201,6 +211,20 @@ dependencies:
   - name: tigera-operator
     version: v3.24.1
     repository: https://docs.projectcalico.org/charts # Access denied
+    containers:
+      tigeraOperator:
+        name:
+          image: tigera/operator
+        ver:
+          version: master
+        registry:
+          registry: quay.io
+      calicoctl:
+        name:
+          image: docker.io/calico/ctl
+        ver:
+          tag: master
+        source: docker.io
   - name: traefik
     version: 10.30.1
     repository: https://helm.traefik.io/traefik
@@ -219,3 +243,24 @@ dependencies:
   - name: testrtc-speedtest
     version: 0.1.0
     repository: https://bogdando.github.io/helm-charts/
+  - name: csi-external-snapshotter # Not helm, image prep data only
+    # https://github.dev/kubernetes-csi/external-snapshotter
+    containers:
+      csi-provisioner:
+        name:
+          repository: k8s.gcr.io/sig-storage/csi-provisioner
+        ver:
+          tag: v3.2.1
+        source: k8s.gcr.io/sig-storage
+      csi-snapshotter:
+        name:
+          repository: gcr.io/k8s-staging-sig-storage/csi-snapshotter
+        ver:
+          tag: v6.0.1
+        source: gcr.io/k8s-staging-sig-storage
+      hostpath:
+        name:
+          repository: k8s.gcr.io/sig-storage/hostpathplugin
+        ver:
+          tag: v1.8.0
+        source: k8s.gcr.io
