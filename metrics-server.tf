@@ -60,6 +60,10 @@ resource "helm_release" "metrics-server" {
     local.metrics-server["extra_values"]
   ]
   namespace = kubernetes_namespace.metrics-server.*.metadata.0.name[count.index]
+
+  depends_on = [
+    skopeo_copy.this
+  ]
 }
 
 resource "kubernetes_network_policy" "metrics-server_default_deny" {

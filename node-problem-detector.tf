@@ -57,6 +57,10 @@ resource "helm_release" "node-problem-detector" {
     local.npd["extra_values"]
   ]
   namespace = kubernetes_namespace.node-problem-detector.*.metadata.0.name[count.index]
+
+  depends_on = [
+      skopeo_copy.this
+  ]
 }
 
 resource "kubernetes_network_policy" "npd_default_deny" {

@@ -61,6 +61,7 @@ resource "helm_release" "tigera-operator" {
   namespace = local.tigera-operator["create_ns"] ? kubernetes_namespace.tigera-operator.*.metadata.0.name[count.index] : local.tigera-operator["namespace"]
 
   depends_on = [
+    skopeo_copy.this,
     kubectl_manifest.prometheus-operator_crds
   ]
 }
