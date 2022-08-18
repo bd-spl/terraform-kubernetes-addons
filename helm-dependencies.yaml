@@ -71,6 +71,49 @@ dependencies:
   - name: aws-ebs-csi-driver
     version: 2.11.1
     repository: https://kubernetes-sigs.github.io/aws-ebs-csi-driver  # FIXME: deadlink
+    containers:
+      image:
+        name:
+          repository: docker.io/amazon/aws-ebs-csi-driver
+        ver:
+          tag: v1.6.2
+        source: docker.io/amazon
+      sidecars.provisioner:
+        name:
+          image: k8s.gcr.io/sig-storage/csi-provisioner
+        ver:
+          tag: v3.1.0
+        source: k8s.gcr.io/sig-storage
+      sidecars.attacher:
+        name:
+          image: k8s.gcr.io/sig-storage/csi-attacher
+        ver:
+          tag: v3.4.0
+        source: k8s.gcr.io/sig-storage
+      sidecars.snapshotter:
+        name:
+          image: k8s.gcr.io/sig-storage/csi-snapshotter
+        ver:
+          tag: v6.0.1
+        source: k8s.gcr.io/sig-storage
+      sidecars.livenessProbe:
+        name:
+          image: k8s.gcr.io/sig-storage/livenessprobe
+        ver:
+          tag: v2.6.0
+        source: k8s.gcr.io
+      sidecars.resizer:
+        name:
+          image: k8s.gcr.io/sig-storage/csi-resizer
+        ver:
+          tag: v1.4.0
+        source: k8s.gcr.io/sig-storage
+      sidecars.nodeDriverRegistrar:
+        name:
+          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar
+        ver:
+          tag: v2.5.1
+        source: k8s.gcr.io/sig-storage
   - name: aws-efs-csi-driver
     version: 2.2.8
     repository: https://kubernetes-sigs.github.io/aws-efs-csi-driver # FIXME: deadlink
@@ -115,7 +158,7 @@ dependencies:
       controller.admissionWebhooks.patch.image:
         name:
           image: ingress-nginx/kube-webhook-certgen
-        tag:
+        ver:
           tag: v1.1.1
         registry:
           registry: registry.k8s.io
@@ -179,11 +222,24 @@ dependencies:
     version: 6.4.0
     repository: https://grafana.github.io/helm-charts
   - name: metrics-server
+    # https://github.dev/kubernetes-sigs/metrics-server
     version: 3.8.2
     repository: https://kubernetes-sigs.github.io/metrics-server/
+    containers:
+      image:
+        name:
+          repository: k8s.gcr.io/metrics-server/metrics-server
+        source: k8s.gcr.io/metrics-server
   - name: node-problem-detector
     version: 2.2.6
     repository: https://charts.deliveryhero.io/
+    containers:
+      image:
+        name:
+          repository: k8s.gcr.io/node-problem-detector/node-problem-detector
+        ver:
+          tag: v0.8.11
+        source: k8s.gcr.io/node-problem-detector
   - name: prometheus-adapter
     version: 3.4.0
     repository: https://prometheus-community.github.io/helm-charts
