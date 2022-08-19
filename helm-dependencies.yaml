@@ -238,7 +238,7 @@ dependencies:
         name:
           repository: k8s.gcr.io/node-problem-detector/node-problem-detector
         ver:
-          tag: v0.8.11
+          tag: v0.8.10
         source: k8s.gcr.io/node-problem-detector
   - name: prometheus-adapter
     version: 3.4.0
