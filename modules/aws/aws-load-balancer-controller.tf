@@ -100,7 +100,7 @@ resource "helm_release" "aws-load-balancer-controller" {
     content {
       name = set.value.helm_values.image.name
       value = set.value.ecr_prepare_images ? "${split(
-        "/", aws_ecr_repository.this["aws-load-balancer-controller.${set.key}"].repository_url
+        "/", aws_ecr_repository.this[set.key].repository_url
       )[0]}/${set.value.helm_values.image.value}" : set.value.helm_values.image.value
     }
   }
@@ -113,7 +113,7 @@ resource "helm_release" "aws-load-balancer-controller" {
       name = set.value.helm_values.registry.name
       # when unset, it should be replaced with the one prepared on ECR
       value = try(set.value.helm_values.registry.value, split(
-        "/", aws_ecr_repository.this["aws-load-balancer-controller.${set.key}"].repository_url
+        "/", aws_ecr_repository.this[set.key].repository_url
       )[0])
     }
   }
