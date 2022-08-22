@@ -241,6 +241,8 @@ dependencies:
       image:
         name:
           repository: k8s.gcr.io/metrics-server/metrics-server
+        ver:
+          tag: v0.6.1
         source: k8s.gcr.io/metrics-server
   - name: node-problem-detector
     version: 2.2.6
