@@ -1,62 +1,74 @@
-# NOTE: each dependency may have an optional image prepare settings and a list of containers.
-# There are optional source or registry path to overwrite for helm and/or to prepared images
-# (retag and push to ECR). It also can provide helm values override paths for image/tag data
-# (mandatory when prepare images requested).
+# NOTE: Each dependency may have containers data to prepare images for use in private
+# EKS clusters. Skopeo will copy images from the given source/registry into ensured ECR.
+# There are source/registry paths used to overwrite for helm and/or to prepared images.
+# It also can provide helm values override paths for image/tag data. For addons not
+# managed with helm_release, but kubectl_manifest, you can still provide containers data.
+#
 # Example:
-# - name: foo-charts
-#   # If not requested, the optional registry data will get overwritten for helm values
-#   # with the value specified for each container, alongside the image and tag values.
-#   # When requested, the registry data used as a source only, so its helm value will
-#   # be rewritten with a ECR repo path prepared for each container.
-#   ecr_prepare_images: true
-#
-#   # (optinal) extra settings for managed ECR repos
-#   ecr_immutable_tag: false
-#   ecr_scan_on_push: false
-#   ecr_encryption_type: KMS
-#   ecr_kms_key: my-kms-key
-#
-#   # foo-charts specific paths to override with helm set CLI (performs deep-merge)
+# - name: foo-addon-charts
 #   containers:
-#     # This results in custom.io/prod/foo:v1.1 pulled, retagged as <ECR repo>/foo:v1.1,
-#     # pushed to ECR, then rewritten via helm set overrides CLI
+#     # This results in custom.io/prod/foo:v1.1 copied as <ECR repo>/foo:v1.1,
+#     # then its helm values updated via the 'helm set' interface
 #     app.foo.spec.containers.frontend:
 #       name:
 #         uri: foo # sets image for helm as app.foo.spec.containers.frontend.uri
 #       ver:
 #         version: v1.1 # sets tag for helm as app.foo.spec.containers.frontend.version
-#       # path to rewrite, also a source to pull from to prepare images
-#       registry:
-#         # rewrites app.foo.spec.containers.frontend.repository, which takes
-#         # <ECR repo> path, when prepared for the image, or custom.io/prod - if not.
-#         repository: custom.io/prod
 #
-#       # ignored, if no prepare images requested, or above registry data provided.
-#       # use this instead of 'registry', if image name helm value already includes the
+#       # Optional ECR settings (not for helm), override the addons module vars
+#       ecr_immutable_tag: false
+#       ecr_scan_on_push: false
+#       ecr_encryption_type: KMS
+#       ecr_kms_key: my-kms-key
+#
+#       # Either to prepare images in ECR, or just override the helm values.
+#       # Disabling it makes the 'source' data ignored. The name/registry values
+#       # then end up in helm as provided (i.e. no paths rewriting for ECR)
+#       ecr_prepare_images: true
+#
+#       # Assumes the 'name' holds a shortname instead of URI.
+#       # When 'source' is unset, skopeo_copy takes this as a source, and ECR as a dst.
+#       # Helm takes the prepared ECR repo URL value, or the original value, if
+#       # 'ecr_prepare_images' was disabled.
+#       registry:
+#         # sets registry for helm as app.foo.spec.containers.frontend.repository,
+#         # based on ecr_prepare_images enabled, or not
+#         repository: custom.io/prod # used as a source only, or as a final value
+#
+#       # Ignored when ecr_prepare_images is off.
+#       # Use this instead of 'registry', if image name helm value already includes the
 #       # registry path, and there is no registry value for helm. Then the registry path
 #       # in the name will get overwritten by the prepared ECR repositroy replacing this
 #       # src value there.
 #       # NOTE: to rewrite helm 'source' value, define it as {registry: {source: ...}}
 #       source: custom.io/prod  # cannot end with a slash /
 #
-#     # Images cannot be prepared for those due to incomplete data
-#     tools.image:
-#       # cannot prepare it as the tag and registry helm values defaults are unknown.
-#       # helm will have overriden with <some registry>/bar:<some tag>
-#       name:
-#         image: bar # sets image for helm as tools.image.image
-#
 #     extra.image:
-#       # cannot prepare it as the name and registry helm values defaults are unknown.
-#       # helm will have overriden with <some registry>/<some image>:123
-#       ver:
-#         tag: 123 # sets tag for helm as extra.image.tag
-#
-#     extra2.image:
-#       # cannot prepare it because the helm default tag is unknown.
+#       # Has ecr_prepare_images enabled by default
 #       name:
-#         image_uri: custom.io/dev/baz  # image path gets rewritten for registry.repository, based on below pattern
-#       source: custom.io/dev  # will be ignored
+#         # NOTE: the registry path part of URI must be the same as in the source, e.g.:
+#         # custom.io, or custom.io/dev (depending on a use case and namespace)
+#         image_uri: custom.io/dev/baz # Helm takes prepared <ECR>/dev/baz:latest
+#       source: custom.io  # skopeo copies it from custom.io/dev/baz:latest to ECR
+#
+#     sidecar.spec.containers:
+#       # Helm will use custom.io/dev/qux:<whatever tag it defines>
+#       ecr_prepare_images: false
+#       name:
+#         image: dev/qux # sets image for helm as sidecar.spec.containers.image
+#       registry: # sets helm to use sidecar.spec.containers.source registry as provided
+#         source: custom.io
+#       source: custom.io/prod  # will be ignored as ecr_prepare_images is off!
+#
+#      bad.example:
+#        # 'registry' will be ignored when preparing images,
+#        # but helm will take both rewritten registry and uri paths,
+#        # which might result in a misconfigured chart (repo info looks redundant here)
+#        name:
+#          uri: custom.io/quux:v123  # helm takes <ECR>/quux:v123
+#        registry:
+#          repo: custom.io/prod      # helm takes <ECR>/prod?..
+#        source: custom.io
 #
 apiVersion: v2
 name: Handle terraform-kubernetes-addons helm chart dependencies update

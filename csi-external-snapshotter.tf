@@ -1,5 +1,4 @@
 locals {
-
   csi-external-snapshotter = merge(
     {
       enabled = false
@@ -39,6 +38,6 @@ resource "kubectl_manifest" "csi-external-snapshotter" {
   yaml_body = each.value
 
   depends_on = [
-      skopeo_copy.this
+    skopeo_copy.this
   ]
 }

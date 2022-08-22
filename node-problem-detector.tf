@@ -59,7 +59,7 @@ resource "helm_release" "node-problem-detector" {
   namespace = kubernetes_namespace.node-problem-detector.*.metadata.0.name[count.index]
 
   depends_on = [
-      skopeo_copy.this
+    skopeo_copy.this
   ]
 }
 
