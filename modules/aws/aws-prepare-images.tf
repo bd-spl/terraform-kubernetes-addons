@@ -39,11 +39,9 @@ locals {
               name  = "${k}.${keys(v.ver)[0]}"
               value = v.ver[keys(v.ver)[0]]
             }
-            # image names (short and URI) overrides - ensure it contains no registry info for later composition
+            # image names (short and URI) overrides - strip registry info off for later composition
             image = {
               name = "${k}.${keys(v.name)[0]}"
-              # when preparing an image named by URI, its future ECR registry_url
-              # is unknown at this moment, and cannot be rewriten here
               value = lookup(v, "source", "") == "" ? v.name[keys(v.name)[0]] : replace(
               "${v.name[keys(v.name)[0]]}", "${v.source}/", "")
             }
@@ -51,12 +49,7 @@ locals {
               # NOTE: cannot rewrite reigstry path for the prepared repo as it is not known yet
               name  = "${k}.${keys(v.registry)[0]}"
               value = null
-              #shortname = replace(replace(v.name[keys(v.name)[0]],
-              #  "${try(v.registry[keys(v.registry)[0]], v.source)}/", ""),
-              #  ":${try(v.ver, local.default_tag)[keys(try(v.ver, local.default_tag))[0]]}", ""
-              #)
               } : {
-              # only set helm value as is
               name  = "${k}.${keys(v.registry)[0]}"
               value = v.registry[keys(v.registry)[0]]
             }
