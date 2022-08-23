@@ -39,19 +39,17 @@ locals {
               name  = "${k}.${keys(v.ver)[0]}"
               value = v.ver[keys(v.ver)[0]]
             }
-            # image names (short and URI) overrides - strip registry info off for later composition
+            # NOTE: cannot rewrite registry/URI-source, until the prepared ECR repo url is known
             image = {
-              name = "${k}.${keys(v.name)[0]}"
-              value = lookup(v, "source", "") == "" ? v.name[keys(v.name)[0]] : replace(
-              "${v.name[keys(v.name)[0]]}", "${v.source}/", "")
+              name  = "${k}.${keys(v.name)[0]}"
+              value = lookup(v, "ecr_prepare_images", true) ? null : v.name[keys(v.name)[0]]
+              tail = length(split(
+                ":", v.name[keys(v.name)[0]])
+              ) == 1 ? "" : ":${split(":", v.name[keys(v.name)[1]])}"
             }
-            registry = lookup(v, "registry", {}) == {} ? {} : lookup(v, "ecr_prepare_images", true) ? {
-              # NOTE: cannot rewrite reigstry path for the prepared repo as it is not known yet
+            registry = lookup(v, "registry", {}) == {} ? {} : {
               name  = "${k}.${keys(v.registry)[0]}"
-              value = null
-              } : {
-              name  = "${k}.${keys(v.registry)[0]}"
-              value = v.registry[keys(v.registry)[0]]
+              value = lookup(v, "ecr_prepare_images", true) ? null : v.registry[keys(v.registry)[0]]
             }
           }
           } if(

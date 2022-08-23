@@ -99,9 +99,8 @@ resource "helm_release" "aws-load-balancer-controller" {
     for_each = local.images_data.aws-load-balancer-controller.containers
     content {
       name = set.value.helm_values.image.name
-      value = set.value.ecr_prepare_images ? "${split(
-        "/", aws_ecr_repository.this[set.key].repository_url
-      )[0]}/${set.value.helm_values.image.value}" : set.value.helm_values.image.value
+      value = set.value.ecr_prepare_images ? "${aws_ecr_repository.this[set.key].repository_url}${set.value.helm_values.image.tail}" : try(
+        set.value.helm_values.image.value, "CANNOT_BE_NULL")
     }
   }
   dynamic "set" {
