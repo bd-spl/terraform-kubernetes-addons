@@ -475,11 +475,45 @@ resource "helm_release" "kube-prometheus-stack" {
     local.kube-prometheus-stack["default_global_limits"] ? local.values_kps_global_limits : null,
     local.kube-prometheus-stack["extra_values"]
   ])
+
+  #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
+  dynamic "set" {
+    for_each = {
+      for c, v in local.images_data.kube-prometheus-stack.containers :
+      c => v if v.helm_values.tag != {}
+    }
+    content {
+      name  = set.value.helm_values.tag.name
+      value = set.value.helm_values.tag.value
+    }
+  }
+  dynamic "set" {
+    for_each = local.images_data.kube-prometheus-stack.containers
+    content {
+      name = set.value.helm_values.image.name
+      value = set.value.ecr_prepare_images ? "${aws_ecr_repository.this[set.key].repository_url}${set.value.helm_values.image.tail}" : try(
+      set.value.helm_values.image.value, "CANNOT_BE_NULL")
+    }
+  }
+  dynamic "set" {
+    for_each = {
+      for c, v in local.images_data.kube-prometheus-stack.containers :
+      c => v if lookup(v, "registry", {}) != {}
+    }
+    content {
+      name = set.value.helm_values.registry.name
+      # when unset, it should be replaced with the one prepared on ECR
+      value = try(set.value.helm_values.registry.value, split(
+        "/", aws_ecr_repository.this[set.key].repository_url
+      )[0])
+    }
+  }
   namespace = kubernetes_namespace.kube-prometheus-stack.*.metadata.0.name[count.index]
 
   depends_on = [
     helm_release.ingress-nginx,
-    kubectl_manifest.prometheus-operator_crds
+    kubectl_manifest.prometheus-operator_crds,
+    skopeo_copy.this
   ]
 }
 

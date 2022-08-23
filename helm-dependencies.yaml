@@ -13,6 +13,7 @@
 #       name:
 #         uri: foo # sets image for helm as app.foo.spec.containers.frontend.uri
 #       ver:
+#         # use 'skopeo list-tags' to pick the best value from available tags
 #         version: v1.1 # sets tag for helm as app.foo.spec.containers.frontend.version
 #
 #       # Optional ECR settings (not for helm), override the addons module vars
@@ -36,10 +37,9 @@
 #         repository: custom.io/prod # used as a source only, or as a final value
 #
 #       # Ignored when ecr_prepare_images is off.
-#       # Use this instead of 'registry', if image name helm value already includes the
-#       # registry path, and there is no registry value for helm. Then the registry path
-#       # in the name will get overwritten by the prepared ECR repositroy replacing this
-#       # src value there.
+#       # Use this instead of 'registry', if image name is URI and already includes the
+#       # registry path. Then the registry path in the name will get overwritten by the
+#       # prepared ECR repositroy replacing the source value of it.
 #       # NOTE: to rewrite helm 'source' value, define it as {registry: {source: ...}}
 #       source: custom.io/prod  # cannot end with a slash /
 #
@@ -47,7 +47,7 @@
 #       # Has ecr_prepare_images enabled by default
 #       name:
 #         # NOTE: the registry path part of URI must be the same as in the source, e.g.:
-#         # custom.io, or custom.io/dev (depending on a use case and namespace)
+#         # custom.io, or custom.io/dev (ambiguous names might require the former notation)
 #         image_uri: custom.io/dev/baz # Helm takes prepared <ECR>/dev/baz:latest
 #       source: custom.io  # skopeo copies it from custom.io/dev/baz:latest to ECR
 #
@@ -114,7 +114,7 @@ dependencies:
           image: k8s.gcr.io/sig-storage/livenessprobe
         ver:
           tag: v2.6.0
-        source: k8s.gcr.io
+        source: k8s.gcr.io  # livenessprobe is ambigouse, so leave sig-storage prefix not rewritten
       sidecars.resizer:
         name:
           image: k8s.gcr.io/sig-storage/csi-resizer
@@ -155,9 +155,17 @@ dependencies:
   - name: cert-manager-csi-driver
     version: v0.4.2
     repository: https://charts.jetstack.io  # https://artifacthub.io/packages/helm/cert-manager/cert-manager-csi-driver
+    # https://github.dev/kubernetes/autoscaler
   - name: cluster-autoscaler
     version: 9.21.0
     repository: https://kubernetes.github.io/autoscaler # NOTE: link does not open in a browser, is this fine?
+    containers:
+      name:
+        image:
+          repository: k8s.gcr.io/autoscaling/cluster-autoscaler
+        ver:
+          tag: v1.24.0
+        source: k8s.gcr.io/autoscaling
   - name: external-dns
     version: 1.11.0
     repository: https://kubernetes-sigs.github.io/external-dns/
@@ -172,7 +180,7 @@ dependencies:
         name:
           image: ingress-nginx/kube-webhook-certgen
         ver:
-          tag: v1.1.1
+          tag: v1.1.1 # poke v1.3.0?
         registry:
           registry: registry.k8s.io
       defaultBackend.image:
@@ -210,6 +218,73 @@ dependencies:
   - name: kube-prometheus-stack
     version: 40.3.1
     repository: https://prometheus-community.github.io/helm-charts
+    containers:
+      ingress.alertmanagerSpec.image:
+        name:
+          repository: quay.io/prometheus/alertmanager
+        ver:
+          tag: v0.24.0
+        source: quay.io/prometheus
+      prometheusOperator.admissionWebhooks.patch.image:
+        name:
+          repository: k8s.gcr.io/ingress-nginx/kube-webhook-certgen
+        ver:
+          tag: v1.2.0  # poke v1.3.0?
+        source: k8s.gcr.io/ingress-nginx
+      prometheusOperator.image:
+        name:
+          repository: quay.io/prometheus-operator/prometheus-operator
+        ver:
+          tag: v0.58.0
+        source: quay.io/prometheus-operator
+      prometheusOperator.prometheusConfigReloader.image:
+        name:
+          repository: quay.io/prometheus-operator/prometheus-config-reloader
+        ver:
+          tag: v0.58.0
+        source: quay.io/prometheus-operator
+      thanosImage: &thanos
+        name:
+          repository: quay.io/thanos/thanos
+        ver:
+          tag: v0.27.0
+        source: quay.io/thanos
+      prometheus.prometheusSpec.image:
+        name:
+          repository: quay.io/prometheus/prometheus
+        ver:
+          tag: v2.37.0
+        source: quay.io/prometheus
+      thanosRuler.thanosRulerSpec.image: *thanos
+      # https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml
+      grafana.image:
+        name:
+          repository: docker.io/grafana/grafana
+        ver:
+          tag: 9.1.0
+        source: docker.io/grafana
+      grafana.downloadDashboardsImage:
+        name:
+          repository: docker.io/curlimages/curl
+        ver:
+          tag: 7.73.0 # poke 7.84.0?
+        source: docker.io
+      grafana.initChownData.image:
+        name:
+          repository: docker.io/busybox
+        ver:
+          tag: 1.31.1
+        source: docker.io
+      grafana.sidecar.image:
+        name:
+          repository: quay.io/kiwigrid/k8s-sidecar
+        ver:
+          tag: 1.19.2
+        source: quay.io
+      grafana.imageRenderer.image:
+        name:
+          repository: docker.io/grafana/grafana-image-renderer
+        source: docker.io/grafana
   - name: kyverno
     version: v2.5.3
     repository: https://kyverno.github.io/kyverno/
@@ -297,7 +372,7 @@ dependencies:
           image: docker.io/calico/ctl
         ver:
           tag: master
-        source: docker.io
+        source: docker.io # ctl is ambiguose, leave calico prefix in ECR repo url
   - name: traefik
     version: 10.30.1
     repository: https://helm.traefik.io/traefik
@@ -336,4 +411,4 @@ dependencies:
           repository: k8s.gcr.io/sig-storage/hostpathplugin
         ver:
           tag: v1.8.0
-        source: k8s.gcr.io
+        source: k8s.gcr.io # hostpathplugin is likely ambigouse, leave the sig prefix
