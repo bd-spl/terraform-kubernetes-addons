@@ -85,6 +85,7 @@ resource "helm_release" "aws-load-balancer-controller" {
     local.aws-load-balancer-controller["extra_values"]
   ]
 
+  #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
   dynamic "set" {
     for_each = {
       for c, v in local.images_data.aws-load-balancer-controller.containers :

@@ -8,7 +8,6 @@ locals {
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].version
       registry               = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].registry, {})
-      containers             = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].containers, {})
       namespace              = "ingress-nginx"
       use_nlb                = false
       use_nlb_ip             = false
@@ -166,35 +165,43 @@ resource "helm_release" "ingress-nginx" {
     local.ingress-nginx["extra_values"],
   ]
 
-  # image overrides
+  #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
   dynamic "set" {
-    for_each = local.ingress-nginx["containers"]
+    for_each = {
+      for c, v in local.images_data.ingress-nginx.containers :
+      c => v if v.helm_values.tag != {}
+    }
     content {
-      name  = "${set.key}.${keys(set.value)[0]}"
-      value = set.value[keys(set.value)[0]]
+      name  = set.value.helm_values.tag.name
+      value = set.value.helm_values.tag.value
     }
   }
-  # optional tag overrides
   dynamic "set" {
-    for_each = { for c, v in local.ingress-nginx["containers"] : c => v if length(v) > 1 }
+    for_each = local.images_data.ingress-nginx.containers
     content {
-      name  = "${set.key}.${keys(set.value)[1]}"
-      value = set.value[keys(set.value)[1]]
+      name = set.value.helm_values.image.name
+      value = set.value.ecr_prepare_images ? "${aws_ecr_repository.this[set.key].repository_url}${set.value.helm_values.image.tail}" : try(
+        set.value.helm_values.image.value, "CANNOT_BE_NULL")
     }
   }
-  # optional registry overrides
   dynamic "set" {
-    for_each = local.ingress-nginx["registry"] == {} ? {} : local.ingress-nginx["containers"]
+    for_each = {
+      for c, v in local.images_data.ingress-nginx.containers :
+      c => v if lookup(v, "registry", {}) != {}
+    }
     content {
-      name  = "${set.key}.${keys(local.ingress-nginx["registry"])[0]}"
-      value = values(local.ingress-nginx["registry"])[0]
+      name = set.value.helm_values.registry.name
+      # when unset, it should be replaced with the one prepared on ECR
+      value = try(set.value.helm_values.registry.value, split(
+        "/", aws_ecr_repository.this[set.key].repository_url
+      )[0])
     }
   }
 
   namespace = kubernetes_namespace.ingress-nginx.*.metadata.0.name[count.index]
 
   depends_on = [
-    kubectl_manifest.prometheus-operator_crds, skopeo_copy.this
+    kubectl_manifest.prometheus-operator_crds, helm_release.aws-load-balancer-controller, skopeo_copy.this
   ]
 }
 
