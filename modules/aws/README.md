@@ -42,7 +42,6 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 | <a name="provider_http"></a> [http](#provider\_http) | >= 3 |
 | <a name="provider_kubectl"></a> [kubectl](#provider\_kubectl) | ~> 1.0 |
 | <a name="provider_kubernetes"></a> [kubernetes](#provider\_kubernetes) | ~> 2.0, != 2.12 |
-| <a name="provider_null"></a> [null](#provider\_null) | n/a |
 | <a name="provider_random"></a> [random](#provider\_random) | n/a |
 | <a name="provider_skopeo"></a> [skopeo](#provider\_skopeo) | 0.0.4 |
 | <a name="provider_time"></a> [time](#provider\_time) | n/a |

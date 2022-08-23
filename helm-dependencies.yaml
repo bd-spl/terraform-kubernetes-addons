@@ -81,6 +81,7 @@ dependencies:
     version: 1.2.4
     repository: https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
   - name: aws-ebs-csi-driver
+    # https://github.dev/kubernetes-sigs/aws-ebs-csi-driver
     version: 2.11.1
     repository: https://kubernetes-sigs.github.io/aws-ebs-csi-driver  # FIXME: deadlink
     containers:
@@ -245,6 +246,7 @@ dependencies:
           tag: v0.6.1
         source: k8s.gcr.io/metrics-server
   - name: node-problem-detector
+    # https://github.com/deliveryhero/helm-charts
     version: 2.2.6
     repository: https://charts.deliveryhero.io/
     containers:
@@ -279,6 +281,7 @@ dependencies:
     version: 11.5.3
     repository: https://charts.bitnami.com/bitnami
   - name: tigera-operator
+    # https://github.dev/projectcalico/calico/
     version: v3.24.1
     repository: https://docs.projectcalico.org/charts # Access denied
     containers:

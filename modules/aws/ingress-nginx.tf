@@ -7,7 +7,6 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].version
-      registry               = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].registry, {})
       namespace              = "ingress-nginx"
       use_nlb                = false
       use_nlb_ip             = false
@@ -159,7 +158,6 @@ resource "helm_release" "ingress-nginx" {
   reuse_values          = local.ingress-nginx["reuse_values"]
   skip_crds             = local.ingress-nginx["skip_crds"]
   verify                = local.ingress-nginx["verify"]
-
   values = [
     local.ingress-nginx["use_nlb_ip"] ? local.values_ingress-nginx_nlb_ip : local.ingress-nginx["use_nlb"] ? local.values_ingress-nginx_nlb : local.ingress-nginx["use_l7"] ? local.values_ingress-nginx_l7 : local.values_ingress-nginx_l4,
     local.ingress-nginx["extra_values"],
@@ -181,7 +179,7 @@ resource "helm_release" "ingress-nginx" {
     content {
       name = set.value.helm_values.image.name
       value = set.value.ecr_prepare_images ? "${aws_ecr_repository.this[set.key].repository_url}${set.value.helm_values.image.tail}" : try(
-        set.value.helm_values.image.value, "CANNOT_BE_NULL")
+      set.value.helm_values.image.value, "CANNOT_BE_NULL")
     }
   }
   dynamic "set" {
