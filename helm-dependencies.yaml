@@ -80,8 +80,8 @@ dependencies:
   - name: secrets-store-csi-driver
     version: 1.2.4
     repository: https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
+  # https://github.dev/kubernetes-sigs/aws-ebs-csi-driver/blob/master/charts/aws-ebs-csi-driver/values.yaml
   - name: aws-ebs-csi-driver
-    # https://github.dev/kubernetes-sigs/aws-ebs-csi-driver
     version: 2.11.1
     repository: https://kubernetes-sigs.github.io/aws-ebs-csi-driver  # FIXME: deadlink
     containers:
@@ -91,39 +91,39 @@ dependencies:
         ver:
           tag: v1.6.2
         source: docker.io/amazon
-      sidecars.provisioner:
+      sidecars.provisioner.image:
         name:
-          image: k8s.gcr.io/sig-storage/csi-provisioner
+          repository: k8s.gcr.io/sig-storage/csi-provisioner
         ver:
           tag: v3.1.0
         source: k8s.gcr.io/sig-storage
-      sidecars.attacher:
+      sidecars.attacher.image:
         name:
-          image: k8s.gcr.io/sig-storage/csi-attacher
+          repository: k8s.gcr.io/sig-storage/csi-attacher
         ver:
           tag: v3.4.0
         source: k8s.gcr.io/sig-storage
-      sidecars.snapshotter:
+      sidecars.snapshotter.image:
         name:
-          image: k8s.gcr.io/sig-storage/csi-snapshotter
+          repository: k8s.gcr.io/sig-storage/csi-snapshotter
         ver:
           tag: v6.0.1
         source: k8s.gcr.io/sig-storage
-      sidecars.livenessProbe:
+      sidecars.livenessProbe.image:
         name:
-          image: k8s.gcr.io/sig-storage/livenessprobe
+          repository: k8s.gcr.io/sig-storage/livenessprobe
         ver:
           tag: v2.6.0
         source: k8s.gcr.io  # livenessprobe is ambigouse, so leave sig-storage prefix not rewritten
-      sidecars.resizer:
+      sidecars.resizer.image:
         name:
-          image: k8s.gcr.io/sig-storage/csi-resizer
+          repository: k8s.gcr.io/sig-storage/csi-resizer
         ver:
           tag: v1.4.0
         source: k8s.gcr.io/sig-storage
-      sidecars.nodeDriverRegistrar:
+      sidecars.nodeDriverRegistrar.image:
         name:
-          image: k8s.gcr.io/sig-storage/csi-node-driver-registrar
+          repository: k8s.gcr.io/sig-storage/csi-node-driver-registrar
         ver:
           tag: v2.5.1
         source: k8s.gcr.io/sig-storage
@@ -133,6 +133,7 @@ dependencies:
   - name: aws-for-fluent-bit
     version: 0.1.21
     repository: https://aws.github.io/eks-charts
+  # https://github.dev/kubernetes-sigs/aws-load-balancer-controller/blob/main/helm/aws-load-balancer-controller/values.yaml
   - name: aws-load-balancer-controller
     version: 1.4.5
     repository: https://aws.github.io/eks-charts
@@ -149,29 +150,64 @@ dependencies:
   - name: aws-calico
     version: 0.3.11
     repository: https://aws.github.io/eks-charts
+  # https://github.dev/cert-manager/cert-manager/blob/master/deploy/charts/cert-manager/values.yaml
   - name: cert-manager
     version: v1.9.1
     repository: https://charts.jetstack.io # NOTE: redirects to https://artifacthub.io/packages/helm/cert-manager/cert-manager
+    containers:
+      image:
+        name:
+          repository: quay.io/jetstack/cert-manager-controller
+        ver:
+          tag: v1.9.1
+        source: quay.io/jetstack
+      webhook.image:
+        name:
+          repository: quay.io/jetstack/cert-manager-webhook
+        ver:
+          tag: v1.9.1
+        source: quay.io/jetstack
+      cainjector.image:
+        name:
+          repository: quay.io/jetstack/cert-manager-cainjector
+        ver:
+          tag: v1.9.1
+        source: quay.io/jetstack
+      startupapicheck.image:
+        name:
+          repository: quay.io/jetstack/cert-manager-ctl
+        ver:
+          tag: v1.9.1
+        source: quay.io/jetstack
   - name: cert-manager-csi-driver
     version: v0.4.2
     repository: https://charts.jetstack.io  # https://artifacthub.io/packages/helm/cert-manager/cert-manager-csi-driver
-    # https://github.dev/kubernetes/autoscaler
+  # https://github.dev/kubernetes/autoscaler/blob/master/charts/cluster-autoscaler/values.yaml
   - name: cluster-autoscaler
     version: 9.21.0
     repository: https://kubernetes.github.io/autoscaler # NOTE: link does not open in a browser, is this fine?
     containers:
-      name:
-        image:
+      image:
+        name:
           repository: k8s.gcr.io/autoscaling/cluster-autoscaler
         ver:
           tag: v1.24.0
         source: k8s.gcr.io/autoscaling
+  # https://github.dev/kubernetes-sigs/external-dns/blob/master/charts/external-dns/values.yaml
   - name: external-dns
     version: 1.11.0
     repository: https://kubernetes-sigs.github.io/external-dns/
+    containers:
+      image:
+        name:
+          repository: k8s.gcr.io/external-dns/external-dns
+        ver:
+          tag: v0.12.2
+        source: k8s.gcr.io/external-dns
   - name: flux
     version: 1.13.3
     repository: https://charts.fluxcd.io
+  # https://github.dev/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml
   - name: ingress-nginx
     version: 4.3.0
     repository: https://kubernetes.github.io/ingress-nginx
@@ -215,11 +251,12 @@ dependencies:
   - name: kong
     version: 2.13.1
     repository: https://charts.konghq.com
+  # https://github.dev/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/values.yaml
   - name: kube-prometheus-stack
     version: 40.3.1
     repository: https://prometheus-community.github.io/helm-charts
     containers:
-      ingress.alertmanagerSpec.image:
+      alertmanager.alertmanagerSpec.image:
         name:
           repository: quay.io/prometheus/alertmanager
         ver:
@@ -243,7 +280,7 @@ dependencies:
         ver:
           tag: v0.58.0
         source: quay.io/prometheus-operator
-      thanosImage: &thanos
+      prometheusOperator.thanosImage: &thanos
         name:
           repository: quay.io/thanos/thanos
         ver:
@@ -259,7 +296,7 @@ dependencies:
         << : *thanos
         # only set rewritten value for helm, skip image already prepared for thanosImage
         ecr_prepare_images: false
-      # https://github.com/grafana/helm-charts/blob/main/charts/grafana/values.yaml
+      # https://github.dev/grafana/helm-charts/blob/main/charts/grafana/values.yaml
       grafana.image:
         name:
           repository: docker.io/grafana/grafana
@@ -312,8 +349,8 @@ dependencies:
   - name: promtail
     version: 6.4.0
     repository: https://grafana.github.io/helm-charts
+  # https://github.dev/kubernetes-sigs/metrics-server/blob/master/charts/metrics-server/values.yaml
   - name: metrics-server
-    # https://github.dev/kubernetes-sigs/metrics-server
     version: 3.8.2
     repository: https://kubernetes-sigs.github.io/metrics-server/
     containers:
@@ -323,8 +360,8 @@ dependencies:
         ver:
           tag: v0.6.1
         source: k8s.gcr.io/metrics-server
+  # https://github.dev/deliveryhero/helm-charts/blob/master/stable/node-problem-detector/values.yaml
   - name: node-problem-detector
-    # https://github.com/deliveryhero/helm-charts
     version: 2.2.6
     repository: https://charts.deliveryhero.io/
     containers:
@@ -358,8 +395,8 @@ dependencies:
   - name: thanos
     version: 11.5.3
     repository: https://charts.bitnami.com/bitnami
+  # https://github.dev/projectcalico/calico/blob/master/charts/tigera-operator/values.yaml
   - name: tigera-operator
-    # https://github.dev/projectcalico/calico/
     version: v3.24.1
     repository: https://docs.projectcalico.org/charts # Access denied
     containers:
@@ -394,8 +431,8 @@ dependencies:
   - name: testrtc-speedtest
     version: 0.1.0
     repository: https://bogdando.github.io/helm-charts/
-  - name: csi-external-snapshotter # Not helm, image prep data only
-    # https://github.dev/kubernetes-csi/external-snapshotter
+  # https://github.com/kubernetes-csi/external-snapshotter
+  - name: csi-external-snapshotter # Not helm, ECR images prep data only
     containers:
       csi-provisioner:
         name:
