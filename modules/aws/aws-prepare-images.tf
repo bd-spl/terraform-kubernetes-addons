@@ -22,10 +22,12 @@ locals {
       containers = {
         # returns a list of {dependency.shortname => {src_reigstry:..., parsed_tag:..., ...}}
         for k, v in item.containers :
-        # strip registry/tag off the images names
-        format("%s.%s", item.name, replace(replace(v.name[keys(v.name)[0]],
+        # strip registry/tag off the images names, avoid duplicate keys by adding uuid
+        format("%s.%s%s", item.name, replace(replace(v.name[keys(v.name)[0]],
           "${try(v.registry[keys(v.registry)[0]], v.source)}/", ""),
-          ":${try(v.ver, local.default_tag)[keys(try(v.ver, local.default_tag))[0]]}", "")) => {
+          ":${try(v.ver, local.default_tag)[keys(try(v.ver, local.default_tag))[0]]}", ""),
+          try(v.ecr_prepare_images, true) ? "" : "_${uuid()}"
+          ) => {
           ecr_prepare_images  = try(v.ecr_prepare_images, true)
           src_reigstry        = try(v.source, v.registry[keys(v.registry)[0]])
           parsed_tag          = try(v.ver, local.default_tag)[keys(try(v.ver, local.default_tag))[0]]
