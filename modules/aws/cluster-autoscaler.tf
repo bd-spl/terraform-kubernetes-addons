@@ -10,7 +10,6 @@ locals {
       service_account_name      = "cluster-autoscaler"
       create_iam_resources_irsa = true
       enabled                   = false
-      version                   = "v1.21.1"
       iam_policy_override       = null
       default_network_policy    = true
       name_prefix               = "${var.cluster-name}-cluster-autoscaler"
@@ -29,9 +28,6 @@ rbac:
     name: ${local.cluster-autoscaler["service_account_name"]}
     annotations:
       eks.amazonaws.com/role-arn: "${local.cluster-autoscaler["enabled"] && local.cluster-autoscaler["create_iam_resources_irsa"] ? module.iam_assumable_role_cluster-autoscaler.iam_role_arn : ""}"
-image:
-  repository: k8s.gcr.io/autoscaling/cluster-autoscaler
-  tag: ${local.cluster-autoscaler["version"]}
 extraArgs:
   balance-similar-node-groups: true
   skip-nodes-with-local-storage: false
@@ -156,7 +152,7 @@ resource "helm_release" "cluster-autoscaler" {
     }
     content {
       name  = set.value.helm_values.tag.name
-      value = set.value.helm_values.tag.value
+      value = try(local.cluster-autoscaler["version"], set.value.helm_values.tag.value)
     }
   }
   dynamic "set" {
