@@ -148,11 +148,11 @@ resource "helm_release" "cluster-autoscaler" {
   dynamic "set" {
     for_each = {
       for c, v in local.images_data.cluster-autoscaler.containers :
-      c => v if v.helm_values.tag != {}
+      c => v if v.helm_values.tag != {} && lookup(v.helm_values.tag, "value", null) != null
     }
     content {
       name  = set.value.helm_values.tag.name
-      value = try(local.cluster-autoscaler["version"], set.value.helm_values.tag.value)
+      value = try(local.cluster-autoscaler["containers_versions"][set.value.helm_values.tag.name], set.value.helm_values.tag.value)
     }
   }
   dynamic "set" {

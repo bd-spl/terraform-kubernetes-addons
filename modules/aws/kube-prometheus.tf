@@ -6,6 +6,7 @@ locals {
       chart                             = local.helm_dependencies[index(local.helm_dependencies.*.name, "kube-prometheus-stack")].name
       repository                        = local.helm_dependencies[index(local.helm_dependencies.*.name, "kube-prometheus-stack")].repository
       chart_version                     = local.helm_dependencies[index(local.helm_dependencies.*.name, "kube-prometheus-stack")].version
+      versions                          = {}
       namespace                         = "monitoring"
       grafana_service_account_name      = "kube-prometheus-stack-grafana"
       prometheus_service_account_name   = "kube-prometheus-stack-prometheus"
@@ -480,11 +481,11 @@ resource "helm_release" "kube-prometheus-stack" {
   dynamic "set" {
     for_each = {
       for c, v in local.images_data.kube-prometheus-stack.containers :
-      c => v if v.helm_values.tag != {}
+      c => v if v.helm_values.tag != {} && lookup(v.helm_values.tag, "value", null) != null
     }
     content {
       name  = set.value.helm_values.tag.name
-      value = set.value.helm_values.tag.value
+      value = try(local.kube-prometheus-stack["containers_versions"][set.value.helm_values.tag.name], set.value.helm_values.tag.value)
     }
   }
   dynamic "set" {

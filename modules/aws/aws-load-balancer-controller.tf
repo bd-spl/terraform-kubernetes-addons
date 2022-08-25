@@ -89,11 +89,11 @@ resource "helm_release" "aws-load-balancer-controller" {
   dynamic "set" {
     for_each = {
       for c, v in local.images_data.aws-load-balancer-controller.containers :
-      c => v if v.helm_values.tag != {}
+      c => v if v.helm_values.tag != {} && lookup(v.helm_values.tag, "value", null) != null
     }
     content {
       name  = set.value.helm_values.tag.name
-      value = set.value.helm_values.tag.value
+      value = try(local.aws-load-balancer-controller["containers_versions"][set.value.helm_values.tag.name], set.value.helm_values.tag.value)
     }
   }
   dynamic "set" {

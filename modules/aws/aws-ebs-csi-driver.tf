@@ -140,16 +140,16 @@ resource "helm_release" "aws-ebs-csi-driver" {
   #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
   dynamic "set" {
     for_each = {
-      for c, v in local.images_data.cert-manager.containers :
-      c => v if v.helm_values.tag != {}
+      for c, v in local.images_data.aws-ebs-csi-driver.containers :
+      c => v if v.helm_values.tag != {} && lookup(v.helm_values.tag, "value", null) != null
     }
     content {
       name  = set.value.helm_values.tag.name
-      value = set.value.helm_values.tag.value
+      value = try(local.aws-ebs-csi-driver["containers_versions"][set.value.helm_values.tag.name], set.value.helm_values.tag.value)
     }
   }
   dynamic "set" {
-    for_each = local.images_data.cert-manager.containers
+    for_each = local.images_data.aws-ebs-csi-driver.containers
     content {
       name = set.value.helm_values.image.name
       value = set.value.ecr_prepare_images ? "${aws_ecr_repository.this[set.key].repository_url}${set.value.helm_values.image.tail}" : try(
@@ -158,7 +158,7 @@ resource "helm_release" "aws-ebs-csi-driver" {
   }
   dynamic "set" {
     for_each = {
-      for c, v in local.images_data.cert-manager.containers :
+      for c, v in local.images_data.aws-ebs-csi-driver.containers :
       c => v if lookup(v, "registry", {}) != {}
     }
     content {

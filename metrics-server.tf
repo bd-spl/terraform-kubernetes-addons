@@ -64,11 +64,11 @@ resource "helm_release" "metrics-server" {
   dynamic "set" {
     for_each = {
       for c, v in local.images_data.metrics-server.containers :
-      c => v if v.helm_values.tag != {}
+      c => v if v.helm_values.tag != {} && lookup(v.helm_values.tag, "value", null) != null
     }
     content {
       name  = set.value.helm_values.tag.name
-      value = set.value.helm_values.tag.value
+      value = try(local.metrics-server["containers_versions"][set.value.helm_values.tag.name], set.value.helm_values.tag.value)
     }
   }
   dynamic "set" {

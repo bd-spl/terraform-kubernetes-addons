@@ -61,11 +61,11 @@ resource "helm_release" "node-problem-detector" {
   dynamic "set" {
     for_each = {
       for c, v in local.images_data.node-problem-detector.containers :
-      c => v if v.helm_values.tag != {}
+      c => v if v.helm_values.tag != {} && lookup(v.helm_values.tag, "value", null) != null
     }
     content {
       name  = set.value.helm_values.tag.name
-      value = set.value.helm_values.tag.value
+      value = try(local.node-problem-detector["containers_versions"][set.value.helm_values.tag.name], set.value.helm_values.tag.value)
     }
   }
   dynamic "set" {
