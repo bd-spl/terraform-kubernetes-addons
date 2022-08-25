@@ -19,14 +19,22 @@ locals {
   images_data = {
     for _, item in local.helm_dependencies :
     item.name => {
+      # contains a list of {uniq_config_path => {src_reigstry:..., parsed_tag:..., ...}} entries
       containers = {
-        # returns a list of {dependency.shortname => {src_reigstry:..., parsed_tag:..., ...}}
+        # NOTE: becaue we cannot use uuid func (https://github.com/hashicorp/terraform/issues/30838),
+        # compose uniq keys with logical fields: <addon>.<helm_value>.<shortreponame>, like:
+        # ingress-nginx.controller_admissionWebhooks_patch_image_image.ingress-nginx/kube-webhook-certgen
+        # for images requested to be prepared in ECR, the last field goes into repo url as a repo name
         for k, v in item.containers :
-        # strip registry/tag off the images names, avoid duplicate keys by adding uuid
-        format("%s.%s%s", item.name, replace(replace(v.name[keys(v.name)[0]],
-          "${try(v.registry[keys(v.registry)[0]], v.source)}/", ""),
-          ":${try(v.ver, local.default_tag)[keys(try(v.ver, local.default_tag))[0]]}", ""),
-          try(v.ecr_prepare_images, true) ? "" : "_${uuid()}"
+        format("%s.%s.%s",
+          # we use "." as a logical field name separator, do not confuse it with dots in logical data fields
+          replace(item.name, ".", "_"),
+          replace("${k}_${keys(v.name)[0]}", ".", "_"),
+          # strip registry/tag off the images names
+          replace(replace(v.name[keys(v.name)[0]],
+            "${try(v.registry[keys(v.registry)[0]], v.source)}/", ""),
+            ":${try(v.ver, local.default_tag)[keys(try(v.ver, local.default_tag))[0]]}", ""
+          )
           ) => {
           ecr_prepare_images  = try(v.ecr_prepare_images, true)
           src_reigstry        = try(v.source, v.registry[keys(v.registry)[0]])
@@ -69,9 +77,14 @@ locals {
 
 # Prepare ECR repos for dependencies' images
 resource "aws_ecr_repository" "this" {
-  for_each             = { for c, v in local.ecr_map : c => v if v.ecr_prepare_images }
+  for_each = {
+    for c, v in local.ecr_map :
+    # omit the middle part (helm value path) off repo names for brevity reasons
+    "${split(".", c)[0]}.${split(".", c)[2]}" => v if v.ecr_prepare_images
+  }
   name                 = each.key
   image_tag_mutability = each.value.ecr_immutable_tag ? "IMMUTABLE" : "MUTABLE"
+  force_delete         = true
 
   image_scanning_configuration {
     scan_on_push = each.value.ecr_scan_on_push
@@ -85,7 +98,10 @@ resource "aws_ecr_repository" "this" {
 
 # Push images from public source to ECR repos
 resource "skopeo_copy" "this" {
-  for_each          = { for c, v in local.ecr_map : c => v if v.ecr_prepare_images }
+  for_each = {
+    for c, v in local.ecr_map :
+    "${split(".", c)[0]}.${split(".", c)[2]}" => v if v.ecr_prepare_images
+  }
   source_image      = "docker://${each.value.src_reigstry}/${split(".", each.key)[1]}:${each.value.parsed_tag}"
   destination_image = "docker://${aws_ecr_repository.this[each.key].repository_url}:${each.value.parsed_tag}"
   keep_image        = true

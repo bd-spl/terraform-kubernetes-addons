@@ -75,7 +75,10 @@ resource "helm_release" "metrics-server" {
     for_each = local.images_data.metrics-server.containers
     content {
       name = set.value.helm_values.image.name
-      value = set.value.ecr_prepare_images ? "${aws_ecr_repository.this[set.key].repository_url}${set.value.helm_values.image.tail}" : try(
+      value = set.value.ecr_prepare_images ? "${
+        aws_ecr_repository.this[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url}${set.value.helm_values.image.tail}" : try(
       set.value.helm_values.image.value, "CANNOT_BE_NULL")
     }
   }
@@ -88,7 +91,9 @@ resource "helm_release" "metrics-server" {
       name = set.value.helm_values.registry.name
       # when unset, it should be replaced with the one prepared on ECR
       value = try(set.value.helm_values.registry.value, split(
-        "/", aws_ecr_repository.this[set.key].repository_url
+        "/", aws_ecr_repository.this[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url
       )[0])
     }
   }
