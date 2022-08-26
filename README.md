@@ -87,12 +87,14 @@ here](https://github.com/particuleio/terraform-kubernetes-addons/blob/master/.gi
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 0.13 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | >= 4.22.0 |
 | <a name="requirement_flux"></a> [flux](#requirement\_flux) | ~> 0.19 |
 | <a name="requirement_github"></a> [github](#requirement\_github) | ~> 5.0 |
 | <a name="requirement_helm"></a> [helm](#requirement\_helm) | ~> 2.0 |
 | <a name="requirement_http"></a> [http](#requirement\_http) | >= 3 |
 | <a name="requirement_kubectl"></a> [kubectl](#requirement\_kubectl) | ~> 1.0 |
 | <a name="requirement_kubernetes"></a> [kubernetes](#requirement\_kubernetes) | ~> 2.0, != 2.12 |
+| <a name="requirement_scaleway"></a> [scaleway](#requirement\_scaleway) | >= 2.2.0 |
 | <a name="requirement_skopeo"></a> [skopeo](#requirement\_skopeo) | 0.0.4 |
 | <a name="requirement_tls"></a> [tls](#requirement\_tls) | ~> 4.0 |
 

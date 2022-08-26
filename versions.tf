@@ -1,6 +1,8 @@
 terraform {
   required_version = ">= 0.13"
   required_providers {
+    aws        = ">= 4.22.0"
+    azurerm    = "~> 3.0"
     helm       = "~> 2.0"
     kubernetes = "~> 2.0, != 2.12"
     kubectl = {
@@ -18,6 +20,10 @@ terraform {
     skopeo = {
       source  = "abergmeier/skopeo"
       version = "0.0.4"
+    }
+    scaleway = {
+      source  = "scaleway/scaleway"
+      version = ">= 2.2.0"
     }
     tls = {
       source  = "hashicorp/tls"
