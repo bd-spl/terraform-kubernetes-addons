@@ -1,14 +1,22 @@
+variable "ecr_prepare_images" {
+  description = "Prepare containers images for addons and store it in ECR"
+  default     = false
+}
 variable "ecr_immutable_tag" {
-  default = false
+  description = "Use immutable tags for ECR images"
+  default     = false
 }
 variable "ecr_scan_on_push" {
-  default = false
+  description = "Scan prepared ECR images on push"
+  default     = false
 }
 variable "ecr_encryption_type" {
-  default = "AES256"
+  description = "Encryption type for ECR images"
+  default     = "AES256"
 }
 variable "ecr_kms_key" {
-  default = null
+  description = "Preconfigured KMS key arn to encrypt ECR images"
+  default     = null
 }
 
 locals {
@@ -36,7 +44,7 @@ locals {
             ":${try(v.ver, local.default_tag)[keys(try(v.ver, local.default_tag))[0]]}", ""
           )
           ) => {
-          ecr_prepare_images  = try(v.ecr_prepare_images, true)
+          ecr_prepare_images  = try(v.ecr_prepare_images, var.ecr_prepare_images)
           src_reigstry        = try(v.source, v.registry[keys(v.registry)[0]])
           parsed_tag          = try(v.ver, local.default_tag)[keys(try(v.ver, local.default_tag))[0]]
           ecr_kms_key         = try(v.ecr_kms_key, var.ecr_kms_key)
