@@ -65,7 +65,7 @@ resource "helm_release" "node-problem-detector" {
     }
     content {
       name  = set.value.helm_values.tag.name
-      value = try(local.node-problem-detector["containers_versions"][set.value.helm_values.tag.name], set.value.helm_values.tag.value)
+      value = try(local.npd["containers_versions"][set.value.helm_values.tag.name], set.value.helm_values.tag.value)
     }
   }
   dynamic "set" {
