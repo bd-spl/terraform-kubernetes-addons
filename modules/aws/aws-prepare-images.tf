@@ -53,7 +53,7 @@ locals {
           ecr_immutable_tag   = try(v.ecr_immutable_tag, var.ecr_immutable_tag)
           helm_values = {
             # tag overrides - only set helm values for explicit tags, not the 'latest' fallback for unset tags
-            tag = lookup(v, "ver", null) == null ? {} : {
+            tag = lookup(v, "ver", null) == null ? null : {
               name  = "${k}.${keys(v.ver)[0]}"
               value = v.ver[keys(v.ver)[0]]
             }
@@ -65,7 +65,7 @@ locals {
                 ":", v.name[keys(v.name)[0]])
               ) == 1 ? "" : ":${split(":", v.name[keys(v.name)[1]])}"
             }
-            registry = lookup(v, "registry", {}) == {} ? {} : {
+            registry = lookup(v, "registry", {}) == {} ? null : {
               name  = "${k}.${keys(v.registry)[0]}"
               value = lookup(v, "ecr_prepare_images", true) ? null : v.registry[keys(v.registry)[0]]
             }

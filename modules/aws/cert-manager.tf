@@ -141,7 +141,7 @@ resource "helm_release" "cert-manager" {
   dynamic "set" {
     for_each = {
       for c, v in local.images_data.cert-manager.containers :
-      c => v if v.helm_values.tag != {} && lookup(v.helm_values.tag, "value", null) != null
+      c => v if v.helm_values.tag != null
     }
     content {
       name  = set.value.helm_values.tag.name
@@ -152,17 +152,16 @@ resource "helm_release" "cert-manager" {
     for_each = local.images_data.cert-manager.containers
     content {
       name = set.value.helm_values.image.name
-      value = set.value.ecr_prepare_images ? "${
+      value = set.value.ecr_prepare_images && set.value.helm_values.registry != null ? "${
         aws_ecr_repository.this[
           format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url}${set.value.helm_values.image.tail}" : try(
-      set.value.helm_values.image.value, "CANNOT_BE_NULL")
+        ].repository_url}${set.value.helm_values.image.tail}" : set.value.helm_values.image.value
     }
   }
   dynamic "set" {
     for_each = {
       for c, v in local.images_data.cert-manager.containers :
-      c => v if lookup(v, "registry", {}) != {}
+      c => v if v.helm_values.registry != null
     }
     content {
       name = set.value.helm_values.registry.name
