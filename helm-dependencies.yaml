@@ -292,10 +292,7 @@ dependencies:
         ver:
           tag: v2.37.0
         source: quay.io/prometheus
-      thanosRuler.thanosRulerSpec.image:
-        << : *thanos
-        # only set rewritten value for helm, skip image already prepared for thanosImage
-        ecr_prepare_images: false
+      thanosRuler.thanosRulerSpec.image: *thanos
       # https://github.dev/grafana/helm-charts/blob/main/charts/grafana/values.yaml
       grafana.image:
         name:
