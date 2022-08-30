@@ -51,7 +51,8 @@ locals {
           ecr_encryption_type = try(v.ecr_encryption_type, var.ecr_encryption_type)
           ecr_scan_on_push    = try(v.ecr_scan_on_push, var.ecr_scan_on_push)
           ecr_immutable_tag   = try(v.ecr_immutable_tag, var.ecr_immutable_tag)
-          helm_values = {
+          helm_managed        = lookup(item, "repository", null) != null
+          rewrite_values = {
             # tag overrides - only set helm values for explicit tags, not the 'latest' fallback for unset tags
             tag = lookup(v, "ver", null) == null ? null : {
               name  = "${k}.${keys(v.ver)[0]}"
@@ -118,3 +119,11 @@ resource "skopeo_copy" "this" {
     aws_ecr_repository.this
   ]
 }
+
+/*
+data "helm_release" "this" {
+  for_each = {
+    "key" =
+  }
+}
+*/
