@@ -38,9 +38,11 @@ locals {
           # we use "." as a logical field name separator, do not confuse it with dots in logical data fields
           replace(item.name, ".", "_"),
           replace("${k}_${keys(v.name)[0]}", ".", "_"),
-          # strip registry/tag off the images names
-          replace(replace(v.name[keys(v.name)[0]],
-            "${try(v.registry[keys(v.registry)[0]], v.source)}/", ""),
+          # strip source-URI/tag off the images names
+          replace(
+            lookup(v, "source", null) == null ? v.name[keys(v.name)[0]] : replace(
+              v.name[keys(v.name)[0]], "${v.source}/", ""
+            ),
             ":${try(v.ver, local.default_tag)[keys(try(v.ver, local.default_tag))[0]]}", ""
           )
           ) => {
@@ -52,21 +54,26 @@ locals {
           ecr_scan_on_push    = try(v.ecr_scan_on_push, var.ecr_scan_on_push)
           ecr_immutable_tag   = try(v.ecr_immutable_tag, var.ecr_immutable_tag)
           helm_managed        = lookup(item, "repository", null) != null
+          source_provided     = lookup(v, "source", null) != null
           rewrite_values = {
             # tag overrides - only set helm values for explicit tags, not the 'latest' fallback for unset tags
             tag = lookup(v, "ver", null) == null ? null : {
               name  = "${k}.${keys(v.ver)[0]}"
               value = v.ver[keys(v.ver)[0]]
             }
-            # NOTE: cannot rewrite registry/URI-source, until the prepared ECR repo url is known
+            # NOTE: value=null when cannot rewrite registry/name's URI-source, until the prepared ECR repo url and name become known
             image = {
-              name  = "${k}.${keys(v.name)[0]}"
+              name = "${k}.${keys(v.name)[0]}"
+              # when prepared a ECR repo, the name value always needs a rewrite
               value = lookup(v, "ecr_prepare_images", true) ? null : v.name[keys(v.name)[0]]
-              tail = length(split(
-                ":", v.name[keys(v.name)[0]])
-              ) == 1 ? "" : ":${split(":", v.name[keys(v.name)[1]])}"
+              tail = length(
+                split(
+                  ":", lookup(v, "source", null) == null ? v.name[keys(v.name)[0]] : replace(
+                  v.name[keys(v.name)[0]], "${v.source}/", "")
+                )
+              ) == 1 ? "" : ":${split(":", v.name[keys(v.name)[0]])[length(v.name[keys(v.name)[0]]) - 1]}"
             }
-            registry = lookup(v, "registry", {}) == {} ? null : {
+            registry = lookup(v, "registry", null) == null ? null : {
               name  = "${k}.${keys(v.registry)[0]}"
               value = lookup(v, "ecr_prepare_images", true) ? null : v.registry[keys(v.registry)[0]]
             }
@@ -76,7 +83,7 @@ locals {
           (lookup(v, "registry", null) != null || lookup(v, "source", null) != null)
         )
       }
-    } if(lookup(item, "containers", {}) != {})
+    } if(lookup(item, "containers", null) != null)
   }
 
   ecr_names = { for k, v in values(local.images_data)[*]["containers"] : k => keys(v) }
@@ -120,6 +127,7 @@ resource "skopeo_copy" "this" {
   ]
 }
 
+/*
 # NOTE: No data type resource for helm_release yet.
 # Can be refered as:
 # data.null_data_source.helm_values[<addon>].outputs["set_tags"]
@@ -141,12 +149,12 @@ data "null_data_source" "helm_values" {
 
   inputs = {
     set_tags = {
-      for_each = [
-        for v in each.value : v[each.key] if v[each.key].tag != null
-      ]
+      for_each = {
+        for v in each.value : each.key => v[each.key] if v[each.key].tag != null
+      }
       content = {
-        name  = set.tag.name
-        value = try(local[each.key]["containers_versions"][set.tag.name], set.tag.value)
+        name  = each.tag.name
+        value = try(local[each.key]["containers_versions"][each.tag.name], each.tag.value)
       }
     }
 
@@ -175,6 +183,6 @@ data "null_data_source" "helm_values" {
         ].repository_url
       )[0])
     }
-  }*/
   }
-}
+  }
+}*/

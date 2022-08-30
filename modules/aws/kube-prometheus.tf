@@ -492,10 +492,15 @@ resource "helm_release" "kube-prometheus-stack" {
     for_each = local.images_data.kube-prometheus-stack.containers
     content {
       name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.rewrite_values.registry != null ? "${
+      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
         aws_ecr_repository.this[
           format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-      ].repository_url}${set.value.rewrite_values.image.tail}" : set.value.rewrite_values.image.value
+        ].repository_url}${set.value.rewrite_values.image.tail
+        }" : set.value.ecr_prepare_images ? "${
+        aws_ecr_repository.this[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].name
+      }" : set.value.rewrite_values.image.value
     }
   }
   dynamic "set" {
@@ -506,11 +511,11 @@ resource "helm_release" "kube-prometheus-stack" {
     content {
       name = set.value.rewrite_values.registry.name
       # when unset, it should be replaced with the one prepared on ECR
-      value = try(set.value.rewrite_values.registry.value, split(
+      value = set.value.rewrite_values.registry.value != null ? set.value.rewrite_values.registry.value : split(
         "/", aws_ecr_repository.this[
           format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
         ].repository_url
-      )[0])
+      )[0]
     }
   }
 
