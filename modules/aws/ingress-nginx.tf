@@ -208,7 +208,7 @@ resource "helm_release" "ingress-nginx" {
   namespace = kubernetes_namespace.ingress-nginx.*.metadata.0.name[count.index]
 
   depends_on = [
-    kubectl_manifest.prometheus-operator_crds, helm_release.aws-load-balancer-controller, skopeo_copy.this
+    kubectl_manifest.prometheus-operator_crds, skopeo_copy.this
   ]
 }
 
