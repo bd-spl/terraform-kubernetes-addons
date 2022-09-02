@@ -67,6 +67,9 @@ controller:
         linkerd.io/inject: disabled
 VALUES
 
+  # NOTE: service.beta.kubernetes.io/aws-load-balancer-nlb-target-type to use vcp_cni instead of nodePort
+  #  - ip: route traffic directly to the pod IP (uses AWS vpc_cni plugin)
+  #  - instance: route traffic to all EC2 instances within cluster on the NodePort
   values_ingress-nginx_nlb_ip = <<VALUES
 controller:
   metrics:
@@ -81,6 +84,7 @@ controller:
       service.beta.kubernetes.io/aws-load-balancer-backend-protocol: tcp
       service.beta.kubernetes.io/aws-load-balancer-cross-zone-load-balancing-enabled: 'true'
       service.beta.kubernetes.io/aws-load-balancer-type: "nlb-ip"
+      service.beta.kubernetes.io/aws-load-balancer-nlb-target-type: "ip"
       service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
   publishService:
     enabled: true
