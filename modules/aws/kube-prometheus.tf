@@ -523,6 +523,7 @@ resource "helm_release" "kube-prometheus-stack" {
 
   depends_on = [
     helm_release.ingress-nginx,
+    helm_release.cluster-autoscaler,
     kubectl_manifest.prometheus-operator_crds,
     skopeo_copy.this
   ]
