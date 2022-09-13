@@ -256,6 +256,18 @@ dependencies:
     version: 40.3.1
     repository: https://prometheus-community.github.io/helm-charts
     containers:
+      prometheus-node-exporter.image:
+        name:
+          repository: quay.io/prometheus/node-exporter
+        ver:
+          tag: v1.3.1
+        source: quay.io/prometheus
+      kube-state-metrics.image:
+        name:
+          repository: registry.k8s.io/kube-state-metrics/kube-state-metrics
+        ver:
+          tag: v2.5.0
+        source: registry.k8s.io/kube-state-metrics
       alertmanager.alertmanagerSpec.image:
         name:
           repository: quay.io/prometheus/alertmanager
