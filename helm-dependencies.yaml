@@ -132,7 +132,7 @@ dependencies:
           repository: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner
         ver:
           tag: v2.1.1-eks-1-18-13
-        source: k8s.gcr.io/sig-storage
+        source: public.ecr.aws/eks-distro
   # https://github.dev/kubernetes-sigs/aws-efs-csi-driver/blob/master/charts/aws-efs-csi-driver/values.yaml
   - name: aws-efs-csi-driver
     version: 2.2.8
