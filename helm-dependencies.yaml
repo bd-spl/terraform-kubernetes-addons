@@ -127,9 +127,41 @@ dependencies:
         ver:
           tag: v2.5.1
         source: k8s.gcr.io/sig-storage
+      sidecars.csiProvisioner.image:
+        name:
+          repository: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner
+        ver:
+          tag: v2.1.1-eks-1-18-13
+        source: k8s.gcr.io/sig-storage
+  # https://github.dev/kubernetes-sigs/aws-efs-csi-driver/blob/master/charts/aws-efs-csi-driver/values.yaml
   - name: aws-efs-csi-driver
     version: 2.2.8
     repository: https://kubernetes-sigs.github.io/aws-efs-csi-driver # FIXME: deadlink
+    containers:
+      image:
+        name:
+          repository: docker.io/amazon/aws-efs-csi-driver
+        ver:
+          tag: v1.4.1
+        source: docker.io/amazon
+      sidecars.livenessProbe.image:
+        name:
+          repository: public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe
+        ver:
+          tag: v2.2.0-eks-1-18-13
+        source: public.ecr.aws/eks-distro
+      sidecars.nodeDriverRegistrar.image:
+        name:
+          repository: public.ecr.aws/eks-distro/kubernetes-csi/node-driver-registrar
+        ver:
+          tag: v2.1.0-eks-1-18-13
+        source: public.ecr.aws/eks-distro
+      sidecars.csiProvisioner.image:
+        name:
+          repository: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner
+        ver:
+          tag: v2.1.1-eks-1-18-13
+        source: public.ecr.aws/eks-distro
   - name: aws-for-fluent-bit
     version: 0.1.21
     repository: https://aws.github.io/eks-charts
