@@ -15,7 +15,19 @@ locals {
 
   prometheus-operator_chart = "https://raw.githubusercontent.com/prometheus-community/helm-charts/kube-prometheus-stack-${local.kube-prometheus-stack.chart_version}/charts/kube-prometheus-stack/Chart.yaml"
 
-  prometheus-operator_crds_apply = (local.victoria-metrics-k8s-stack.enabled && local.victoria-metrics-k8s-stack.install_prometheus_operator_crds) || (local.kube-prometheus-stack.enabled && local.kube-prometheus-stack.manage_crds) ? { for k, v in data.http.prometheus-operator_crds : lower(join("/", compact([yamldecode(v.response_body).apiVersion, yamldecode(v.response_body).kind, lookup(yamldecode(v.response_body).metadata, "namespace", ""), yamldecode(v.response_body).metadata.name]))) => v.response_body
+  prometheus-operator_crds_apply = (
+    local.victoria-metrics-k8s-stack.enabled && local.victoria-metrics-k8s-stack.install_prometheus_operator_crds
+    ) || (
+    local.kube-prometheus-stack.enabled && local.kube-prometheus-stack.manage_crds
+    ) ? { for k, v in data.http.prometheus-operator_crds : lower(
+      join(
+        "/", compact([
+          yamldecode(v.response_body).apiVersion,
+          yamldecode(v.response_body).kind,
+          lookup(yamldecode(v.response_body).metadata, "namespace", ""),
+          yamldecode(v.response_body).metadata.name
+        ])
+    )) => v.response_body
   } : null
 
 }
