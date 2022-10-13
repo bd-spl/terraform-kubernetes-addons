@@ -472,22 +472,30 @@ dependencies:
   - name: testrtc-speedtest
     version: 0.1.0
     repository: https://bogdando.github.io/helm-charts/
+  # Not helm, but kubectl_manifest managed containers data
+  # Override path is <manifest_file>.<container_name>
   # https://github.com/kubernetes-csi/external-snapshotter
-  - name: csi-external-snapshotter # Not helm, ECR images prep data only
+  - name: csi-external-snapshotter
     containers:
-      csi-provisioner:
+      setup-snapshot-controller.snapshot-controller:
+        name:
+          repository: gcr.io/k8s-staging-sig-storage/snapshot-controller
+        ver:
+          tag: v5.0.1
+        source: gcr.io/k8s-staging-sig-storage
+      setup-csi-snapshotter.csi-provisioner:
         name:
           repository: k8s.gcr.io/sig-storage/csi-provisioner
         ver:
           tag: v3.2.1
         source: k8s.gcr.io/sig-storage
-      csi-snapshotter:
+      setup-csi-snapshotter.csi-snapshotter:
         name:
           repository: gcr.io/k8s-staging-sig-storage/csi-snapshotter
         ver:
           tag: v6.0.1
         source: gcr.io/k8s-staging-sig-storage
-      hostpath:
+      setup-csi-snapshotter.hostpath:
         name:
           repository: k8s.gcr.io/sig-storage/hostpathplugin
         ver:
