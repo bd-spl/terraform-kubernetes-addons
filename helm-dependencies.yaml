@@ -285,7 +285,7 @@ dependencies:
     repository: https://charts.konghq.com
   # https://github.dev/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/values.yaml
   - name: kube-prometheus-stack
-    version: 40.3.1
+    version: 41.7.0
     repository: https://prometheus-community.github.io/helm-charts
     containers:
       prometheus-node-exporter.image:
