@@ -182,7 +182,7 @@ resource "helm_release" "aws-ebs-csi-driver" {
   namespace = local.aws-ebs-csi-driver["create_ns"] ? kubernetes_namespace.aws-ebs-csi-driver.*.metadata.0.name[count.index] : local.aws-ebs-csi-driver["namespace"]
 
   depends_on = [
-    kubectl_manifest.csi-external-snapshotter,
+    #kubectl_manifest.csi-external-snapshotter,
     skopeo_copy.this
   ]
 }
@@ -266,7 +266,7 @@ resource "kubectl_manifest" "aws-ebs-csi-driver_vsc" {
   yaml_body = local.aws-ebs-csi-driver.volume_snapshot_class
 
   depends_on = [
-    kubectl_manifest.csi-external-snapshotter,
+    #kubectl_manifest.csi-external-snapshotter,
     helm_release.aws-ebs-csi-driver
   ]
   server_side_apply = true
