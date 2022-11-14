@@ -12,6 +12,7 @@ locals {
       allowed_cidrs          = ["0.0.0.0/0"]
       default_network_policy = true
       manage_crds            = true
+      enable_dashboards      = true
     },
     var.kube-prometheus-stack
   )
@@ -135,10 +136,10 @@ resource "helm_release" "kube-prometheus-stack" {
   values = compact([
     local.values_kube-prometheus-stack,
     local.kube-prometheus-stack["extra_values"],
-    local.kong["enabled"] ? local.values_dashboard_kong : null,
-    local.cert-manager["enabled"] ? local.values_dashboard_cert-manager : null,
-    local.ingress-nginx["enabled"] ? local.values_dashboard_ingress-nginx : null,
-    local.values_dashboard_node_exporter
+    local.kong["enabled"] && local.enable_dashboards ? local.values_dashboard_kong : null,
+    local.cert-manager["enabled"] && local.enable_dashboards ? local.values_dashboard_cert-manager : null,
+    local.ingress-nginx["enabled"] && local.enable_dashboards ? local.values_dashboard_ingress-nginx : null,
+    local.enable_dashboards ? local.values_dashboard_node_exporter : null
   ])
   namespace = kubernetes_namespace.kube-prometheus-stack.*.metadata.0.name[count.index]
 
