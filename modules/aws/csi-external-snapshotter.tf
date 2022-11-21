@@ -1,7 +1,5 @@
 locals {
 
-  debug = true
-
   csi-external-snapshotter = merge(
     {
       create_ns    = false
@@ -68,6 +66,12 @@ locals {
       yamldecode(d) if try(yamldecode(d), null) != null
     ]
   }
+
+  csi-external-snapshotter_apply = local.csi-external-snapshotter["enabled"] ? [for v in data.kubectl_file_documents.csi-external-snapshotter[0].documents : {
+    data : yamldecode(v)
+    content : v
+    }
+  ] : null
 }
 
 # Patch manifests with user defined overrides, whenever its kind and metadata name matches the target resource ones
@@ -78,7 +82,7 @@ module "deepmerge" {
     [
       { data = { "${k}" = v } },
       { data = { "${k}" = [
-        for n in v : local.csi-external-snapshotter-extra-values_patched[k][0] if try(
+        for n in v : try(
           local.csi-external-snapshotter-extra-values_patched[k][0], null
           ) != null && try(
           n.kind, null
@@ -88,7 +92,7 @@ module "deepmerge" {
           n.metadata.name, null
           ) == try(
           local.csi-external-snapshotter-extra-values_patched[k][0].metadata.name, null
-        )
+        ) ? local.csi-external-snapshotter-extra-values_patched[k][0] : null
         ] }
       }
   ]])
@@ -97,31 +101,9 @@ module "deepmerge" {
   deep_copy_list_enabled = true
 }
 
-resource "local_file" "kube_manifests_debug" {
-  count    = local.debug ? 1 : 0
-  content  = <<-EOT
-    === fetched and decoded ===
-    ${yamlencode(local.kube_manifests)}
-    === patched and encoded ===
-    ${yamlencode(data.kubectl_file_documents.csi-external-snapshotter)}
-    === merged data ===
-    ${yamlencode(module.deepmerge.merged)}
-    EOT
-  filename = "/tmp/debug-csi-external-snapshotter-manifests"
-
-  depends_on = [
-    module.deepmerge
-  ]
-}
-
 data "http" "csi-external-snapshotter" {
   for_each = local.csi-external-snapshotter.enabled ? toset(values(local.csi-external-snapshotter_yaml_files)) : []
   url      = each.key
-}
-
-data "kubectl_file_documents" "csi-external-snapshotter" {
-  count   = local.csi-external-snapshotter.enabled ? 1 : 0
-  content = join("\n---\n", [for k, v in data.http.csi-external-snapshotter : v.response_body])
 }
 
 resource "kubernetes_namespace" "csi-external-snapshotter" {
@@ -136,18 +118,29 @@ resource "kubernetes_namespace" "csi-external-snapshotter" {
   }
 }
 
-/*resource "kubectl_manifest" "csi-external-snapshotter" {
-  for_each = local.csi-external-snapshotter.enabled ? {
-    for _, v in values(module.deepmerge.merged) : lower(
-      join("/", compact(
-        [v.data.apiVersion,
-          v.data.kind,
-    lookup(v.data.metadata, "namespace", local.csi-external-snapshotter.namespace), v.data.metadata.name]))) => yamlencode(v.data)
-  } : {}
+data "kubectl_file_documents" "csi-external-snapshotter" {
+  count = local.csi-external-snapshotter.enabled ? 1 : 0
+  content = [
+    for v in values(module.deepmerge.merged) :
+    join(
+      "\n---\n",
+      [
+        for d in values(v) :
+        join("\n---\n", [for i in d : yamlencode(i)])
+      ]
+    )
+  ][0]
+}
+
+
+
+
+resource "kubectl_manifest" "csi-external-snapshotter" {
+  for_each  = local.csi-external-snapshotter.enabled ? { for v in local.csi-external-snapshotter_apply : lower(join("/", compact([v.data.apiVersion, v.data.kind, lookup(v.data.metadata, "namespace", local.csi-external-snapshotter.namespace), v.data.metadata.name]))) => v.content } : {}
   yaml_body = each.value
 
   depends_on = [
     kubernetes_namespace.csi-external-snapshotter,
     skopeo_copy.this
   ]
-}*/
+}
