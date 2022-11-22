@@ -132,12 +132,20 @@ data "kubectl_file_documents" "csi-external-snapshotter" {
   ][0]
 }
 
-
-
-
 resource "kubectl_manifest" "csi-external-snapshotter" {
-  for_each  = local.csi-external-snapshotter.enabled ? { for v in local.csi-external-snapshotter_apply : lower(join("/", compact([v.data.apiVersion, v.data.kind, lookup(v.data.metadata, "namespace", local.csi-external-snapshotter.namespace), v.data.metadata.name]))) => v.content } : {}
-  yaml_body = each.value
+  for_each = local.csi-external-snapshotter.enabled ? {
+    for v in local.csi-external-snapshotter_apply :
+    lower(join("/", compact(
+      [
+        v.data.apiVersion,
+        v.data.kind,
+        local.csi-external-snapshotter.namespace,
+        v.data.metadata.name
+      ]
+    ))) => v.content
+  } : {}
+  yaml_body          = each.value
+  override_namespace = local.csi-external-snapshotter.namespace
 
   depends_on = [
     kubernetes_namespace.csi-external-snapshotter,
