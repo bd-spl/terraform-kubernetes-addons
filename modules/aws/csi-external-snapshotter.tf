@@ -2,10 +2,13 @@ locals {
 
   csi-external-snapshotter = merge(
     {
-      create_ns    = false
-      namespace    = "csi-snapshotter"
-      enabled      = false
-      version      = "v6.0.1"
+      create_ns = false
+      namespace = "csi-snapshotter"
+      enabled   = false
+      version   = "v6.0.1"
+      # NOTE: the caller side must override roleRef/subjects' namespaces
+      # as kubectl_manifest's override_namespace cannot do that.
+      # See https://github.com/gavinbunney/terraform-provider-kubectl/issues/235.
       extra_values = {}
     },
     var.csi-external-snapshotter
@@ -21,7 +24,7 @@ locals {
   }
 
   #TODO(bogdando): create a shared template and refer it in addons managed by kubectl_manifest (copy-pasta until then)
-  csi-external-snapshotter-containers-data = {
+  containers_data = {
     for k, v in local.images_data.csi-external-snapshotter.containers :
     v.rewrite_values.image.name => {
       tag = try(
@@ -40,22 +43,33 @@ locals {
     }
   }
 
-  # Rewrite patches templates in extra_values with the prepared containers images data
+  patches = {
+    for k, v in yamldecode(try(local.csi-external-snapshotter.extra_values, "---")) : k => v
+  }
+
+  # Template patches containing REWRITE_* args with the prepared containers images data values
   # TODO(bogdando): find a better templating method (maybe use https://github.com/cloudposse/terraform-yaml-config)
   csi-external-snapshotter-extra-values_patched = {
-    for k, v in local.csi-external-snapshotter-containers-data :
-    split(".", k)[0] =>
-    yamldecode(replace(replace(replace(
-      yamlencode(
-        yamldecode(
-          try(local.csi-external-snapshotter.extra_values, "---")
-        )[join(".", slice(split(".", k), 0, 2))]
-      ),
-      "REWRITE_ALL",
-      "${v.repo}:${v.tag}"
-      ), "REWRITE_TAG", v.tag), "REWRITE_NAME", v.repo))... if try(yamldecode(
-      try(local.csi-external-snapshotter.extra_values, "---")
-    )[join(".", slice(split(".", k), 0, 2))], null) != null
+    for k, v in merge(local.patches, local.containers_data) :
+    split(".", k)[0] => try(local.containers_data[k], null) != null ? yamldecode(
+      replace(
+        replace(
+          replace(
+            yamlencode(try(local.patches[join(".", slice(split(".", k), 0, 2))], null)),
+            "REWRITE_ALL",
+            format("%s:%s",
+              try(v.repo, "ERR_REPO_NOT_FOUND"),
+              try(v.tag, "ERR_TAG_NOT_FOUND")
+            )
+          ),
+          "REWRITE_TAG",
+          try(v.tag, "ERR_TAG_NOT_FOUND")
+        ),
+        "REWRITE_NAME",
+        try(v.repo, "ERR_REPO_NOT_FOUND")
+      )
+      # Skip patches with REWRITE_ args as have been already templated
+    ) : try(regex("\\bREWRITE_(ALL|TAGS|NAME)\\b", yamlencode(v)), null) != null ? null : local.patches[k]...
   }
 
   # Decode feteched manifests/CRDs etc documents and skip blobs without data
