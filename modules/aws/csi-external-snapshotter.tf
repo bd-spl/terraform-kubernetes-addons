@@ -51,22 +51,22 @@ locals {
   # TODO(bogdando): find a better templating method (maybe use https://github.com/cloudposse/terraform-yaml-config)
   csi-external-snapshotter-extra-values_patched = {
     for k, v in local.patches :
-    split(".", k)[0] => try(local.containers_data[k], null) != null ? yamldecode(
+    split(".", k)[0] => try(local.containers_data["${k}.repository"], null) != null ? yamldecode(
       replace(
         replace(
           replace(
             yamlencode(try(local.patches[join(".", slice(split(".", k), 0, 2))], null)),
             "REWRITE_ALL",
             format("%s:%s",
-              local.containers_data[k].repo,
-              local.containers_data[k].tag
+              local.containers_data["${k}.repository"].repo,
+              local.containers_data["${k}.repository"].tag
             )
           ),
           "REWRITE_TAG",
-          local.containers_data[k].tag
+          local.containers_data["${k}.repository"].tag
         ),
         "REWRITE_NAME",
-        local.containers_data[k].repo
+        local.containers_data["${k}.repository"].repo
       )
     ) : local.patches[k]...
   }
