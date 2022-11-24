@@ -51,7 +51,7 @@ locals {
   # TODO(bogdando): find a better templating method (maybe use https://github.com/cloudposse/terraform-yaml-config)
   csi-external-snapshotter-extra-values_patched = {
     for k, v in local.patches :
-    split(".", k)[0] => try(local.containers_data["${k}.repository"], null) != null ? yamldecode(
+    "${k}.${v.kind}" => try(local.containers_data["${k}.repository"], null) == null ? v : yamldecode(
       replace(
         replace(
           replace(
@@ -68,17 +68,26 @@ locals {
         "REWRITE_NAME",
         local.containers_data["${k}.repository"].repo
       )
-    ) : local.patches[k]...
+    )
   }
 
   # Decode feteched manifests/CRDs etc documents and skip blobs without data
-  kube_manifests = {
-    for i, e in local.csi-external-snapshotter_yaml_files :
-    i => [
-      for d in split("---", data.http.csi-external-snapshotter[e].response_body) :
-      yamldecode(d) if try(yamldecode(d), null) != null
+  csi-external-snapshotter_yaml_files_decoded = {
+    for name, uri in local.csi-external-snapshotter_yaml_files :
+    name => [
+      for content in split("---", data.http.csi-external-snapshotter[uri].response_body) :
+      yamldecode(content) if try(yamldecode(content), null) != null
     ]
   }
+
+  # Split decoded data into separate resources manifests, with keys
+  # matching the patched data index
+  kube_manifests = flatten([
+    for name, manifests in local.csi-external-snapshotter_yaml_files_decoded :
+    [
+      for m in manifests : { "${name}.${m.metadata.name}.${m.kind}" = m }
+    ]
+  ])
 
   csi-external-snapshotter_apply = [
     for v in data.kubectl_file_documents.csi-external-snapshotter[0].documents : {
@@ -88,28 +97,21 @@ locals {
   ]
 }
 
-# Patch manifests with user defined overrides, whenever its kind and metadata name matches the target resource ones
+# Patch manifests with user defined overrides
 module "deepmerge" {
   source = "github.com/cloudposse/terraform-yaml-config//modules/deepmerge?ref=1.0.2"
   maps = flatten([
-    for k, v in local.kube_manifests :
+    for m in local.kube_manifests :
     [
-      { data = { "${k}" = v } },
-      { data = { "${k}" = [
-        for n in v : try(
-          local.csi-external-snapshotter-extra-values_patched[k][0], null
-          ) != null && try(
-          n.kind, null
-          ) == try(
-          local.csi-external-snapshotter-extra-values_patched[k][0].kind, null
-          ) && try(
-          n.metadata.name, null
-          ) == try(
-          local.csi-external-snapshotter-extra-values_patched[k][0].metadata.name, null
-        ) ? local.csi-external-snapshotter-extra-values_patched[k][0] : null
-        ] }
+      m,
+      { keys(local.kube_manifests[index(local.kube_manifests, m)])[0] = try(
+        local.csi-external-snapshotter-extra-values_patched[
+          keys(local.kube_manifests[index(local.kube_manifests, m)])[0]
+        ], {}
+        )
       }
-  ]])
+    ]
+  ])
 
   append_list_enabled    = false
   deep_copy_list_enabled = true
@@ -132,18 +134,10 @@ resource "kubernetes_namespace" "csi-external-snapshotter" {
   }
 }
 
+# Combine processed manifests into a yaml blob as it's required for kubectl_file_documents
 data "kubectl_file_documents" "csi-external-snapshotter" {
-  count = local.csi-external-snapshotter.enabled ? 1 : 0
-  content = [
-    for v in values(module.deepmerge.merged) :
-    join(
-      "\n---\n",
-      [
-        for d in values(v) :
-        join("\n---\n", [for i in d : yamlencode(i)])
-      ]
-    )
-  ][0]
+  count   = local.csi-external-snapshotter.enabled ? 1 : 0
+  content = join("\n---\n", [for v in values(module.deepmerge.merged) : yamlencode(v)])
 }
 
 resource "kubectl_manifest" "csi-external-snapshotter" {
