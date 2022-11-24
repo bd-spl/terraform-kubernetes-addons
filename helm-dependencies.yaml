@@ -469,3 +469,33 @@ dependencies:
   - name: victoria-metrics-k8s-stack
     version: 0.12.12
     repository: https://victoriametrics.github.io/helm-charts/
+
+  # Not Helm, but kubectl_manifest managed containers data
+  # Override path is <manifest_file>.<container_name>
+  # https://github.com/kubernetes-csi/external-snapshotter
+  - name: csi-external-snapshotter
+    containers:
+      setup-snapshot-controller.snapshot-controller:
+        name:
+          repository: gcr.io/k8s-staging-sig-storage/snapshot-controller
+        ver:
+          tag: v5.0.1
+        source: gcr.io/k8s-staging-sig-storage
+      setup-csi-snapshotter.csi-provisioner:
+        name:
+          repository: k8s.gcr.io/sig-storage/csi-provisioner
+        ver:
+          tag: v3.2.1
+        source: k8s.gcr.io/sig-storage
+      setup-csi-snapshotter.csi-snapshotter:
+        name:
+          repository: gcr.io/k8s-staging-sig-storage/csi-snapshotter
+        ver:
+          tag: v6.0.1
+        source: gcr.io/k8s-staging-sig-storage
+      setup-csi-snapshotter.hostpath:
+        name:
+          repository: k8s.gcr.io/sig-storage/hostpathplugin
+        ver:
+          tag: v1.8.0
+        source: k8s.gcr.io # hostpathplugin is likely ambigouse, leave the sig prefix

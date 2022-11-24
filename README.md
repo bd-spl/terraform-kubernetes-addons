@@ -101,7 +101,7 @@ here](https://github.com/particuleio/terraform-kubernetes-addons/blob/master/.gi
 | Name | Version |
 |------|---------|
 | <a name="provider_aws"></a> [aws](#provider\_aws) | n/a |
-| <a name="provider_flux"></a> [flux](#provider\_flux) | ~> 0.19 |
+| <a name="provider_flux"></a> [flux](#provider\_flux) | ~> 0.20 |
 | <a name="provider_github"></a> [github](#provider\_github) | ~> 5.0 |
 | <a name="provider_helm"></a> [helm](#provider\_helm) | ~> 2.0 |
 | <a name="provider_http"></a> [http](#provider\_http) | >= 3 |
