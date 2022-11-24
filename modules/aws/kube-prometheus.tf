@@ -6,7 +6,6 @@ locals {
       chart                             = local.helm_dependencies[index(local.helm_dependencies.*.name, "kube-prometheus-stack")].name
       repository                        = local.helm_dependencies[index(local.helm_dependencies.*.name, "kube-prometheus-stack")].repository
       chart_version                     = local.helm_dependencies[index(local.helm_dependencies.*.name, "kube-prometheus-stack")].version
-      versions                          = {}
       namespace                         = "monitoring"
       grafana_service_account_name      = "kube-prometheus-stack-grafana"
       prometheus_service_account_name   = "kube-prometheus-stack-prometheus"
