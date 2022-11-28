@@ -59,28 +59,39 @@ locals {
   }
 
   # Template patches containing REWRITE_* args with the prepared containers images data values
+  # FIXME: No support for CR templates but only pods standard '*.spec.template.spec.containers' paths.
   # NOTE: containers data does not contain the Kind data subfield, so strip it off the patches names
   # TODO(bogdando): find a better templating method (maybe use https://github.com/cloudposse/terraform-yaml-config)
   extra-values_patched = {
     for k, v in local.patches :
-    k => try(local.containers_data["${join(".", slice(split(".", k), 0, 2))}.repository"], null) == null ? v : yamldecode(
-      replace(
-        replace(
-          replace(
-            yamlencode(v),
-            "REWRITE_ALL",
-            format("%s:%s",
-              local.containers_data["${join(".", slice(split(".", k), 0, 2))}.repository"].repo,
-              local.containers_data["${join(".", slice(split(".", k), 0, 2))}.repository"].tag
+    k => [
+      # to deepmerge the original and templated patches later, if anything there to rewrite
+      v,
+      try(
+        { spec = { template = { spec = { containers = [
+          for c in v.spec.template.spec.containers :
+          yamldecode(
+            replace(
+              replace(
+                replace(
+                  yamlencode(c),
+                  "REWRITE_ALL",
+                  format("%s:%s",
+                    local.containers_data[format("%s.%s.repository", split(".", k)[0], c.name)].repo,
+                    local.containers_data[format("%s.%s.repository", split(".", k)[0], c.name)].tag
+                  )
+                ),
+                "REWRITE_TAG",
+                local.containers_data[format("%s.%s.repository", split(".", k)[0], c.name)].tag
+              ),
+              "REWRITE_NAME",
+              local.containers_data[format("%s.%s.repository", split(".", k)[0], c.name)].repo
             )
-          ),
-          "REWRITE_TAG",
-          local.containers_data["${join(".", slice(split(".", k), 0, 2))}.repository"].tag
-        ),
-        "REWRITE_NAME",
-        local.containers_data["${join(".", slice(split(".", k), 0, 2))}.repository"].repo
+          )
+        ] } } } },
+        {}
       )
-    )
+    ]
   }
 
   # Decode feteched manifests/CRDs etc documents and skip blobs without data
@@ -116,12 +127,11 @@ module "deepmerge" {
     for m in local.kube_manifests :
     [
       m,
-      { keys(local.kube_manifests[index(local.kube_manifests, m)])[0] = try(
-        local.extra-values_patched[
+      [
+        for p in try(local.extra-values_patched[
           keys(local.kube_manifests[index(local.kube_manifests, m)])[0]
-        ], {}
-        )
-      }
+        ], {}) : { keys(local.kube_manifests[index(local.kube_manifests, m)])[0] = p }
+      ]
     ]
   ])
 
