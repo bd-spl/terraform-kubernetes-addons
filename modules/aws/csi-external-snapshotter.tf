@@ -55,7 +55,7 @@ locals {
   }
 
   patches = {
-    for k, v in yamldecode(try(local.csi-external-snapshotter.extra_values, "---")) : k => v
+    for k, v in try(yamldecode(try(local.csi-external-snapshotter.extra_values, "---")), {}) : k => v
   }
 
   # Template patches containing REWRITE_* args with the prepared containers images data values
@@ -98,7 +98,7 @@ locals {
   yaml_files_decoded = {
     for name, uri in local.yaml_files :
     name => [
-      for content in split("---", data.http.csi-external-snapshotter[uri].response_body) :
+      for content in split("---", try(data.http.csi-external-snapshotter[uri].response_body, "---")) :
       yamldecode(content) if try(yamldecode(content), null) != null
     ]
   }
@@ -113,7 +113,7 @@ locals {
   ]))
 
   manifests_apply = [
-    for v in data.kubectl_file_documents.csi-external-snapshotter[0].documents : {
+    for v in try(data.kubectl_file_documents.csi-external-snapshotter[0].documents, {}) : {
       data : yamldecode(v)
       content : v
     }
