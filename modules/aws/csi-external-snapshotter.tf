@@ -26,7 +26,7 @@ locals {
 
   # Adhoc workarounds for missing things to merge with YAML manifests defined above
   # Define each item in the list as <fetched YAML files type>.<metadata.name>.<kind>
-  fixes = <<-EOT
+  csi-external-snapshotter_fixes = <<-EOT
     - setup-csi-snapshotter.csi-snapshotter.ServiceAccount:
         apiVersion: v1
         kind: ServiceAccount
@@ -35,7 +35,7 @@ locals {
     EOT
 
   #TODO(bogdando): create a shared template and refer it in addons managed by kubectl_manifest (copy-pasta until then)
-  containers_data = {
+  csi-external-snapshotter_containers_data = {
     for k, v in local.images_data.csi-external-snapshotter.containers :
     v.rewrite_values.image.name => {
       tag = try(
@@ -54,7 +54,7 @@ locals {
     }
   }
 
-  patches = {
+  csi-external-snapshotter_patches = {
     for k, v in try(yamldecode(try(local.csi-external-snapshotter.extra_values, "---")), {}) : k => v
   }
 
@@ -62,8 +62,8 @@ locals {
   # FIXME: No support for CR templates but only pods standard '*.spec.template.spec.containers' paths.
   # NOTE: containers data does not contain the Kind data subfield, so strip it off the patches names
   # TODO(bogdando): find a better templating method (maybe use https://github.com/cloudposse/terraform-yaml-config)
-  extra-values_patched = {
-    for k, v in local.patches :
+  csi-external-snapshotter-extra-values_patched = {
+    for k, v in local.csi-external-snapshotter_patches :
     k => [
       # to deepmerge the original and templated patches later, if anything there to rewrite
       v,
@@ -77,15 +77,15 @@ locals {
                   yamlencode(c),
                   "REWRITE_ALL",
                   format("%s:%s",
-                    local.containers_data[format("%s.%s.repository", split(".", k)[0], c.name)].repo,
-                    local.containers_data[format("%s.%s.repository", split(".", k)[0], c.name)].tag
+                    local.csi-external-snapshotter_containers_data[format("%s.%s.repository", split(".", k)[0], c.name)].repo,
+                    local.csi-external-snapshotter_containers_data[format("%s.%s.repository", split(".", k)[0], c.name)].tag
                   )
                 ),
                 "REWRITE_TAG",
-                local.containers_data[format("%s.%s.repository", split(".", k)[0], c.name)].tag
+                local.csi-external-snapshotter_containers_data[format("%s.%s.repository", split(".", k)[0], c.name)].tag
               ),
               "REWRITE_NAME",
-              local.containers_data[format("%s.%s.repository", split(".", k)[0], c.name)].repo
+              local.csi-external-snapshotter_containers_data[format("%s.%s.repository", split(".", k)[0], c.name)].repo
             )
           )
         ] } } } },
@@ -95,7 +95,7 @@ locals {
   }
 
   # Decode feteched manifests/CRDs etc documents and skip blobs without data
-  yaml_files_decoded = {
+  csi-external-snapshotter_yaml_files_decoded = {
     for name, uri in local.yaml_files :
     name => [
       for content in split("---", try(data.http.csi-external-snapshotter[uri].response_body, "---")) :
@@ -105,14 +105,14 @@ locals {
 
   # Split decoded data into separate resources manifests, with keys
   # matching the patched data index
-  kube_manifests = concat(yamldecode(local.fixes), flatten([
-    for name, manifests in local.yaml_files_decoded :
+  csi-external-snapshotter_kube_manifests = concat(yamldecode(local.csi-external-snapshotter_fixes), flatten([
+    for name, manifests in local.csi-external-snapshotter_yaml_files_decoded :
     [
       for m in manifests : { "${name}.${m.metadata.name}.${m.kind}" = m }
     ]
   ]))
 
-  manifests_apply = [
+  csi-external-snapshotter_manifests_apply = [
     for v in try(data.kubectl_file_documents.csi-external-snapshotter[0].documents, {}) : {
       data : yamldecode(v)
       content : v
@@ -124,13 +124,13 @@ locals {
 module "deepmerge" {
   source = "github.com/cloudposse/terraform-yaml-config//modules/deepmerge?ref=1.0.2"
   maps = flatten([
-    for m in local.kube_manifests :
+    for m in local.csi-external-snapshotter_kube_manifests :
     [
       m,
       [
-        for p in try(local.extra-values_patched[
-          keys(local.kube_manifests[index(local.kube_manifests, m)])[0]
-        ], {}) : { keys(local.kube_manifests[index(local.kube_manifests, m)])[0] = p }
+        for p in try(local.csi-external-snapshotter-extra-values_patched[
+          keys(local.csi-external-snapshotter_kube_manifests[index(local.csi-external-snapshotter_kube_manifests, m)])[0]
+        ], {}) : { keys(local.csi-external-snapshotter_kube_manifests[index(local.csi-external-snapshotter_kube_manifests, m)])[0] = p }
       ]
     ]
   ])
@@ -164,7 +164,7 @@ data "kubectl_file_documents" "csi-external-snapshotter" {
 
 resource "kubectl_manifest" "csi-external-snapshotter" {
   for_each = {
-    for v in local.manifests_apply :
+    for v in local.csi-external-snapshotter_manifests_apply :
     lower(join("/", compact(
       [
         v.data.apiVersion,
