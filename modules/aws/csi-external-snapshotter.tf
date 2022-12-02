@@ -34,7 +34,7 @@ locals {
           name: csi-snapshotter
     EOT
 
-  #TODO(bogdando): create a shared template and refer it in addons managed by kubectl_manifest (copy-pasta until then)
+  #TODO(bogdando): create a shared template and a module it in addons managed by kubectl_manifest (copy-pasta until then)
   csi-external-snapshotter_containers_data = {
     for k, v in local.images_data.csi-external-snapshotter.containers :
     v.rewrite_values.image.name => {
@@ -51,7 +51,7 @@ locals {
           format("%s.%s", split(".", k)[0], split(".", k)[2])
         ].name
       }" : v.rewrite_values.image.value
-    }
+    } if v.manager == "kubectl"
   }
 
   csi-external-snapshotter_patches = {
@@ -121,6 +121,7 @@ locals {
 }
 
 # Patch manifests with user defined overrides
+# TODO: rework deep-merging as a module. Until then, it cannot be used for multiple addons, but this one
 module "deepmerge" {
   source = "github.com/cloudposse/terraform-yaml-config//modules/deepmerge?ref=1.0.2"
   maps = flatten([
