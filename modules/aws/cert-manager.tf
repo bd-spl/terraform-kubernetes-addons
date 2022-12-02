@@ -39,6 +39,88 @@ securityContext:
 installCRDs: true
 VALUES
 
+  #TODO(bogdando): create a shared template, or a module, and refer it in addons managed by kustomize (copy-pasta until then)
+  cert-manager_containers_data = {
+    for k, v in local.images_data.cert-manager.containers :
+    v.rewrite_values.image.name => {
+      tag = try(
+        local.cert-manager["containers_versions"][v.rewrite_values.tag.name],
+        v.rewrite_values.tag.value,
+        v.rewrite_values.image.tail
+      )
+      repo = v.ecr_prepare_images && v.source_provided ? "${
+        aws_ecr_repository.this[
+          format("%s.%s", split(".", k)[0], split(".", k)[2])
+        ].repository_url}" : v.ecr_prepare_images ? "${
+        aws_ecr_repository.this[
+          format("%s.%s", split(".", k)[0], split(".", k)[2])
+        ].name
+      }" : v.rewrite_values.image.value
+    } if v.manager == "kustomize"
+  }
+
+  # Update kustomizations with the prepared containers images data
+  cert-manager_containers_kustomizations_patched = {
+    for k, v in local.cert-manager.kustomizations :
+    k => merge(
+      try(yamldecode(v), {}),
+      try(
+        { images = [
+          for c in try(yamldecode(v).images, []) :
+          {
+            name = c.name,
+            newName = local.cert-manager_containers_data[
+              format(
+                "%s.%s.repository",
+                k,
+              local.cert-manager.kustomizations_images_map[k][c.name])
+            ].repo,
+            newTag = try(c.newTag, local.cert-manager_containers_data[
+              format(
+                "%s.%s.repository",
+                k,
+              local.cert-manager.kustomizations_images_map[k][c.name])
+            ].tag)
+          }
+        ] },
+        {}
+      )
+    )
+  }
+}
+
+# NOTE: only a single kustomization.yml is supported yet (kubectl apply -k limitation?)
+# FIXME: local_sensitive_file maybe?
+resource "local_file" "kustomization" {
+  #for_each = local.cert-manager_containers_kustomizations_patched
+  count = local.cert-manager_containers_kustomizations_patched != {} && local.cert-manager_containers_kustomizations_patched != null ? 1 : 0
+
+  #content  = yamlencode(each.value)
+  #filename = "./kustomization/${each.key}.yaml"
+  content  = yamlencode(values(local.cert-manager_containers_kustomizations_patched)[0])
+  filename = "./kustomization/kustomization.yml"
+
+  depends_on = [
+    skopeo_copy.this
+  ]
+}
+
+resource "null_resource" "kustomize" {
+  count = local.cert-manager_containers_kustomizations_patched != {} && local.cert-manager_containers_kustomizations_patched != null ? 1 : 0
+  triggers = {
+    kustomizations = jsonencode(local.cert-manager_containers_kustomizations_patched)
+    helm_data      = jsonencode(helm_release.cert-manager[0])
+    filemd5        = filemd5("cert-manager.tf")
+  }
+
+  provisioner "local-exec" {
+    command = "kubectl apply -k ./kustomization"
+  }
+
+  depends_on = [
+    local_file.kustomization,
+    helm_release.cert-manager
+  ]
 }
 
 module "iam_assumable_role_cert-manager" {
@@ -141,7 +223,7 @@ resource "helm_release" "cert-manager" {
   dynamic "set" {
     for_each = {
       for c, v in local.images_data.cert-manager.containers :
-      c => v if v.rewrite_values.tag != null
+      c => v if v.rewrite_values.tag != null && v.manager == "helm"
     }
     content {
       name  = set.value.rewrite_values.tag.name
@@ -149,7 +231,10 @@ resource "helm_release" "cert-manager" {
     }
   }
   dynamic "set" {
-    for_each = local.images_data.cert-manager.containers
+    for_each = {
+      for c, v in local.images_data.cert-manager.containers :
+      c => v if v.manager == "helm"
+    }
     content {
       name = set.value.rewrite_values.image.name
       value = set.value.ecr_prepare_images && set.value.source_provided ? "${
@@ -166,7 +251,7 @@ resource "helm_release" "cert-manager" {
   dynamic "set" {
     for_each = {
       for c, v in local.images_data.cert-manager.containers :
-      c => v if v.rewrite_values.registry != null
+      c => v if v.rewrite_values.registry != null && v.manager == "helm"
     }
     content {
       name = set.value.rewrite_values.registry.name
@@ -183,7 +268,7 @@ resource "helm_release" "cert-manager" {
 
   depends_on = [
     skopeo_copy.this,
-    kubectl_manifest.prometheus-operator_crds
+    kubectl_manifest.prometheus-operator_crds,
   ]
 }
 

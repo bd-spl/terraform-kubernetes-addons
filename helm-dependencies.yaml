@@ -10,6 +10,7 @@
 #     # This results in custom.io/prod/foo:v1.1 copied as <ECR repo>/foo:v1.1,
 #     # then its helm values updated via the 'helm set' interface
 #     app.foo.spec.containers.frontend:
+#       manager: helm # default. Allowed: helm, kustomize, kubectl
 #       name:
 #         uri: foo # sets image for helm as app.foo.spec.containers.frontend.uri
 #       ver:
@@ -211,6 +212,22 @@ dependencies:
         ver:
           tag: v1.9.1
         source: quay.io/jetstack
+      # used by kustomization, is noop for helm
+      freeipa-issuer-controller-manager.kube-rbac-proxy:
+        manager: kustomize
+        name:
+          repository: gcr.io/kubebuilder/kube-rbac-proxy
+        ver:
+          tag: v0.5.0
+        source: gcr.io/kubebuilder
+      # https://github.com/guilhem/freeipa-issuer/blob/master/Makefile
+      freeipa-issuer-controller-manager.manager:
+        manager: kustomize
+        name:
+          repository: quay.io/bogdando/freeipa-issuer
+        ver:
+          tag: 174d145616a672b09d3fdb56b2dd7c93612e483e
+        source: quay.io/bogdando
   - name: cert-manager-csi-driver
     version: v0.4.2
     repository: https://charts.jetstack.io  # https://artifacthub.io/packages/helm/cert-manager/cert-manager-csi-driver
@@ -478,24 +495,28 @@ dependencies:
   - name: csi-external-snapshotter
     containers:
       setup-snapshot-controller.snapshot-controller:
+        manager: kubectl
         name:
           repository: gcr.io/k8s-staging-sig-storage/snapshot-controller
         ver:
           tag: v5.0.1
         source: gcr.io/k8s-staging-sig-storage
       setup-csi-snapshotter.csi-provisioner:
+        manager: kubectl
         name:
           repository: k8s.gcr.io/sig-storage/csi-provisioner
         ver:
           tag: v3.2.1
         source: k8s.gcr.io/sig-storage
       setup-csi-snapshotter.csi-snapshotter:
+        manager: kubectl
         name:
           repository: gcr.io/k8s-staging-sig-storage/csi-snapshotter
         ver:
           tag: v6.0.1
         source: gcr.io/k8s-staging-sig-storage
       setup-csi-snapshotter.hostpath:
+        manager: kubectl
         name:
           repository: k8s.gcr.io/sig-storage/hostpathplugin
         ver:
