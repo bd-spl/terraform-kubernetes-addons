@@ -109,7 +109,7 @@ resource "null_resource" "kustomize" {
   count = local.cert-manager_containers_kustomizations_patched != {} && local.cert-manager_containers_kustomizations_patched != null ? 1 : 0
   triggers = {
     kustomizations = jsonencode(local.cert-manager_containers_kustomizations_patched)
-    helm_data      = jsonencode(helm_release.cert-manager[0])
+    #helm_data      = jsonencode(helm_release.cert-manager[0])
     filemd5        = filemd5("cert-manager.tf")
   }
 
