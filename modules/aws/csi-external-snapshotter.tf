@@ -5,24 +5,23 @@ locals {
       create_ns = false
       namespace = "csi-snapshotter"
       enabled   = false
-      version   = "v6.0.1"
       # NOTE: the caller side must override subjects' namespaces
       # as kubectl_manifest's override_namespace cannot do that.
       # See https://github.com/gavinbunney/terraform-provider-kubectl/issues/235.
       # Targets for patching will match by keys named as <fetched YAML files type>.<metadata.name>.<kind>
       extra_values = {}
+      yaml_files = {
+        crd-snapshot-classes      = "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml",
+        crd-snapshot-contents     = "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml",
+        crd-snapshots             = "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml",
+        setup-snapshot-controller = "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml",
+        setup-csi-snapshotter     = "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/deploy/kubernetes/csi-snapshotter/setup-csi-snapshotter.yaml",
+        rbac-snapshot-controller  = "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml"
+      }
     },
     var.csi-external-snapshotter
   )
 
-  yaml_files = {
-    crd-snapshot-classes      = "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${local.csi-external-snapshotter.version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml",
-    crd-snapshot-contents     = "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${local.csi-external-snapshotter.version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml",
-    crd-snapshots             = "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${local.csi-external-snapshotter.version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml",
-    setup-snapshot-controller = "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${local.csi-external-snapshotter.version}/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml",
-    setup-csi-snapshotter     = "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${local.csi-external-snapshotter.version}/deploy/kubernetes/csi-snapshotter/setup-csi-snapshotter.yaml",
-    rbac-snapshot-controller  = "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${local.csi-external-snapshotter.version}/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml"
-  }
 
   # Adhoc workarounds for missing things to merge with YAML manifests defined above
   # Define each item in the list as <fetched YAML files type>.<metadata.name>.<kind>
@@ -96,7 +95,7 @@ locals {
 
   # Decode feteched manifests/CRDs etc documents and skip blobs without data
   csi-external-snapshotter_yaml_files_decoded = {
-    for name, uri in local.yaml_files :
+    for name, uri in local.csi-external-snapshotter.yaml_files :
     name => [
       for content in split("---", try(data.http.csi-external-snapshotter[uri].response_body, "---")) :
       yamldecode(content) if try(yamldecode(content), null) != null
@@ -141,7 +140,7 @@ module "deepmerge" {
 }
 
 data "http" "csi-external-snapshotter" {
-  for_each = local.csi-external-snapshotter.enabled ? toset(values(local.yaml_files)) : []
+  for_each = local.csi-external-snapshotter.enabled ? toset(values(local.csi-external-snapshotter.yaml_files)) : []
   url      = each.key
 }
 
