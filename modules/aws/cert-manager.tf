@@ -56,8 +56,23 @@ VALUES
           format("%s.%s", split(".", k)[0], split(".", k)[2])
         ].name
       }" : v.rewrite_values.image.value
-    } if v.manager == "kustomize"
+    } if v.manager == "kustomize" || v.manager == "extra"
   }
+
+  ## Extra values prepare images manager
+
+  # Get variables names and values to template them in
+  cert-manager_extra_tpl = {
+    for k, v in local.cert-manager_containers_data :
+      "params" => {
+        "${split(".", k)[1]}-repo" = v.repo
+        "${split(".", k)[1]}-tag"  = v.tag
+      } if lookup(
+        try(yamldecode(local.cert-manager["extra_values"]), {}), split(".", k)[0], null
+      ) != null
+  }
+
+  ## Kuztomize prepare images manager
 
   # Update kustomizations with the prepared containers images data
   cert-manager_containers_kustomizations_patched = {
@@ -89,6 +104,11 @@ VALUES
   }
 }
 
+data "template_file" "cert-manager_extra_values_patched" {
+  template = local.cert-manager["extra_values"]
+  vars = local.cert-manager_extra_tpl.params
+}
+
 # NOTE: only a single kustomization.yml is supported yet (kubectl apply -k limitation?)
 # FIXME: local_sensitive_file maybe?
 resource "local_file" "kustomization" {
@@ -110,7 +130,7 @@ resource "null_resource" "kustomize" {
   triggers = {
     kustomizations = jsonencode(local.cert-manager_containers_kustomizations_patched)
     #helm_data      = jsonencode(helm_release.cert-manager[0])
-    filemd5        = filemd5("cert-manager.tf")
+    filemd5 = filemd5("cert-manager.tf")
   }
 
   provisioner "local-exec" {
@@ -216,9 +236,10 @@ resource "helm_release" "cert-manager" {
   verify                = local.cert-manager["verify"]
   values = [
     local.values_cert-manager,
-    local.cert-manager["extra_values"]
+    data.template_file.cert-manager_extra_values_patched.rendered
   ]
 
+  ## Helm prepare images manager
   #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
   dynamic "set" {
     for_each = {

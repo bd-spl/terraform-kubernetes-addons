@@ -7,10 +7,11 @@
 # Example:
 # - name: foo-addon-charts
 #   containers:
-#     # This results in custom.io/prod/foo:v1.1 copied as <ECR repo>/foo:v1.1,
-#     # then its helm values updated via the 'helm set' interface
+#     # Examples for Helm manager (default)
 #     app.foo.spec.containers.frontend:
-#       manager: helm # default. Allowed: helm, kustomize, kubectl
+#       # results in custom.io/prod/foo:v1.1 copied as <ECR repo>/foo:v1.1,
+#       # then its helm values updated via the 'helm set' interface
+#       manager: helm # default. Allowed: helm, kustomize, kubectl, extra
 #       name:
 #         uri: foo # sets image for helm as app.foo.spec.containers.frontend.uri
 #       ver:
@@ -61,16 +62,48 @@
 #         source: custom.io
 #       source: custom.io/prod  # will be ignored as ecr_prepare_images is off!
 #
-#      bad.example:
-#        # 'registry' will be ignored when preparing images,
-#        # but helm will take both rewritten registry and uri paths,
-#        # which might result in a misconfigured chart (repo info looks redundant here)
-#        name:
-#          uri: custom.io/quux:v123  # helm takes <ECR>/quux:v123
-#        registry:
-#          repo: custom.io/prod      # helm takes <ECR>/prod?..
-#        source: custom.io
+#     bad.example:
+#       # 'registry' will be ignored when preparing images,
+#       # but helm will take both rewritten registry and uri paths,
+#       # which might result in a misconfigured chart (repo info looks redundant here)
+#       name:
+#         uri: custom.io/quux:v123  # helm takes <ECR>/quux:v123
+#       registry:
+#         repo: custom.io/prod      # helm takes <ECR>/prod?..
+#       source: custom.io
 #
+#     # Other than Helm managers examples
+#
+#     # Key name format: <extra_values_keyname>.<template_var>
+#     # Requires data: foo-addon-charts.extra_values.extraArgs
+#     extraArgs.acme-http01-solver-image:
+#       # rewrites ${acme-http01-solver-image-repo} and/or ${acme-http01-solver-image-tag}
+#       # templates (need to be escaped \$${...} in extra_values),
+#       # in foo-addon-charts.extra_values.extraArgs, with the prepared ECR image URI
+#       manager: extra
+#       name: {repository: ..., ...}
+#
+#     # Key name format: <target_resource_metadata_name>.<target_container_name>.
+#     # Requires data: foo-addon-charts.kustomizations_images_map, foo-addon-charts.kustomizations
+#     controller-manager.kube-rbac-proxy:
+#       # rewrites kube-rbac-proxy container image URIs in foo-addon-charts.kustomizations with ECR path,
+#       # before applying it with kubectl.
+#       manager: kustomize
+#       name:
+#         # upstream image URI src to prepare its copy in ECR,
+#         # it may match, or differ to <original_image_uri> in the kustomization data source
+#         repository: <image_uri>
+#
+#     # Key name format: <fetched-YAML-manifest-name>.<target_container_name>
+#     # Optional data: foo-addon-charts.yaml_files (defaults are provided)
+#     # Required data: foo-addon-charts.extra_values
+#     setup-controller.hostpath:
+#       # rewrites hostpath container image URI in a patch (applied by terraform instead of kubectl)
+#       # for kube manifests fetched from URL value in foo-addon-charts.yaml_files['setup-controller'].
+#       # The patches contents should be inlined in foo-addon-charts.extra_values.
+#       manager: kubectl
+#       name: ...
+
 apiVersion: v2
 name: Handle terraform-kubernetes-addons helm chart dependencies update
 version: 1.0.0
@@ -212,7 +245,7 @@ dependencies:
         ver:
           tag: v1.9.1
         source: quay.io/jetstack
-      # used by kustomization, is noop for helm
+      # used by kustomization, is noop for helm and others
       freeipa-issuer-controller-manager.kube-rbac-proxy:
         manager: kustomize
         name:
@@ -228,6 +261,14 @@ dependencies:
         ver:
           tag: 174d145616a672b09d3fdb56b2dd7c93612e483e
         source: quay.io/bogdando
+      # used by extra_values, noop for helm and other managers
+      extraArgs.acme-http01-solver-image:
+        manager: extra
+        name:
+          repository: quay.io/jetstack/cert-manager-acmesolver
+        ver:
+          tag: v1.9.1
+        source: quay.io/jetstack
   - name: cert-manager-csi-driver
     version: v0.4.2
     repository: https://charts.jetstack.io  # https://artifacthub.io/packages/helm/cert-manager/cert-manager-csi-driver
