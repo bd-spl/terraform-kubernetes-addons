@@ -31,7 +31,9 @@ variable "cluster-name" {
 variable "csi-external-snapshotter" {
   description = "Customize csi-external-snapshotter, see `csi-external-snapshotter.tf` for supported values"
   type        = any
-  default     = {}
+  default     = {
+    version = "v6.0.1"
+  }
 }
 
 variable "external-dns" {
