@@ -261,6 +261,20 @@ dependencies:
         ver:
           tag: 174d145616a672b09d3fdb56b2dd7c93612e483e
         source: quay.io/bogdando
+      gateway-api-admission.webhook:
+        manager: kustomize
+        name:
+          repository: gcr.io/k8s-staging-gateway-api/admission-server
+        ver:
+          tag: v0.5.1
+      # the same image is used for create and patch containers
+      gateway-api-admission.create_or_patch:
+        manager: kustomize
+        name:
+          repository: k8s.gcr.io/ingress-nginx/kube-webhook-certgen
+        ver:
+          tag: v1.1.1  # poke v1.3.0?
+        source: k8s.gcr.io/ingress-nginx
       # used by extra_values, noop for helm and other managers
       extraArgs.acme-http01-solver-image:
         manager: extra
