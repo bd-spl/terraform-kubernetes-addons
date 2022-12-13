@@ -83,7 +83,7 @@
 #       manager: extra
 #       name: {repository: ..., ...}
 #
-#     # Key name format: <target_resource_metadata_name>.<target_container_name>.
+#     # Key name format: <target_from_foo-addon-charts.kustomizations_images_map>.<target_container_name(s)_template>
 #     # Requires data: foo-addon-charts.kustomizations_images_map, foo-addon-charts.kustomizations
 #     controller-manager.kube-rbac-proxy:
 #       # rewrites kube-rbac-proxy container image URIs in foo-addon-charts.kustomizations with ECR path,
@@ -267,7 +267,10 @@ dependencies:
           repository: gcr.io/k8s-staging-gateway-api/admission-server
         ver:
           tag: v0.5.1
-      # the same image is used for create and patch containers
+        source: gcr.io
+      # The same image represents two containers: create and patch.
+      # When those cannot be aggregated in kustomization by its metadata.name wildcard,
+      # split it into different entries, like gateway-api-admission.create
       gateway-api-admission.create_or_patch:
         manager: kustomize
         name:
