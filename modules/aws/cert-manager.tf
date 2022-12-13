@@ -56,6 +56,7 @@ VALUES
           format("%s.%s", split(".", k)[0], split(".", k)[2])
         ].name
       }" : v.rewrite_values.image.value
+      src = v.src
     } if v.manager == "kustomize" || v.manager == "extra"
   }
 
@@ -64,12 +65,12 @@ VALUES
   # Get variables names and values to template them in
   cert-manager_extra_tpl = {
     for k, v in local.cert-manager_containers_data :
-      "params" => {
-        "${split(".", k)[1]}-repo" = v.repo
-        "${split(".", k)[1]}-tag"  = v.tag
+    "params" => {
+      "${split(".", k)[1]}-repo" = v.repo
+      "${split(".", k)[1]}-tag"  = v.tag
       } if lookup(
-        try(yamldecode(local.cert-manager["extra_values"]), {}), split(".", k)[0], null
-      ) != null
+      try(yamldecode(local.cert-manager["extra_values"]), {}), split(".", k)[0], null
+    ) != null
   }
 
   ## Kuztomize prepare images manager
@@ -88,13 +89,15 @@ VALUES
               format(
                 "%s.%s.repository",
                 k,
-              local.cert-manager.kustomizations_images_map[k][c.name])
+                local.cert-manager.kustomizations_images_map[k][c.name]
+              )
             ].repo,
             newTag = try(c.newTag, local.cert-manager_containers_data[
               format(
                 "%s.%s.repository",
                 k,
-              local.cert-manager.kustomizations_images_map[k][c.name])
+                local.cert-manager.kustomizations_images_map[k][c.name]
+              )
             ].tag)
           }
         ] },
@@ -106,19 +109,15 @@ VALUES
 
 data "template_file" "cert-manager_extra_values_patched" {
   template = local.cert-manager["extra_values"]
-  vars = local.cert-manager_extra_tpl.params
+  vars     = local.cert-manager_extra_tpl.params
 }
 
-# NOTE: only a single kustomization.yml is supported yet (kubectl apply -k limitation?)
 # FIXME: local_sensitive_file maybe?
 resource "local_file" "kustomization" {
-  #for_each = local.cert-manager_containers_kustomizations_patched
-  count = local.cert-manager_containers_kustomizations_patched != {} && local.cert-manager_containers_kustomizations_patched != null ? 1 : 0
+  for_each = local.cert-manager_containers_kustomizations_patched
 
-  #content  = yamlencode(each.value)
-  #filename = "./kustomization/${each.key}.yaml"
-  content  = yamlencode(values(local.cert-manager_containers_kustomizations_patched)[0])
-  filename = "./kustomization/kustomization.yml"
+  content  = yamlencode(each.value)
+  filename = "./kustomization-${each.key}/kustomization/kustomization.yaml"
 
   depends_on = [
     skopeo_copy.this
@@ -126,15 +125,14 @@ resource "local_file" "kustomization" {
 }
 
 resource "null_resource" "kustomize" {
-  count = local.cert-manager_containers_kustomizations_patched != {} && local.cert-manager_containers_kustomizations_patched != null ? 1 : 0
+  for_each = local.cert-manager_containers_kustomizations_patched
   triggers = {
     kustomizations = jsonencode(local.cert-manager_containers_kustomizations_patched)
-    #helm_data      = jsonencode(helm_release.cert-manager[0])
-    filemd5 = filemd5("cert-manager.tf")
+    filemd5        = filemd5("cert-manager.tf")
   }
 
   provisioner "local-exec" {
-    command = "kubectl apply -k ./kustomization"
+    command = "kubectl apply -k ./kustomization-${each.key}/kustomization"
   }
 
   depends_on = [

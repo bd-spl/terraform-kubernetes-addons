@@ -55,6 +55,7 @@ locals {
           ecr_immutable_tag   = try(v.ecr_immutable_tag, var.ecr_immutable_tag)
           helm_managed        = lookup(item, "repository", null) != null
           source_provided     = lookup(v, "source", null) != null
+          src                 = try(v.name.repository, null)
           manager             = lookup(v, "manager", "helm")
           rewrite_values = {
             # tag overrides - only set helm values for explicit tags, not the 'latest' fallback for unset tags

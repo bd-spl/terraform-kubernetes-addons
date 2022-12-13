@@ -46,6 +46,7 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 | <a name="provider_null"></a> [null](#provider\_null) | n/a |
 | <a name="provider_random"></a> [random](#provider\_random) | n/a |
 | <a name="provider_skopeo"></a> [skopeo](#provider\_skopeo) | 0.0.4 |
+| <a name="provider_template"></a> [template](#provider\_template) | n/a |
 | <a name="provider_time"></a> [time](#provider\_time) | n/a |
 | <a name="provider_tls"></a> [tls](#provider\_tls) | ~> 4.0 |
 
@@ -387,6 +388,7 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 | [kubectl_file_documents.secrets-store-csi-driver-provider-aws](https://registry.terraform.io/providers/gavinbunney/kubectl/latest/docs/data-sources/file_documents) | data source |
 | [kubectl_file_documents.sync](https://registry.terraform.io/providers/gavinbunney/kubectl/latest/docs/data-sources/file_documents) | data source |
 | [kubectl_path_documents.cert-manager_cluster_issuers](https://registry.terraform.io/providers/gavinbunney/kubectl/latest/docs/data-sources/path_documents) | data source |
+| [template_file.cert-manager_extra_values_patched](https://registry.terraform.io/providers/hashicorp/template/latest/docs/data-sources/file) | data source |
 
 ## Inputs
 
@@ -406,7 +408,7 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 | <a name="input_cluster-autoscaler"></a> [cluster-autoscaler](#input\_cluster-autoscaler) | Customize cluster-autoscaler chart, see `cluster-autoscaler.tf` for supported values | `any` | `{}` | no |
 | <a name="input_cluster-name"></a> [cluster-name](#input\_cluster-name) | Name of the Kubernetes cluster | `string` | `"sample-cluster"` | no |
 | <a name="input_cni-metrics-helper"></a> [cni-metrics-helper](#input\_cni-metrics-helper) | Customize cni-metrics-helper deployment, see `cni-metrics-helper.tf` for supported values | `any` | `{}` | no |
-| <a name="input_csi-external-snapshotter"></a> [csi-external-snapshotter](#input\_csi-external-snapshotter) | Customize csi-external-snapshotter, see `csi-external-snapshotter.tf` for supported values | `any` | `{}` | no |
+| <a name="input_csi-external-snapshotter"></a> [csi-external-snapshotter](#input\_csi-external-snapshotter) | Customize csi-external-snapshotter, see `csi-external-snapshotter.tf` for supported values | `any` | <pre>{<br>  "version": "v6.0.1"<br>}</pre> | no |
 | <a name="input_ecr_encryption_type"></a> [ecr\_encryption\_type](#input\_ecr\_encryption\_type) | Encryption type for ECR images | `string` | `"AES256"` | no |
 | <a name="input_ecr_immutable_tag"></a> [ecr\_immutable\_tag](#input\_ecr\_immutable\_tag) | Use immutable tags for ECR images | `bool` | `false` | no |
 | <a name="input_ecr_kms_key"></a> [ecr\_kms\_key](#input\_ecr\_kms\_key) | Preconfigured KMS key arn to encrypt ECR images | `any` | `null` | no |
