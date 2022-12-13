@@ -77,33 +77,35 @@ VALUES
 
   # Update kustomizations with the prepared containers images data
   cert-manager_containers_kustomizations_patched = {
-    for k, v in local.cert-manager.kustomizations :
-    k => merge(
-      try(yamldecode(v), {}),
-      try(
-        { images = [
-          for c in try(yamldecode(v).images, []) :
-          {
-            name = c.name,
-            newName = local.cert-manager_containers_data[
-              format(
-                "%s.%s.repository",
-                k,
-                local.cert-manager.kustomizations_images_map[k][c.name]
-              )
-            ].repo,
-            newTag = try(c.newTag, local.cert-manager_containers_data[
-              format(
-                "%s.%s.repository",
-                k,
-                local.cert-manager.kustomizations_images_map[k][c.name]
-              )
-            ].tag)
-          }
-        ] },
-        {}
-      )
-    )
+    for k, data in local.cert-manager.kustomizations :
+    k => [for v in compact(split("---", data)) :
+      merge(
+        try(yamldecode(v), {}),
+        try(
+          { images = [
+            for c in try(yamldecode(v).images, []) :
+            {
+              # Remove unique identifiers distinguishing same images used for different containers
+              name = split("::", c.name)[0]
+              newName = local.cert-manager_containers_data[
+                format(
+                  "%s.%s.repository",
+                  k,
+                  split("::", local.cert-manager.kustomizations_images_map[k][c.name])[0]
+                )
+              ].repo
+              newTag = try(c.newTag, local.cert-manager_containers_data[
+                format(
+                  "%s.%s.repository",
+                  k,
+                  split("::", local.cert-manager.kustomizations_images_map[k][c.name])[0]
+                )
+              ].tag)
+            }
+          ] },
+          {}
+        )
+    )]
   }
 }
 
@@ -116,7 +118,8 @@ data "template_file" "cert-manager_extra_values_patched" {
 resource "local_file" "kustomization" {
   for_each = local.cert-manager_containers_kustomizations_patched
 
-  content  = yamlencode(each.value)
+  # reconstruct multi-kustomizations sections from the patched data
+  content  = join("\n---\n", [for data in each.value : yamlencode(data)])
   filename = "./kustomization-${each.key}/kustomization/kustomization.yaml"
 
   depends_on = [
@@ -127,7 +130,7 @@ resource "local_file" "kustomization" {
 resource "null_resource" "kustomize" {
   for_each = local.cert-manager_containers_kustomizations_patched
   triggers = {
-    kustomizations = jsonencode(local.cert-manager_containers_kustomizations_patched)
+    kustomizations = join("\n---\n", [for data in each.value : yamlencode(data)])
     filemd5        = filemd5("cert-manager.tf")
   }
 
