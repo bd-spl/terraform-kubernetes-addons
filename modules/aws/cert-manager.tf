@@ -123,7 +123,7 @@ resource "local_file" "kustomization" {
   filename = "./kustomization-${each.key}/kustomization/kustomization.yaml"
 
   depends_on = [
-    skopeo_copy.this
+    helm_release.cert-manager
   ]
 }
 
@@ -140,7 +140,6 @@ resource "null_resource" "kustomize" {
 
   depends_on = [
     local_file.kustomization,
-    helm_release.cert-manager
   ]
 }
 
