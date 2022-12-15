@@ -81,8 +81,8 @@ VALUES
     k => [for v in compact(split("---", data)) :
       merge(
         try(yamldecode(v), {}),
-        try(
-          { images = [
+        {
+          images = [
             for c in try(yamldecode(v).images, []) :
             {
               # Remove unique identifiers distinguishing same images used for different containers
@@ -102,9 +102,8 @@ VALUES
                 )
               ].tag)
             }
-          ] },
-          {}
-        )
+          ]
+        }
     )]
   }
 }
@@ -115,7 +114,7 @@ data "template_file" "cert-manager_extra_values_patched" {
 }
 
 # FIXME: local_sensitive_file maybe?
-resource "local_file" "kustomization" {
+resource "local_file" "cert-manager-kustomization" {
   for_each = local.cert-manager_containers_kustomizations_patched
 
   # reconstruct multi-kustomizations sections from the patched data
@@ -127,7 +126,7 @@ resource "local_file" "kustomization" {
   ]
 }
 
-resource "null_resource" "kustomize" {
+resource "null_resource" "cert-manager-kustomize" {
   for_each = local.cert-manager_containers_kustomizations_patched
   triggers = {
     kustomizations = join("\n---\n", [for data in each.value : yamlencode(data)])
@@ -139,7 +138,7 @@ resource "null_resource" "kustomize" {
   }
 
   depends_on = [
-    local_file.kustomization,
+    local_file.cert-manager-kustomization,
   ]
 }
 

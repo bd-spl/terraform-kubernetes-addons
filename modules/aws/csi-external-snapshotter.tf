@@ -2,38 +2,24 @@ locals {
 
   csi-external-snapshotter = merge(
     {
-      create_ns = false
-      namespace = "csi-snapshotter"
-      enabled   = false
-      # NOTE: the caller side must override subjects' namespaces
-      # as kubectl_manifest's override_namespace cannot do that.
-      # See https://github.com/gavinbunney/terraform-provider-kubectl/issues/235.
-      # Targets for patching will match by keys named as <fetched YAML files type>.<metadata.name>.<kind>
+      create_ns    = false
+      namespace    = "csi-snapshotter"
+      enabled      = false
       extra_values = {}
-      yaml_files = {
-        crd-snapshot-classes      = "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml",
-        crd-snapshot-contents     = "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml",
-        crd-snapshots             = "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml",
-        setup-snapshot-controller = "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml",
-        setup-csi-snapshotter     = "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/deploy/kubernetes/csi-snapshotter/setup-csi-snapshotter.yaml",
-        rbac-snapshot-controller  = "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml"
-      }
+      # Kustomize resources
+      resources = [
+        "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml",
+        "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml",
+        "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml",
+        "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml",
+        "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/deploy/kubernetes/csi-snapshotter/setup-csi-snapshotter.yaml",
+        "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml"
+      ]
     },
     var.csi-external-snapshotter
   )
 
-
-  # Adhoc workarounds for missing things to merge with YAML manifests defined above
-  # Define each item in the list as <fetched YAML files type>.<metadata.name>.<kind>
-  csi-external-snapshotter_fixes = <<-EOT
-    - setup-csi-snapshotter.csi-snapshotter.ServiceAccount:
-        apiVersion: v1
-        kind: ServiceAccount
-        metadata:
-          name: csi-snapshotter
-    EOT
-
-  #TODO(bogdando): create a shared template and a module it in addons managed by kubectl_manifest (copy-pasta until then)
+  #TODO(bogdando): create a shared template, or a module, and refer it in addons managed by kustomize (copy-pasta until then)
   csi-external-snapshotter_containers_data = {
     for k, v in local.images_data.csi-external-snapshotter.containers :
     v.rewrite_values.image.name => {
@@ -50,98 +36,59 @@ locals {
           format("%s.%s", split(".", k)[0], split(".", k)[2])
         ].name
       }" : v.rewrite_values.image.value
-    } if v.manager == "kubectl"
+      src = v.src
+    } if v.manager == "kustomize" || v.manager == "extra"
   }
 
-  csi-external-snapshotter_patches = {
-    for k, v in try(yamldecode(try(local.csi-external-snapshotter.extra_values, "---")), {}) : k => v
+  ## Kuztomize prepare images manager
+
+  # Update kustomizations with the prepared containers images data
+  csi-external-snapshotter_containers_kustomizations_patched = {
+    for k, data in local.csi-external-snapshotter.kustomizations :
+    k => [for v in compact(split("---", data)) :
+      merge(
+        try(yamldecode(v), {}),
+        lookup(try(yamldecode(v), {}), "resources", {
+          resources = local.csi-external-snapshotter.resources
+        }),
+        lookup(try(yamldecode(v), {}), "images", null) == null ? {} : {
+          images = [
+            for c in try(yamldecode(v).images, []) :
+            {
+              # Remove unique identifiers distinguishing same images used for different containers
+              name = split("::", c.name)[0]
+              newName = local.csi-external-snapshotter_containers_data[
+                format(
+                  "%s.%s.repository",
+                  k,
+                  split("::", local.csi-external-snapshotter.kustomizations_images_map[k][c.name])[0]
+                )
+              ].repo
+              newTag = try(c.newTag, local.csi-external-snapshotter_containers_data[
+                format(
+                  "%s.%s.repository",
+                  k,
+                  split("::", local.csi-external-snapshotter.kustomizations_images_map[k][c.name])[0]
+                )
+              ].tag)
+            }
+          ]
+        }
+    )]
   }
+}
 
-  # Template patches containing REWRITE_* args with the prepared containers images data values
-  # FIXME: No support for CR templates but only pods standard '*.spec.template.spec.containers' paths.
-  # NOTE: containers data does not contain the Kind data subfield, so strip it off the patches names
-  # TODO(bogdando): find a better templating method (maybe use https://github.com/cloudposse/terraform-yaml-config)
-  csi-external-snapshotter-extra-values_patched = {
-    for k, v in local.csi-external-snapshotter_patches :
-    k => [
-      # to deepmerge the original and templated patches later, if anything there to rewrite
-      v,
-      try(
-        { spec = { template = { spec = { containers = [
-          for c in v.spec.template.spec.containers :
-          yamldecode(
-            replace(
-              replace(
-                replace(
-                  yamlencode(c),
-                  "REWRITE_ALL",
-                  format("%s:%s",
-                    local.csi-external-snapshotter_containers_data[format("%s.%s.repository", split(".", k)[0], c.name)].repo,
-                    local.csi-external-snapshotter_containers_data[format("%s.%s.repository", split(".", k)[0], c.name)].tag
-                  )
-                ),
-                "REWRITE_TAG",
-                local.csi-external-snapshotter_containers_data[format("%s.%s.repository", split(".", k)[0], c.name)].tag
-              ),
-              "REWRITE_NAME",
-              local.csi-external-snapshotter_containers_data[format("%s.%s.repository", split(".", k)[0], c.name)].repo
-            )
-          )
-        ] } } } },
-        {}
-      )
-    ]
-  }
+# FIXME: local_sensitive_file maybe?
+resource "local_file" "csi-external-snapshotter-kustomization" {
+  for_each = local.csi-external-snapshotter_containers_kustomizations_patched
 
-  # Decode feteched manifests/CRDs etc documents and skip blobs without data
-  csi-external-snapshotter_yaml_files_decoded = {
-    for name, uri in local.csi-external-snapshotter.yaml_files :
-    name => [
-      for content in split("---", try(data.http.csi-external-snapshotter[uri].response_body, "---")) :
-      yamldecode(content) if try(yamldecode(content), null) != null
-    ]
-  }
+  # reconstruct multi-kustomizations sections from the patched data
+  content  = join("\n---\n", [for data in each.value : yamlencode(data)])
+  filename = "./kustomization-${each.key}/kustomization/kustomization.yaml"
 
-  # Split decoded data into separate resources manifests, with keys
-  # matching the patched data index
-  csi-external-snapshotter_kube_manifests = concat(yamldecode(local.csi-external-snapshotter_fixes), flatten([
-    for name, manifests in local.csi-external-snapshotter_yaml_files_decoded :
-    [
-      for m in manifests : { "${name}.${m.metadata.name}.${m.kind}" = m }
-    ]
-  ]))
-
-  csi-external-snapshotter_manifests_apply = [
-    for v in try(data.kubectl_file_documents.csi-external-snapshotter[0].documents, {}) : {
-      data : yamldecode(v)
-      content : v
-    }
+  depends_on = [
+    skopeo_copy.this
   ]
-}
-
-# Patch manifests with user defined overrides
-# TODO: rework deep-merging as a module. Until then, it cannot be used for multiple addons, but this one
-module "deepmerge" {
-  source = "github.com/cloudposse/terraform-yaml-config//modules/deepmerge?ref=1.0.2"
-  maps = flatten([
-    for m in local.csi-external-snapshotter_kube_manifests :
-    [
-      m,
-      [
-        for p in try(local.csi-external-snapshotter-extra-values_patched[
-          keys(local.csi-external-snapshotter_kube_manifests[index(local.csi-external-snapshotter_kube_manifests, m)])[0]
-        ], {}) : { keys(local.csi-external-snapshotter_kube_manifests[index(local.csi-external-snapshotter_kube_manifests, m)])[0] = p }
-      ]
-    ]
-  ])
-
-  append_list_enabled    = false
-  deep_copy_list_enabled = true
-}
-
-data "http" "csi-external-snapshotter" {
-  for_each = local.csi-external-snapshotter.enabled ? toset(values(local.csi-external-snapshotter.yaml_files)) : []
-  url      = each.key
 }
 
 resource "kubernetes_namespace" "csi-external-snapshotter" {
@@ -156,31 +103,19 @@ resource "kubernetes_namespace" "csi-external-snapshotter" {
   }
 }
 
-# Combine processed manifests into a yaml blob as it's required for kubectl_file_documents
-data "kubectl_file_documents" "csi-external-snapshotter" {
-  count   = local.csi-external-snapshotter.enabled ? 1 : 0
-  content = join("\n---\n", [for v in values(module.deepmerge.merged) : yamlencode(v)])
-}
-
-resource "kubectl_manifest" "csi-external-snapshotter" {
-  for_each = {
-    for v in local.csi-external-snapshotter_manifests_apply :
-    lower(join("/", compact(
-      [
-        v.data.apiVersion,
-        v.data.kind,
-        local.csi-external-snapshotter.create_ns ? local.csi-external-snapshotter.namespace : lookup(v.data.metadata, "namespace", ""),
-        v.data.metadata.name
-      ]
-    ))) => v.content
+resource "null_resource" "csi-external-snapshotter-kustomize" {
+  for_each = local.csi-external-snapshotter_containers_kustomizations_patched
+  triggers = {
+    kustomizations = join("\n---\n", [for data in each.value : yamlencode(data)])
+    filemd5        = filemd5("csi-external-snapshotter.tf")
   }
-  yaml_body          = each.value
-  override_namespace = local.csi-external-snapshotter.create_ns ? local.csi-external-snapshotter.namespace : "kube-system"
+
+  provisioner "local-exec" {
+    command = "kubectl apply -k ./kustomization-${each.key}/kustomization"
+  }
 
   depends_on = [
-    kubernetes_namespace.csi-external-snapshotter,
-    module.deepmerge,
-    data.kubectl_file_documents.csi-external-snapshotter,
-    skopeo_copy.this
+    local_file.csi-external-snapshotter-kustomization,
+    kubernetes_namespace.csi-external-snapshotter
   ]
 }

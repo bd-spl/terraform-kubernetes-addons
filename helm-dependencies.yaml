@@ -11,7 +11,7 @@
 #     app.foo.spec.containers.frontend:
 #       # results in custom.io/prod/foo:v1.1 copied as <ECR repo>/foo:v1.1,
 #       # then its helm values updated via the 'helm set' interface
-#       manager: helm # default. Allowed: helm, kustomize, kubectl, extra
+#       manager: helm # default. Allowed: helm, kustomize, extra (WIP)
 #       name:
 #         uri: foo # sets image for helm as app.foo.spec.containers.frontend.uri
 #       ver:
@@ -94,15 +94,6 @@
 #         # it may match, or differ to <original_image_uri> in the kustomization data source
 #         repository: <image_uri>
 #
-#     # Key name format: <fetched-YAML-manifest-name>.<target_container_name>
-#     # Optional data: foo-addon-charts.yaml_files (defaults are provided)
-#     # Required data: foo-addon-charts.extra_values
-#     setup-controller.hostpath:
-#       # rewrites hostpath container image URI in a patch (applied by terraform instead of kubectl)
-#       # for kube manifests fetched from URL value in foo-addon-charts.yaml_files['setup-controller'].
-#       # The patches contents should be inlined in foo-addon-charts.extra_values.
-#       manager: kubectl
-#       name: ...
 
 apiVersion: v2
 name: Handle terraform-kubernetes-addons helm chart dependencies update
@@ -553,28 +544,28 @@ dependencies:
   - name: csi-external-snapshotter
     containers:
       setup-snapshot-controller.snapshot-controller:
-        manager: kubectl
+        manager: kustomize
         name:
           repository: gcr.io/k8s-staging-sig-storage/snapshot-controller
         ver:
           tag: v5.0.1
         source: gcr.io/k8s-staging-sig-storage
       setup-csi-snapshotter.csi-provisioner:
-        manager: kubectl
+        manager: kustomize
         name:
           repository: k8s.gcr.io/sig-storage/csi-provisioner
         ver:
           tag: v3.2.1
         source: k8s.gcr.io/sig-storage
       setup-csi-snapshotter.csi-snapshotter:
-        manager: kubectl
+        manager: kustomize
         name:
           repository: gcr.io/k8s-staging-sig-storage/csi-snapshotter
         ver:
           tag: v6.0.1
         source: gcr.io/k8s-staging-sig-storage
       setup-csi-snapshotter.hostpath:
-        manager: kubectl
+        manager: kustomize
         name:
           repository: k8s.gcr.io/sig-storage/hostpathplugin
         ver:
