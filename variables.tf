@@ -7,7 +7,10 @@ variable "admiralty" {
 variable "cert-manager" {
   description = "Customize cert-manager chart, see `cert-manager.tf` for supported values"
   type        = any
-  default     = {}
+  default = {
+    kustomizations_images_map = {}
+    kustomizations            = {}
+  }
 }
 
 variable "cert-manager-csi-driver" {

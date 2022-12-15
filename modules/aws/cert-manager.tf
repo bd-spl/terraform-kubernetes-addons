@@ -111,7 +111,7 @@ VALUES
 
 data "template_file" "cert-manager_extra_values_patched" {
   template = local.cert-manager["extra_values"]
-  vars     = local.cert-manager_extra_tpl.params
+  vars     = try(local.cert-manager_extra_tpl.params, {})
 }
 
 # FIXME: local_sensitive_file maybe?
