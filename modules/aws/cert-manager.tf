@@ -20,6 +20,7 @@ locals {
       allowed_cidrs             = ["0.0.0.0/0"]
       csi_driver                = false
       name_prefix               = "${var.cluster-name}-cert-manager"
+      kustomize_external        = false
     },
     var.cert-manager
   )
@@ -134,7 +135,7 @@ resource "null_resource" "cert-manager-kustomize" {
   }
 
   provisioner "local-exec" {
-    command = "kubectl apply -k ./kustomization-${each.key}/kustomization"
+    command = local.cert-manager.kustomize_external ? "kustomize build ./kustomization-${each.key}/kustomization | kubectl apply -f -" : "kubectl apply -k ./kustomization-${each.key}/kustomization"
   }
 
   depends_on = [

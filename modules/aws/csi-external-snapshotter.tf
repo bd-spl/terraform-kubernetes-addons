@@ -2,10 +2,11 @@ locals {
 
   csi-external-snapshotter = merge(
     {
-      create_ns    = false
-      namespace    = "csi-snapshotter"
-      enabled      = false
-      extra_values = {}
+      create_ns          = false
+      namespace          = "csi-snapshotter"
+      enabled            = false
+      extra_values       = {}
+      kustomize_external = false
       # Kustomize resources
       resources = [
         "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml",
@@ -48,9 +49,13 @@ locals {
     k => [for v in compact(split("---", data)) :
       merge(
         try(yamldecode(v), {}),
-        lookup(try(yamldecode(v), {}), "resources", {
-          resources = local.csi-external-snapshotter.resources
-        }),
+        {
+          resources = lookup(
+            try(yamldecode(v), {}),
+            "resources",
+            local.csi-external-snapshotter.resources
+          )
+        },
         lookup(try(yamldecode(v), {}), "images", null) == null ? {} : {
           images = [
             for c in try(yamldecode(v).images, []) :
@@ -111,7 +116,7 @@ resource "null_resource" "csi-external-snapshotter-kustomize" {
   }
 
   provisioner "local-exec" {
-    command = "kubectl apply -k ./kustomization-${each.key}/kustomization"
+    command = local.csi-external-snapshotter.kustomize_external ? "kustomize build ./kustomization-${each.key}/kustomization | kubectl apply -f -" : "kubectl apply -k ./kustomization-${each.key}/kustomization"
   }
 
   depends_on = [
