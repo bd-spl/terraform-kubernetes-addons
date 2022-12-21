@@ -77,10 +77,10 @@ VALUES
   ## Kuztomize prepare images manager
 
   # Update kustomizations with the prepared containers images data
-  cert-manager_containers_kustomizations_patched = {
+  cert-manager_containers_kustomizations_patched = flatten([
     for k, data in local.cert-manager.kustomizations :
-    k => [for v in compact(split("---", data)) :
-      merge(
+    [for v in compact(split("---", data)) :
+      yamlencode(merge(
         try(yamldecode(v), {}),
         {
           images = [
@@ -105,8 +105,8 @@ VALUES
             }
           ]
         }
-    )]
-  }
+    ))]
+  ])
 }
 
 data "template_file" "cert-manager_extra_values_patched" {
@@ -116,11 +116,11 @@ data "template_file" "cert-manager_extra_values_patched" {
 
 # FIXME: local_sensitive_file maybe?
 resource "local_file" "cert-manager-kustomization" {
-  for_each = local.cert-manager_containers_kustomizations_patched
+  for_each = toset(local.cert-manager_containers_kustomizations_patched)
 
   # reconstruct multi-kustomizations sections from the patched data
-  content  = join("\n---\n", [for data in each.value : yamlencode(data)])
-  filename = "./kustomization-${each.key}/kustomization/kustomization.yaml"
+  content  = each.value
+  filename = "./kustomization-${md5(each.value)}/kustomization/kustomization.yaml"
 
   depends_on = [
     helm_release.cert-manager
@@ -128,14 +128,15 @@ resource "local_file" "cert-manager-kustomization" {
 }
 
 resource "null_resource" "cert-manager-kustomize" {
-  for_each = local.cert-manager_containers_kustomizations_patched
+  for_each = toset(local.cert-manager_containers_kustomizations_patched)
+
   triggers = {
-    kustomizations = join("\n---\n", [for data in each.value : yamlencode(data)])
-    filemd5        = filemd5("cert-manager.tf")
+    kustomization = each.value
+    filemd5       = filemd5("cert-manager.tf")
   }
 
   provisioner "local-exec" {
-    command = local.cert-manager.kustomize_external ? "kustomize build ./kustomization-${each.key}/kustomization | kubectl apply -f -" : "kubectl apply -k ./kustomization-${each.key}/kustomization"
+    command = local.cert-manager.kustomize_external ? "kustomize build ./kustomization-${md5(each.value)}/kustomization | kubectl apply -f -" : "kubectl apply -k ./kustomization-${each.key}/kustomization"
   }
 
   depends_on = [
