@@ -116,11 +116,12 @@ data "template_file" "cert-manager_extra_values_patched" {
 
 # FIXME: local_sensitive_file maybe?
 resource "local_file" "cert-manager-kustomization" {
-  for_each = toset(local.cert-manager_containers_kustomizations_patched)
-
-  # reconstruct multi-kustomizations sections from the patched data
+  for_each = zipmap(
+    [for c in local.cert-manager_containers_kustomizations_patched : md5(c)],
+    local.cert-manager_containers_kustomizations_patched
+  )
   content  = each.value
-  filename = "./kustomization-${md5(each.value)}/kustomization/kustomization.yaml"
+  filename = "./kustomization-${each.key}/kustomization/kustomization.yaml"
 
   depends_on = [
     helm_release.cert-manager
@@ -128,15 +129,18 @@ resource "local_file" "cert-manager-kustomization" {
 }
 
 resource "null_resource" "cert-manager-kustomize" {
-  for_each = toset(local.cert-manager_containers_kustomizations_patched)
+  for_each = zipmap(
+    [for c in local.cert-manager_containers_kustomizations_patched : md5(c)],
+    local.cert-manager_containers_kustomizations_patched
+  )
 
   triggers = {
-    kustomization = each.value
+    kustomization = each.key
     filemd5       = filemd5("cert-manager.tf")
   }
 
   provisioner "local-exec" {
-    command = local.cert-manager.kustomize_external ? "kustomize build ./kustomization-${md5(each.value)}/kustomization | kubectl apply -f -" : "kubectl apply -k ./kustomization-${each.key}/kustomization"
+    command = local.cert-manager.kustomize_external ? "kustomize build ./kustomization-${each.key}/kustomization | kubectl apply -f -" : "kubectl apply -k ./kustomization-${each.key}/kustomization"
   }
 
   depends_on = [

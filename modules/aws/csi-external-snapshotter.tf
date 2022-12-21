@@ -85,10 +85,13 @@ locals {
 
 # FIXME: local_sensitive_file maybe?
 resource "local_file" "csi-external-snapshotter-kustomization" {
-  for_each = toset(local.csi-external-snapshotter_containers_kustomizations_patched)
+  for_each = zipmap(
+    [for c in local.csi-external-snapshotter_containers_kustomizations_patched : md5(c)],
+    local.csi-external-snapshotter_containers_kustomizations_patched
+  )
 
   content  = each.value
-  filename = "./kustomization-${md5(each.value)}/kustomization/kustomization.yaml"
+  filename = "./kustomization-${each.key}/kustomization/kustomization.yaml"
 
   depends_on = [
     skopeo_copy.this
@@ -108,15 +111,18 @@ resource "kubernetes_namespace" "csi-external-snapshotter" {
 }
 
 resource "null_resource" "csi-external-snapshotter-kustomize" {
-  for_each = toset(local.csi-external-snapshotter_containers_kustomizations_patched)
+  for_each = zipmap(
+    [for c in local.csi-external-snapshotter_containers_kustomizations_patched : md5(c)],
+    local.csi-external-snapshotter_containers_kustomizations_patched
+  )
 
   triggers = {
-    kustomization = each.value
+    kustomization = each.key
     filemd5       = filemd5("csi-external-snapshotter.tf")
   }
 
   provisioner "local-exec" {
-    command = local.csi-external-snapshotter.kustomize_external ? "kustomize build ./kustomization-${md5(each.value)}/kustomization | kubectl apply -f -" : "kubectl apply -k ./kustomization-${each.key}/kustomization"
+    command = local.csi-external-snapshotter.kustomize_external ? "kustomize build ./kustomization-${each.key}/kustomization | kubectl apply -f -" : "kubectl apply -k ./kustomization-${each.key}/kustomization"
   }
 
   depends_on = [
