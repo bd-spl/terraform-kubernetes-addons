@@ -44,7 +44,7 @@ locals {
   ## Kuztomize prepare images manager
 
   # Update kustomizations with the prepared containers images data
-  csi-external-snapshotter_containers_kustomizations_patched = flatten([
+  csi-external-snapshotter_kustomizations_patched = flatten([
     for k, data in local.csi-external-snapshotter.kustomizations :
     [for v in compact(split("---", data)) :
       yamlencode(merge(
@@ -86,8 +86,8 @@ locals {
 # FIXME: local_sensitive_file maybe?
 resource "local_file" "csi-external-snapshotter-kustomization" {
   for_each = zipmap(
-    [for c in local.csi-external-snapshotter_containers_kustomizations_patched : md5(c)],
-    local.csi-external-snapshotter_containers_kustomizations_patched
+    [for c in local.csi-external-snapshotter_kustomizations_patched : md5(c)],
+    local.csi-external-snapshotter_kustomizations_patched
   )
 
   content  = each.value
@@ -112,8 +112,8 @@ resource "kubernetes_namespace" "csi-external-snapshotter" {
 
 resource "null_resource" "csi-external-snapshotter-kustomize" {
   for_each = zipmap(
-    [for c in local.csi-external-snapshotter_containers_kustomizations_patched : md5(c)],
-    local.csi-external-snapshotter_containers_kustomizations_patched
+    [for c in local.csi-external-snapshotter_kustomizations_patched : md5(c)],
+    local.csi-external-snapshotter_kustomizations_patched
   )
 
   triggers = {

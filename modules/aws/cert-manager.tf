@@ -77,7 +77,7 @@ VALUES
   ## Kuztomize prepare images manager
 
   # Update kustomizations with the prepared containers images data
-  cert-manager_containers_kustomizations_patched = flatten([
+  cert-manager_kustomizations_patched = flatten([
     for k, data in local.cert-manager.kustomizations :
     [for v in compact(split("---", data)) :
       yamlencode(merge(
@@ -117,8 +117,8 @@ data "template_file" "cert-manager_extra_values_patched" {
 # FIXME: local_sensitive_file maybe?
 resource "local_file" "cert-manager-kustomization" {
   for_each = zipmap(
-    [for c in local.cert-manager_containers_kustomizations_patched : md5(c)],
-    local.cert-manager_containers_kustomizations_patched
+    [for c in local.cert-manager_kustomizations_patched : md5(c)],
+    local.cert-manager_kustomizations_patched
   )
   content  = each.value
   filename = "./kustomization-${each.key}/kustomization/kustomization.yaml"
@@ -130,8 +130,8 @@ resource "local_file" "cert-manager-kustomization" {
 
 resource "null_resource" "cert-manager-kustomize" {
   for_each = zipmap(
-    [for c in local.cert-manager_containers_kustomizations_patched : md5(c)],
-    local.cert-manager_containers_kustomizations_patched
+    [for c in local.cert-manager_kustomizations_patched : md5(c)],
+    local.cert-manager_kustomizations_patched
   )
 
   triggers = {
