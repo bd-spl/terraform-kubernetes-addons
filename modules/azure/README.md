@@ -226,7 +226,7 @@ No modules.
 | <a name="input_cert-manager-csi-driver"></a> [cert-manager-csi-driver](#input\_cert-manager-csi-driver) | Customize cert-manager-csi-driver chart, see `cert-manager.tf` for supported values | `any` | `{}` | no |
 | <a name="input_cluster-autoscaler"></a> [cluster-autoscaler](#input\_cluster-autoscaler) | Customize cluster-autoscaler chart, see `cluster-autoscaler.tf` for supported values | `any` | `{}` | no |
 | <a name="input_cluster-name"></a> [cluster-name](#input\_cluster-name) | Name of the Kubernetes cluster | `string` | `"sample-cluster"` | no |
-| <a name="input_csi-external-snapshotter"></a> [csi-external-snapshotter](#input\_csi-external-snapshotter) | Kustomizations for csi-external-snapshotter, see `csi-external-snapshotter.tf` for supported values | `any` | <pre>{<br>  "kustomizations": {},<br>  "kustomizations_images_map": {},<br>  "version": "v6.0.1"<br>}</pre> | no |
+| <a name="input_csi-external-snapshotter"></a> [csi-external-snapshotter](#input\_csi-external-snapshotter) | Kustomizations for csi-external-snapshotter, see `csi-external-snapshotter.tf` for supported values | `any` | <pre>{<br>  "kustomizations": {},<br>  "kustomizations_extra_resources": {},<br>  "kustomizations_images_map": {},<br>  "version": "v6.0.1"<br>}</pre> | no |
 | <a name="input_external-dns"></a> [external-dns](#input\_external-dns) | Map of map for external-dns configuration: see `external_dns.tf` for supported values | `any` | `{}` | no |
 | <a name="input_flux"></a> [flux](#input\_flux) | Customize Flux chart, see `flux.tf` for supported values | `any` | `{}` | no |
 | <a name="input_flux2"></a> [flux2](#input\_flux2) | Customize Flux chart, see `flux2.tf` for supported values | `any` | `{}` | no |

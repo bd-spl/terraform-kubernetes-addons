@@ -94,6 +94,17 @@ resource "local_file" "csi-external-snapshotter-kustomization" {
   filename = "./kustomization-${each.key}/kustomization/kustomization.yaml"
 
   depends_on = [
+    local_file.csi-external-snapshotter-manifests
+  ]
+}
+
+resource "local_file" "csi-external-snapshotter-manifests" {
+  for_each = var.csi-external-snapshotter.kustomizations_extra_resources
+
+  content  = each.value
+  filename = "kustomizations-extra-resources/${each.key}.yaml"
+
+  depends_on = [
     skopeo_copy.this
   ]
 }
@@ -110,6 +121,23 @@ resource "kubernetes_namespace" "csi-external-snapshotter" {
   }
 }
 
+resource "null_resource" "csi-external-snapshotter-kubectl" {
+  for_each = var.csi-external-snapshotter.kustomizations_extra_resources
+
+  triggers = {
+    kustomization = each.value
+    filemd5       = filemd5("csi-external-snapshotter.tf")
+  }
+
+  provisioner "local-exec" {
+    command = "kubectl apply -f ./kustomizations-extra-resources/${each.key}.yaml"
+  }
+
+  depends_on = [
+    local_file.csi-external-snapshotter-kustomization,
+    kubernetes_namespace.csi-external-snapshotter
+  ]
+}
 resource "null_resource" "csi-external-snapshotter-kustomize" {
   for_each = zipmap(
     [for c in local.csi-external-snapshotter_kustomizations_patched : md5(c)],
@@ -126,7 +154,6 @@ resource "null_resource" "csi-external-snapshotter-kustomize" {
   }
 
   depends_on = [
-    local_file.csi-external-snapshotter-kustomization,
-    kubernetes_namespace.csi-external-snapshotter
+    null_resource.csi-external-snapshotter-kubectl
   ]
 }

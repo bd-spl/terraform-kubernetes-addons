@@ -35,9 +35,10 @@ variable "csi-external-snapshotter" {
   description = "Kustomizations for csi-external-snapshotter, see `csi-external-snapshotter.tf` for supported values"
   type        = any
   default = {
-    version                   = "v6.0.1"
-    kustomizations_images_map = {}
-    kustomizations            = {}
+    version                        = "v6.0.1"
+    kustomizations_images_map      = {}
+    kustomizations_extra_resources = {}
+    kustomizations                 = {}
   }
 }
 
