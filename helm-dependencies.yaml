@@ -270,7 +270,7 @@ dependencies:
           tag: v1.1.1  # poke v1.3.0?
         source: k8s.gcr.io/ingress-nginx
       # used by extra_values, noop for helm and other managers
-      args.acme-http01-solver-image:
+      extraArgs.acme-http01-solver-image:
         manager: extra
         name:
           repository: quay.io/jetstack/cert-manager-acmesolver
