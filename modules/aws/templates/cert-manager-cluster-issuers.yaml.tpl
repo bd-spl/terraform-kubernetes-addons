@@ -1,3 +1,4 @@
+%{ if acme_provider == "letsencrypt" }
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
@@ -5,7 +6,7 @@ metadata:
   name: letsencrypt-staging
 spec:
   acme:
-    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    server: '${acme_staging_server}'
     email: '${acme_email}'
     privateKeySecretRef:
       name: letsencrypt-staging
@@ -25,17 +26,18 @@ spec:
           "use-http01-solver": "true"
       %{ endif }
     %{ endif }
+%{ endif }
 ---
 apiVersion: cert-manager.io/v1
 kind: ClusterIssuer
 metadata:
-  name: letsencrypt
+  name: '${acme_provider}'
 spec:
   acme:
-    server: https://acme-v02.api.letsencrypt.org/directory
+    server: '${acme_server}'
     email: '${acme_email}'
     privateKeySecretRef:
-      name: letsencrypt
+      name: '${acme_provider}'
     solvers:
     %{ if acme_dns01_enabled }
     - dns01:

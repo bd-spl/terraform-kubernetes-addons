@@ -14,6 +14,9 @@ locals {
       iam_policy_override       = null
       default_network_policy    = true
       acme_email                = "contact@acme.com"
+      acme_provider             = "letsencrypt"
+      acme_server               = "https://acme-v02.api.letsencrypt.org/directory"
+      acme_staging_server       = "https://acme-staging-v02.api.letsencrypt.org/directory"
       acme_http01_enabled       = true
       acme_http01_ingress_class = "nginx"
       acme_dns01_enabled        = true
@@ -21,6 +24,7 @@ locals {
       csi_driver                = false
       name_prefix               = "${var.cluster-name}-cert-manager"
       kustomize_external        = false
+      extra_tpl                 = {}
     },
     var.cert-manager
   )
@@ -64,15 +68,32 @@ VALUES
   ## Extra values prepare images manager
 
   # Get variables names and values to template them in
-  cert-manager_extra_tpl = {
+  cert-manager_extra_tpl_vars = {
     for k, v in local.cert-manager_containers_data :
-    "params" => {
-      "${split(".", k)[1]}-repo" = v.repo
-      "${split(".", k)[1]}-tag"  = v.tag
+    k => {
+      params = {
+        "${split(".", k)[1]}-repo" = v.repo
+        "${split(".", k)[1]}-tag"  = v.tag
+      }
       } if lookup(
-      try(yamldecode(local.cert-manager["extra_values"]), {}), split(".", k)[0], null
+      local.cert-manager.extra_tpl, split(".", k)[0], null
     ) != null
   }
+  cert-manager_extra_tpl_data = [for v in values(local.cert-manager_extra_tpl_vars) : v.params]
+
+  # FIXME: workaround limitation to pass templates with vars in it (even if escaped) via the module input var.cert-manager
+  cert-manager_extra_tpl = [
+    for i in [
+      for k, v in local.cert-manager_extra_tpl_vars :
+      { "${k}" = yamldecode(replace(
+        replace(
+          yamlencode(local.cert-manager.extra_tpl),
+          format("$%s", keys(v.params)[0]), "$${${keys(v.params)[0]}}"
+        ),
+        format("$%s", keys(v.params)[1]), "$${${keys(v.params)[1]}}"
+      )) }
+    ] : { for k, v in i : split(".", k)[0] => v[split(".", k)[0]] }
+  ]
 
   ## Kuztomize prepare images manager
 
@@ -110,8 +131,9 @@ VALUES
 }
 
 data "template_file" "cert-manager_extra_values_patched" {
-  template = local.cert-manager["extra_values"]
-  vars     = try(local.cert-manager_extra_tpl.params, {})
+  count    = local.cert-manager.extra_tpl != {} && length(local.cert-manager_extra_tpl_vars) > 0 ? 1 : 0
+  template = yamlencode(merge(local.cert-manager_extra_tpl...))
+  vars     = merge(local.cert-manager_extra_tpl_data...)
 }
 
 # FIXME: local_sensitive_file maybe?
@@ -241,7 +263,12 @@ resource "helm_release" "cert-manager" {
   verify                = local.cert-manager["verify"]
   values = [
     local.values_cert-manager,
-    data.template_file.cert-manager_extra_values_patched.rendered
+    yamlencode(
+      merge(
+        yamldecode(local.cert-manager["extra_values"]),
+        try(yamldecode(data.template_file.cert-manager_extra_values_patched.0.rendered), {})
+      )
+    )
   ]
 
   ## Helm prepare images manager
@@ -295,6 +322,7 @@ resource "helm_release" "cert-manager" {
   depends_on = [
     skopeo_copy.this,
     kubectl_manifest.prometheus-operator_crds,
+    data.template_file.cert-manager_extra_values_patched,
   ]
 }
 
@@ -302,7 +330,10 @@ data "kubectl_path_documents" "cert-manager_cluster_issuers" {
   pattern = "${path.module}/templates/cert-manager-cluster-issuers.yaml.tpl"
   vars = {
     aws_region                = data.aws_region.current.name
+    acme_server               = local.cert-manager["acme_server"]
+    acme_staging_server       = local.cert-manager["acme_staging_server"]
     acme_email                = local.cert-manager["acme_email"]
+    acme_provider             = local.cert-manager["acme_provider"]
     acme_http01_enabled       = local.cert-manager["acme_http01_enabled"]
     acme_http01_ingress_class = local.cert-manager["acme_http01_ingress_class"]
     acme_dns01_enabled        = local.cert-manager["acme_dns01_enabled"]
