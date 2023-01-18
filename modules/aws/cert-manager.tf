@@ -3,28 +3,29 @@ locals {
   cert-manager = merge(
     local.helm_defaults,
     {
-      name                      = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].name
-      chart                     = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].name
-      repository                = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].repository
-      chart_version             = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].version
-      namespace                 = "cert-manager"
-      service_account_name      = "cert-manager"
-      create_iam_resources_irsa = true
-      enabled                   = false
-      iam_policy_override       = null
-      default_network_policy    = true
-      acme_email                = "contact@acme.com"
-      acme_provider             = "letsencrypt"
-      acme_server               = "https://acme-v02.api.letsencrypt.org/directory"
-      acme_staging_server       = "https://acme-staging-v02.api.letsencrypt.org/directory"
-      acme_http01_enabled       = true
-      acme_http01_ingress_class = "nginx"
-      acme_dns01_enabled        = true
-      allowed_cidrs             = ["0.0.0.0/0"]
-      csi_driver                = false
-      name_prefix               = "${var.cluster-name}-cert-manager"
-      kustomize_external        = false
-      extra_tpl                 = {}
+      name                        = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].name
+      chart                       = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].name
+      repository                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].repository
+      chart_version               = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].version
+      namespace                   = "cert-manager"
+      service_account_name        = "cert-manager"
+      create_iam_resources_irsa   = true
+      enabled                     = false
+      iam_policy_override         = null
+      default_network_policy      = true
+      acme_email                  = "contact@acme.com"
+      acme_provider               = "letsencrypt"
+      acme_server                 = "https://acme-v02.api.letsencrypt.org/directory"
+      acme_staging_server         = "https://acme-staging-v02.api.letsencrypt.org/directory"
+      acme_http01_enabled         = true
+      acme_http01_ingress_class   = "nginx"
+      acme_http01_skip_tls_verify = false
+      acme_dns01_enabled          = true
+      allowed_cidrs               = ["0.0.0.0/0"]
+      csi_driver                  = false
+      name_prefix                 = "${var.cluster-name}-cert-manager"
+      kustomize_external          = false
+      extra_tpl                   = {}
     },
     var.cert-manager
   )
