@@ -236,6 +236,12 @@ dependencies:
         ver:
           tag: v1.9.1
         source: quay.io/jetstack
+      acmesolver.image:
+        name:
+          repository: quay.io/jetstack/cert-manager-acmesolver
+        ver:
+          tag: v1.9.1
+        source: quay.io/jetstack
       # used by kustomization, is noop for helm and others
       freeipa-issuer-controller-manager.kube-rbac-proxy:
         manager: kustomize

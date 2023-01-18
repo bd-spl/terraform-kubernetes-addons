@@ -38,6 +38,7 @@ spec:
     email: '${acme_email}'
     privateKeySecretRef:
       name: '${acme_provider}'
+    skipTLSVerify: ${acme_http01_skip_tls_verify}
     solvers:
     %{ if acme_dns01_enabled }
     - dns01:

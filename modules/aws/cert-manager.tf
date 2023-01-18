@@ -329,14 +329,15 @@ resource "helm_release" "cert-manager" {
 data "kubectl_path_documents" "cert-manager_cluster_issuers" {
   pattern = "${path.module}/templates/cert-manager-cluster-issuers.yaml.tpl"
   vars = {
-    aws_region                = data.aws_region.current.name
-    acme_server               = local.cert-manager["acme_server"]
-    acme_staging_server       = local.cert-manager["acme_staging_server"]
-    acme_email                = local.cert-manager["acme_email"]
-    acme_provider             = local.cert-manager["acme_provider"]
-    acme_http01_enabled       = local.cert-manager["acme_http01_enabled"]
-    acme_http01_ingress_class = local.cert-manager["acme_http01_ingress_class"]
-    acme_dns01_enabled        = local.cert-manager["acme_dns01_enabled"]
+    aws_region                  = data.aws_region.current.name
+    acme_server                 = local.cert-manager["acme_server"]
+    acme_staging_server         = local.cert-manager["acme_staging_server"]
+    acme_email                  = local.cert-manager["acme_email"]
+    acme_provider               = local.cert-manager["acme_provider"]
+    acme_http01_enabled         = local.cert-manager["acme_http01_enabled"]
+    acme_http01_ingress_class   = local.cert-manager["acme_http01_ingress_class"]
+    acme_http01_skip_tls_verify = local.cert-manager["acme_http01_skip_tls_verify"]
+    acme_dns01_enabled          = local.cert-manager["acme_dns01_enabled"]
   }
 }
 
