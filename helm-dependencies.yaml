@@ -320,7 +320,7 @@ dependencies:
         name:
           image: ingress-nginx/kube-webhook-certgen
         ver:
-          tag: v1.1.1 # poke v1.3.0?
+          tag: v20221220-controller-v1.5.1-58-g787ea74b6
         registry:
           registry: registry.k8s.io
       defaultBackend.image:
@@ -334,7 +334,7 @@ dependencies:
         name:
           image: ingress-nginx/controller
         ver:
-          tag: v1.0.4
+          tag: v1.5.2
         registry:
           registry: registry.k8s.io
   - name: istio-operator
