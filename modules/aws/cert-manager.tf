@@ -139,10 +139,10 @@ data "template_file" "cert-manager_extra_values_patched" {
 
 # FIXME: local_sensitive_file maybe?
 resource "local_file" "cert-manager-kustomization" {
-  for_each = zipmap(
+  for_each = local.cert-manager["enabled"] ? zipmap(
     [for c in local.cert-manager_kustomizations_patched : md5(c)],
     local.cert-manager_kustomizations_patched
-  )
+  ) : {}
   content  = each.value
   filename = "./kustomization-${each.key}/kustomization/kustomization.yaml"
 
@@ -152,10 +152,10 @@ resource "local_file" "cert-manager-kustomization" {
 }
 
 resource "null_resource" "cert-manager-kustomize" {
-  for_each = zipmap(
+  for_each = local.cert-manager["enabled"] ? zipmap(
     [for c in local.cert-manager_kustomizations_patched : md5(c)],
     local.cert-manager_kustomizations_patched
-  )
+  ) : {}
 
   triggers = {
     kustomization = each.key

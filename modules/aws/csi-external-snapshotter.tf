@@ -85,10 +85,10 @@ locals {
 
 # FIXME: local_sensitive_file maybe?
 resource "local_file" "csi-external-snapshotter-kustomization" {
-  for_each = zipmap(
+  for_each = local.csi-external-snapshotter.enabled ? zipmap(
     [for c in local.csi-external-snapshotter_kustomizations_patched : md5(c)],
     local.csi-external-snapshotter_kustomizations_patched
-  )
+  ) : {}
 
   content  = each.value
   filename = "./kustomization-${each.key}/kustomization/kustomization.yaml"
@@ -99,7 +99,7 @@ resource "local_file" "csi-external-snapshotter-kustomization" {
 }
 
 resource "local_file" "csi-external-snapshotter-manifests" {
-  for_each = var.csi-external-snapshotter.kustomizations_extra_resources
+  for_each = local.csi-external-snapshotter.enabled ? var.csi-external-snapshotter.kustomizations_extra_resources : {}
 
   content  = each.value
   filename = "kustomizations-extra-resources/${each.key}.yaml"
@@ -122,7 +122,7 @@ resource "kubernetes_namespace" "csi-external-snapshotter" {
 }
 
 resource "null_resource" "csi-external-snapshotter-kubectl" {
-  for_each = var.csi-external-snapshotter.kustomizations_extra_resources
+  for_each = local.csi-external-snapshotter.enabled ? var.csi-external-snapshotter.kustomizations_extra_resources : {}
 
   triggers = {
     kustomization = each.value
@@ -139,10 +139,10 @@ resource "null_resource" "csi-external-snapshotter-kubectl" {
   ]
 }
 resource "null_resource" "csi-external-snapshotter-kustomize" {
-  for_each = zipmap(
+  for_each = local.csi-external-snapshotter.enabled ? zipmap(
     [for c in local.csi-external-snapshotter_kustomizations_patched : md5(c)],
     local.csi-external-snapshotter_kustomizations_patched
-  )
+  ) : {}
 
   triggers = {
     kustomization = each.key
