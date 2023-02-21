@@ -3,29 +3,40 @@ locals {
   cert-manager = merge(
     local.helm_defaults,
     {
-      name                        = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].name
-      chart                       = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].name
-      repository                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].repository
-      chart_version               = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].version
-      namespace                   = "cert-manager"
-      service_account_name        = "cert-manager"
-      create_iam_resources_irsa   = true
-      enabled                     = false
-      iam_policy_override         = null
-      default_network_policy      = true
-      acme_email                  = "contact@acme.com"
-      acme_provider               = "letsencrypt"
-      acme_server                 = "https://acme-v02.api.letsencrypt.org/directory"
-      acme_staging_server         = "https://acme-staging-v02.api.letsencrypt.org/directory"
-      acme_http01_enabled         = true
-      acme_http01_ingress_class   = "nginx"
-      acme_http01_skip_tls_verify = false
-      acme_dns01_enabled          = true
-      allowed_cidrs               = ["0.0.0.0/0"]
-      csi_driver                  = false
-      name_prefix                 = "${var.cluster-name}-cert-manager"
-      kustomize_external          = false
-      extra_tpl                   = {}
+      name                      = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].name
+      chart                     = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].name
+      repository                = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].repository
+      chart_version             = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].version
+      namespace                 = "cert-manager"
+      service_account_name      = "cert-manager"
+      create_iam_resources_irsa = true
+      enabled                   = false
+      iam_policy_override       = null
+      default_network_policy    = true
+      acme_providers = [
+        {
+          name          = "letsencrypt-staging"
+          email         = "contact@acme.com"
+          server        = "https://acme-staging-v02.api.letsencrypt.org/directory"
+          ingress_class = "nginx"
+        },
+        {
+          name          = "letsencrypt"
+          email         = "contact@acme.com"
+          server        = "https://acme-v02.api.letsencrypt.org/directory"
+          ingress_class = "nginx"
+        }
+      ]
+      acme_use_egress_proxy    = false
+      acme_egress_proxy_secret = ""
+      acme_http01_enabled      = true
+      acme_dns01_enabled       = true
+      acme_skip_tls_verify     = false
+      allowed_cidrs            = ["0.0.0.0/0"]
+      csi_driver               = false
+      name_prefix              = "${var.cluster-name}-cert-manager"
+      kustomize_external       = false
+      extra_tpl                = {}
     },
     var.cert-manager
   )
@@ -328,17 +339,19 @@ resource "helm_release" "cert-manager" {
 }
 
 data "kubectl_path_documents" "cert-manager_cluster_issuers" {
-  pattern = "${path.module}/templates/cert-manager-cluster-issuers.yaml.tpl"
+  for_each = { for i in local.cert-manager["acme_providers"] : i.name => i }
+  pattern  = "${path.module}/templates/cert-manager-cluster-issuers.yaml.tpl"
   vars = {
-    aws_region                  = data.aws_region.current.name
-    acme_server                 = local.cert-manager["acme_server"]
-    acme_staging_server         = local.cert-manager["acme_staging_server"]
-    acme_email                  = local.cert-manager["acme_email"]
-    acme_provider               = local.cert-manager["acme_provider"]
-    acme_http01_enabled         = local.cert-manager["acme_http01_enabled"]
-    acme_http01_ingress_class   = local.cert-manager["acme_http01_ingress_class"]
-    acme_http01_skip_tls_verify = local.cert-manager["acme_http01_skip_tls_verify"]
-    acme_dns01_enabled          = local.cert-manager["acme_dns01_enabled"]
+    aws_region                = data.aws_region.current.name
+    acme_server               = each.value.server
+    acme_email                = each.value.email
+    acme_provider             = each.value.name
+    acme_http01_ingress_class = try(each.value.ingress_class, local.cert-manager["acme_http01_ingress_class"])
+    acme_http01_enabled       = try(each.value.http01_enabled, local.cert-manager["acme_http01_enabled"])
+    acme_skip_tls_verify      = try(each.value.skip_tls_verify, local.cert-manager["acme_skip_tls_verify"])
+    acme_dns01_enabled        = try(each.value.dns01_enabled, local.cert-manager["acme_dns01_enabled"])
+    acme_use_egress_proxy     = try(each.value.use_egress_proxy, local.cert-manager["acme_use_egress_proxy"])
+    acme_egress_proxy_secret  = local.cert-manager["acme_egress_proxy_secret"]
   }
 }
 
@@ -349,8 +362,14 @@ resource "time_sleep" "cert-manager_sleep" {
 }
 
 resource "kubectl_manifest" "cert-manager_cluster_issuers" {
-  count     = local.cert-manager["enabled"] && (local.cert-manager["acme_http01_enabled"] || local.cert-manager["acme_dns01_enabled"]) ? length(data.kubectl_path_documents.cert-manager_cluster_issuers.documents) : 0
-  yaml_body = element(data.kubectl_path_documents.cert-manager_cluster_issuers.documents, count.index)
+  for_each = local.cert-manager["enabled"] && (
+    local.cert-manager["acme_http01_enabled"] || local.cert-manager["acme_dns01_enabled"]
+    ) ? {
+    for ind, d in [
+      for i in values(data.kubectl_path_documents.cert-manager_cluster_issuers) : i.documents
+    ] : ind => d
+  } : {}
+  yaml_body = join("\n---\n", each.value)
   depends_on = [
     helm_release.cert-manager,
     kubernetes_namespace.cert-manager,
