@@ -27,16 +27,17 @@ locals {
           ingress_class = "nginx"
         }
       ]
-      acme_use_egress_proxy    = false
-      acme_egress_proxy_secret = ""
-      acme_http01_enabled      = true
-      acme_dns01_enabled       = true
-      acme_skip_tls_verify     = false
-      allowed_cidrs            = ["0.0.0.0/0"]
-      csi_driver               = false
-      name_prefix              = "${var.cluster-name}-cert-manager"
-      kustomize_external       = false
-      extra_tpl                = {}
+      acme_use_egress_proxy     = false
+      acme_egress_proxy_secret  = ""
+      acme_http01_enabled       = true
+      acme_http01_ingress_class = "nginx"
+      acme_dns01_enabled        = true
+      acme_skip_tls_verify      = false
+      allowed_cidrs             = ["0.0.0.0/0"]
+      csi_driver                = false
+      name_prefix               = "${var.cluster-name}-cert-manager"
+      kustomize_external        = false
+      extra_tpl                 = {}
     },
     var.cert-manager
   )
@@ -346,11 +347,11 @@ data "kubectl_path_documents" "cert-manager_cluster_issuers" {
     acme_server               = each.value.server
     acme_email                = each.value.email
     acme_provider             = each.value.name
-    acme_http01_ingress_class = try(each.value.ingress_class, local.cert-manager["acme_http01_ingress_class"])
-    acme_http01_enabled       = try(each.value.http01_enabled, local.cert-manager["acme_http01_enabled"])
-    acme_skip_tls_verify      = try(each.value.skip_tls_verify, local.cert-manager["acme_skip_tls_verify"])
-    acme_dns01_enabled        = try(each.value.dns01_enabled, local.cert-manager["acme_dns01_enabled"])
-    acme_use_egress_proxy     = try(each.value.use_egress_proxy, local.cert-manager["acme_use_egress_proxy"])
+    acme_http01_ingress_class = lookup(each.value, "ingress_class", local.cert-manager["acme_http01_ingress_class"])
+    acme_http01_enabled       = lookup(each.value, "http01_enabled", local.cert-manager["acme_http01_enabled"])
+    acme_skip_tls_verify      = lookup(each.value, "skip_tls_verify", local.cert-manager["acme_skip_tls_verify"])
+    acme_dns01_enabled        = lookup(each.value, "dns01_enabled", local.cert-manager["acme_dns01_enabled"])
+    acme_use_egress_proxy     = lookup(each.value, "use_egress_proxy", local.cert-manager["acme_use_egress_proxy"])
     acme_egress_proxy_secret  = local.cert-manager["acme_egress_proxy_secret"]
   }
 }
