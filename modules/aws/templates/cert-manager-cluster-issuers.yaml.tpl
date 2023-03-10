@@ -20,6 +20,12 @@ spec:
     - http01:
         ingress:
           class: '${acme_http01_ingress_class}'
+          %{ if whitelist_source_range != "" }
+          ingressTemplate:
+            metadata:
+              annotations:
+                nginx.ingress.kubernetes.io/whitelist-source-range: '${whitelist_source_range}'
+          %{ endif }
           %{ if acme_use_egress_proxy }
           podTemplate:
             spec:

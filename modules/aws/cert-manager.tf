@@ -28,6 +28,7 @@ locals {
         }
       ]
       acme_use_egress_proxy     = false
+      whitelist_source_range    = ""
       acme_egress_proxy_secret  = ""
       acme_http01_enabled       = true
       acme_http01_ingress_class = "nginx"
@@ -352,6 +353,7 @@ data "kubectl_path_documents" "cert-manager_cluster_issuers" {
     acme_skip_tls_verify      = lookup(each.value, "skip_tls_verify", local.cert-manager["acme_skip_tls_verify"])
     acme_dns01_enabled        = lookup(each.value, "dns01_enabled", local.cert-manager["acme_dns01_enabled"])
     acme_use_egress_proxy     = lookup(each.value, "use_egress_proxy", local.cert-manager["acme_use_egress_proxy"])
+    whitelist_source_range    = lookup(each.value, "whitelist_source_range", local.cert-manager["whitelist_source_range"])
     acme_egress_proxy_secret  = local.cert-manager["acme_egress_proxy_secret"]
   }
 }
