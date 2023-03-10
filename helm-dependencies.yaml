@@ -209,38 +209,38 @@ dependencies:
     repository: https://aws.github.io/eks-charts
   # https://github.dev/cert-manager/cert-manager/blob/master/deploy/charts/cert-manager/values.yaml
   - name: cert-manager
-    version: v1.9.1
+    version: v1.11.0
     repository: https://charts.jetstack.io # NOTE: redirects to https://artifacthub.io/packages/helm/cert-manager/cert-manager
     containers:
       image:
         name:
           repository: quay.io/jetstack/cert-manager-controller
         ver:
-          tag: v1.9.1
+          tag: v1.11.0
         source: quay.io/jetstack
       webhook.image:
         name:
           repository: quay.io/jetstack/cert-manager-webhook
         ver:
-          tag: v1.9.1
+          tag: v1.11.0
         source: quay.io/jetstack
       cainjector.image:
         name:
           repository: quay.io/jetstack/cert-manager-cainjector
         ver:
-          tag: v1.9.1
+          tag: v1.11.0
         source: quay.io/jetstack
       startupapicheck.image:
         name:
           repository: quay.io/jetstack/cert-manager-ctl
         ver:
-          tag: v1.9.1
+          tag: v1.11.0
         source: quay.io/jetstack
       acmesolver.image:
         name:
           repository: quay.io/jetstack/cert-manager-acmesolver
         ver:
-          tag: v1.9.1
+          tag: v1.11.0
         source: quay.io/jetstack
       # used by kustomization, is noop for helm and others
       gateway-api-admission.webhook:
