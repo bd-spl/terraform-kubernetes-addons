@@ -156,6 +156,12 @@ variable "ingress-nginx" {
   default     = {}
 }
 
+variable "ingress-nginx-internal" {
+  description = "Customize ingress-nginx-internal chart, see `nginx-ingress-internal.tf` for supported values"
+  type        = any
+  default     = {}
+}
+
 variable "npd" {
   description = "Customize node-problem-detector chart, see `npd.tf` for supported values"
   type        = any

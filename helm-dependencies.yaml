@@ -300,7 +300,7 @@ dependencies:
   - name: ingress-nginx
     version: 4.5.2
     repository: https://kubernetes.github.io/ingress-nginx
-    containers:
+    containers: &ingress_nginx
       controller.admissionWebhooks.patch.image:
         name:
           image: ingress-nginx/kube-webhook-certgen
@@ -322,6 +322,11 @@ dependencies:
           tag: v1.6.4
         registry:
           registry: registry.k8s.io
+  - name: ingress-nginx-internal
+    chart: ingress-nginx
+    version: 4.5.2
+    repository: https://kubernetes.github.io/ingress-nginx
+    containers: *ingress_nginx
   - name: istio-operator
     version: 1.7.0
     repository: https://clusterfrak-dynamics.github.io/istio/ # FIXME: dead link
