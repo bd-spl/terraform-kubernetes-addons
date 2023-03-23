@@ -121,7 +121,7 @@ resource "skopeo_copy" "this" {
     "${split(".", c)[0]}.${split(".", c)[2]}" => v... if v.ecr_prepare_images
   }
   source_image      = "docker://${each.value[0].src_reigstry}/${split(".", each.key)[1]}:${each.value[0].parsed_tag}"
-  destination_image = "docker://${aws_ecr_repository.this[each.key].repository_url}:${each.value[0].parsed_tag}"
+  destination_image = "docker://${try(aws_ecr_repository.this[each.key].repository_url, "UNKNOWN")}:${each.value[0].parsed_tag}"
   keep_image        = true
 
   depends_on = [
