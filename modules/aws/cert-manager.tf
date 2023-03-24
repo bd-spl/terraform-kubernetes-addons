@@ -158,10 +158,6 @@ resource "local_file" "cert-manager-kustomization" {
   ) : {}
   content  = each.value
   filename = "./kustomization-${each.key}/kustomization/kustomization.yaml"
-
-  depends_on = [
-    helm_release.cert-manager
-  ]
 }
 
 resource "null_resource" "cert-manager-kustomize" {
@@ -337,6 +333,7 @@ resource "helm_release" "cert-manager" {
     skopeo_copy.this,
     kubectl_manifest.prometheus-operator_crds,
     data.template_file.cert-manager_extra_values_patched,
+    resource.null_resource.cert-manager-kustomize # reguires gateway API CRD installed firstly
   ]
 }
 
