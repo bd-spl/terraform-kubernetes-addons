@@ -15,9 +15,15 @@ locals {
       default_network_policy = true
       ingress_cidrs          = ["0.0.0.0/0"]
       allowed_cidrs          = ["0.0.0.0/0"]
+      nlb_listeners = {
+        http : "TCP:80"
+        https : "TCP:443"
+      }
     },
     var.ingress-nginx-internal
   )
+
+  ingress-nginx-internal_nlb_listeners = { for l, v in local.ingress-nginx-internal.nlb_listeners : l => [split(":", v)[0], split(":", v)[1]] }
 
   values_ingress-nginx-internal_l4 = <<VALUES
 controller:
@@ -110,7 +116,7 @@ controller:
       https: http
     annotations:
       service.beta.kubernetes.io/aws-load-balancer-backend-protocol: "http"
-      service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https"
+      service.beta.kubernetes.io/aws-load-balancer-ssl-ports: "https" # TODO: ssl ports for custom nlb_listeners as well
       service.beta.kubernetes.io/aws-load-balancer-connection-idle-timeout: "3600"
     externalTrafficPolicy: "Cluster"
   publishService:
@@ -275,13 +281,12 @@ resource "kubernetes_network_policy" "ingress-nginx-internal_allow_ingress" {
     }
 
     ingress {
-      ports {
-        port     = "80"
-        protocol = "TCP"
-      }
-      ports {
-        port     = "443"
-        protocol = "TCP"
+      dynamic "ports" {
+        for_each = local.ingress-nginx-internal_nlb_listeners
+        content {
+          protocol = ports.value[0]
+          port     = ports.value[1]
+        }
       }
 
       dynamic "from" {
