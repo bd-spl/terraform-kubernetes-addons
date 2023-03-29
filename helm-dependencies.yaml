@@ -347,70 +347,78 @@ dependencies:
     repository: https://charts.konghq.com
   # https://github.dev/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/values.yaml
   - name: kube-prometheus-stack
-    version: 41.7.0
+    version: 45.8.0
     repository: https://prometheus-community.github.io/helm-charts
     containers:
       prometheus-node-exporter.image:
         name:
-          repository: quay.io/prometheus/node-exporter
+          repository: prometheus/node-exporter
+        registry:
+          registry: quay.io
         ver:
-          tag: v1.3.1
-        source: quay.io/prometheus
+          tag: v1.5.0
       kube-state-metrics.image:
         name:
-          repository: registry.k8s.io/kube-state-metrics/kube-state-metrics
+          repository: kube-state-metrics/kube-state-metrics
+        registry:
+          registry: registry.k8s.io
         ver:
-          tag: v2.5.0
-        source: registry.k8s.io/kube-state-metrics
+          tag: v2.8.2
       alertmanager.alertmanagerSpec.image:
         name:
-          repository: quay.io/prometheus/alertmanager
+          repository: prometheus/alertmanager
+        registry:
+          registry: quay.io
         ver:
-          tag: v0.24.0
-        source: quay.io/prometheus
+          tag: v0.25.0
       prometheusOperator.admissionWebhooks.patch.image:
         name:
-          repository: k8s.gcr.io/ingress-nginx/kube-webhook-certgen
+          repository: ingress-nginx/kube-webhook-certgen
+        registry:
+          registry: k8s.gcr.io
         ver:
-          tag: v1.2.0  # poke v1.3.0?
-        source: k8s.gcr.io/ingress-nginx
+          tag: v1.3.0
       prometheusOperator.image:
         name:
-          repository: quay.io/prometheus-operator/prometheus-operator
+          repository: prometheus-operator/prometheus-operator
+        registry:
+          registry: quay.io
         ver:
-          tag: v0.58.0
-        source: quay.io/prometheus-operator
+          tag: v0.63.0
       prometheusOperator.prometheusConfigReloader.image:
         name:
-          repository: quay.io/prometheus-operator/prometheus-config-reloader
+          repository: prometheus-operator/prometheus-config-reloader
+        registry:
+          registry: quay.io
         ver:
-          tag: v0.58.0
-        source: quay.io/prometheus-operator
+          tag: v0.63.0
       prometheusOperator.thanosImage: &thanos
         name:
-          repository: quay.io/thanos/thanos
+          repository: thanos/thanos
+        registry:
+          registry: quay.io
         ver:
-          tag: v0.27.0
-        source: quay.io/thanos
+          tag: v0.31.0
       prometheus.prometheusSpec.image:
         name:
-          repository: quay.io/prometheus/prometheus
+          repository: prometheus/prometheus
+        registry:
+          registry: quay.io
         ver:
-          tag: v2.37.0
-        source: quay.io/prometheus
+          tag: v2.43.0
       thanosRuler.thanosRulerSpec.image: *thanos
       # https://github.dev/grafana/helm-charts/blob/main/charts/grafana/values.yaml
       grafana.image:
         name:
           repository: docker.io/grafana/grafana
         ver:
-          tag: 9.1.0
+          tag: 9.4.7
         source: docker.io/grafana
       grafana.downloadDashboardsImage:
         name:
           repository: docker.io/curlimages/curl
         ver:
-          tag: 7.73.0 # poke 7.84.0?
+          tag: 8.00.1
         source: docker.io
       grafana.initChownData.image:
         name:
@@ -422,7 +430,7 @@ dependencies:
         name:
           repository: quay.io/kiwigrid/k8s-sidecar
         ver:
-          tag: 1.19.2
+          tag: 1.23.1
         source: quay.io
       grafana.imageRenderer.image:
         name:
