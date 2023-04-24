@@ -107,11 +107,14 @@ config:
           username: uid
           idAttr: uid
           emailAttr: mail
-          nameAttr: uid # name?
+          nameAttr: displayName
+          preferredUsernameAttr: uid
         groupSearch:
           baseDN: ${local.dex["ldap_groups_search_dn"]}
           filter: ${local.dex["ldap_group_filter"]}
           userMatchers:
+            - userAttr: uid
+              groupAttr: member
             - userAttr: DN
               groupAttr: member
             - userAttr: uid
