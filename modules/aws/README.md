@@ -84,6 +84,7 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 | [aws_ecr_repository.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecr_repository) | resource |
 | [aws_efs_file_system.aws-efs-csi-driver](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/efs_file_system) | resource |
 | [aws_efs_mount_target.aws-efs-csi-driver](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/efs_mount_target) | resource |
+| [aws_eks_identity_provider_config.dex](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_identity_provider_config) | resource |
 | [aws_iam_policy.aws-ebs-csi-driver](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.aws-efs-csi-driver](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
 | [aws_iam_policy.aws-for-fluent-bit](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/iam_policy) | resource |
@@ -120,6 +121,8 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 | [helm_release.cert-manager](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.cert-manager-csi-driver](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.cluster-autoscaler](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
+| [helm_release.dex](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
+| [helm_release.dex-k8s-authenticator](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.external-dns](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.flux](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.ingress-nginx](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
@@ -176,6 +179,7 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 | [kubernetes_namespace.cert-manager](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/namespace) | resource |
 | [kubernetes_namespace.cluster-autoscaler](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/namespace) | resource |
 | [kubernetes_namespace.csi-external-snapshotter](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/namespace) | resource |
+| [kubernetes_namespace.dex](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/namespace) | resource |
 | [kubernetes_namespace.external-dns](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/namespace) | resource |
 | [kubernetes_namespace.flux](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/namespace) | resource |
 | [kubernetes_namespace.flux2](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/namespace) | resource |
@@ -231,6 +235,9 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 | [kubernetes_network_policy.cluster-autoscaler_allow_monitoring](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/network_policy) | resource |
 | [kubernetes_network_policy.cluster-autoscaler_allow_namespace](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/network_policy) | resource |
 | [kubernetes_network_policy.cluster-autoscaler_default_deny](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/network_policy) | resource |
+| [kubernetes_network_policy.dex_allow_monitoring](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/network_policy) | resource |
+| [kubernetes_network_policy.dex_allow_namespace](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/network_policy) | resource |
+| [kubernetes_network_policy.dex_default_deny](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/network_policy) | resource |
 | [kubernetes_network_policy.external-dns_allow_monitoring](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/network_policy) | resource |
 | [kubernetes_network_policy.external-dns_allow_namespace](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/network_policy) | resource |
 | [kubernetes_network_policy.external-dns_default_deny](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/network_policy) | resource |
@@ -321,7 +328,10 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 | [kubernetes_priority_class.kubernetes_addons_ds](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/priority_class) | resource |
 | [kubernetes_role.flux](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/role) | resource |
 | [kubernetes_role_binding.flux](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/role_binding) | resource |
+| [kubernetes_secret.cluster_secret](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/secret) | resource |
+| [kubernetes_secret.infra_ca_secret](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/secret) | resource |
 | [kubernetes_secret.kube-prometheus-stack_thanos](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/secret) | resource |
+| [kubernetes_secret.ldap_acc_secret](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/secret) | resource |
 | [kubernetes_secret.linkerd_trust_anchor](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/secret) | resource |
 | [kubernetes_secret.loki-stack-ca](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/secret) | resource |
 | [kubernetes_secret.main](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/secret) | resource |
@@ -414,8 +424,11 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 | <a name="input_cert-manager-csi-driver"></a> [cert-manager-csi-driver](#input\_cert-manager-csi-driver) | Customize cert-manager-csi-driver chart, see `cert-manager.tf` for supported values | `any` | `{}` | no |
 | <a name="input_cluster-autoscaler"></a> [cluster-autoscaler](#input\_cluster-autoscaler) | Customize cluster-autoscaler chart, see `cluster-autoscaler.tf` for supported values | `any` | `{}` | no |
 | <a name="input_cluster-name"></a> [cluster-name](#input\_cluster-name) | Name of the Kubernetes cluster | `string` | `"sample-cluster"` | no |
+| <a name="input_cluster_client_secret"></a> [cluster\_client\_secret](#input\_cluster\_client\_secret) | OAUTH login secret for Dex (staticClient) IDP OIDC provider. Must match dex[cluster\_secret], if pre-created | `string` | `""` | no |
 | <a name="input_cni-metrics-helper"></a> [cni-metrics-helper](#input\_cni-metrics-helper) | Customize cni-metrics-helper deployment, see `cni-metrics-helper.tf` for supported values | `any` | `{}` | no |
+| <a name="input_create_secrets"></a> [create\_secrets](#input\_create\_secrets) | Create k8s secrets from the provided sensitive inputs, or pick already existing ones | `bool` | `false` | no |
 | <a name="input_csi-external-snapshotter"></a> [csi-external-snapshotter](#input\_csi-external-snapshotter) | Kustomizations for csi-external-snapshotter, see `csi-external-snapshotter.tf` for supported values | `any` | <pre>{<br>  "kustomizations": {},<br>  "kustomizations_extra_resources": {},<br>  "kustomizations_images_map": {},<br>  "version": "v6.0.1"<br>}</pre> | no |
+| <a name="input_dex"></a> [dex](#input\_dex) | Customize dex charts, see `dex.tf` for supported values | `any` | `{}` | no |
 | <a name="input_ecr_encryption_type"></a> [ecr\_encryption\_type](#input\_ecr\_encryption\_type) | Encryption type for ECR images | `string` | `"AES256"` | no |
 | <a name="input_ecr_immutable_tag"></a> [ecr\_immutable\_tag](#input\_ecr\_immutable\_tag) | Use immutable tags for ECR images | `bool` | `false` | no |
 | <a name="input_ecr_kms_key"></a> [ecr\_kms\_key](#input\_ecr\_kms\_key) | Preconfigured KMS key arn to encrypt ECR images | `any` | `null` | no |
@@ -437,6 +450,8 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 | <a name="input_kube-prometheus-stack"></a> [kube-prometheus-stack](#input\_kube-prometheus-stack) | Customize kube-prometheus-stack chart, see `kube-prometheus-stack.tf` for supported values | `any` | `{}` | no |
 | <a name="input_kyverno"></a> [kyverno](#input\_kyverno) | Customize kyverno chart, see `kyverno.tf` for supported values | `any` | `{}` | no |
 | <a name="input_labels_prefix"></a> [labels\_prefix](#input\_labels\_prefix) | Custom label prefix used for network policy namespace matching | `string` | `"particule.io"` | no |
+| <a name="input_ldap_user_dn"></a> [ldap\_user\_dn](#input\_ldap\_user\_dn) | FreeIPA reader user DN for Dex IDP LDAP connector. Must match dex[ldap\_acc\_secret], if pre-created | `string` | `""` | no |
+| <a name="input_ldap_user_password"></a> [ldap\_user\_password](#input\_ldap\_user\_password) | FreeIPA reader user password for Dex IDP LDAP connector. Must match dex[ldap\_acc\_secret], if pre-created | `string` | `""` | no |
 | <a name="input_linkerd-viz"></a> [linkerd-viz](#input\_linkerd-viz) | Customize linkerd-viz chart, see `linkerd-viz.tf` for supported values | `any` | `{}` | no |
 | <a name="input_linkerd2"></a> [linkerd2](#input\_linkerd2) | Customize linkerd2 chart, see `linkerd2.tf` for supported values | `any` | `{}` | no |
 | <a name="input_linkerd2-cni"></a> [linkerd2-cni](#input\_linkerd2-cni) | Customize linkerd2-cni chart, see `linkerd2-cni.tf` for supported values | `any` | `{}` | no |

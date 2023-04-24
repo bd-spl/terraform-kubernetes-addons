@@ -81,3 +81,31 @@ variable "velero" {
   type        = any
   default     = {}
 }
+
+variable "dex" {
+  description = "Customize dex charts, see `dex.tf` for supported values"
+  type        = any
+  default     = {}
+}
+
+variable "cluster_client_secret" {
+  description = "OAUTH login secret for Dex (staticClient) IDP OIDC provider. Must match dex[cluster_secret], if pre-created"
+  default     = ""
+  sensitive   = true
+}
+
+variable "ldap_user_dn" {
+  description = "FreeIPA reader user DN for Dex IDP LDAP connector. Must match dex[ldap_acc_secret], if pre-created"
+  default     = ""
+}
+
+variable "ldap_user_password" {
+  description = "FreeIPA reader user password for Dex IDP LDAP connector. Must match dex[ldap_acc_secret], if pre-created"
+  default     = ""
+  sensitive   = true
+}
+
+variable "create_secrets" {
+  description = "Create k8s secrets from the provided sensitive inputs, or pick already existing ones"
+  default     = false
+}

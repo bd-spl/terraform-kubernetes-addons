@@ -539,9 +539,30 @@ dependencies:
   - name: victoria-metrics-k8s-stack
     version: 0.12.4
     repository: https://victoriametrics.github.io/helm-charts/
-  - name: testrtc-speedtest
-    version: 0.1.0
-    repository: https://bogdando.github.io/helm-charts/
+  # https://github.com/dexidp/helm-charts/blob/master/charts/dex/values.yaml
+  # TODO: maybe switch to https://github.com/mintel/dex-k8s-authenticator/blob/master/charts/dex/values.yaml
+  - name: dex
+    version: 0.14.0
+    repository: https://charts.dexidp.io
+    containers:
+      image:
+        name:
+          repository: ghcr.io/dexidp/dex
+        ver:
+          tag: v2.36.0
+        source: ghcr.io/dexidp
+  # https://github.dev/sagikazarmark/helm-charts/blob/master/charts/dex-k8s-authenticator/values.yaml
+  # TODO: maybe switch to https://github.com/mintel/dex-k8s-authenticator/blob/master/charts/dex-k8s-authenticator/values.yaml
+  - name: dex-k8s-authenticator
+    version: 0.0.2
+    repository: https://charts.sagikazarmark.dev/
+    containers:
+      image:
+        name:
+          repository: mintel/dex-k8s-authenticator
+        ver:
+          tag: 1.4.0
+        source: mintel
   # Not helm, but kubectl_manifest managed containers data
   # Override path is <manifest_file>.<container_name>
   # https://github.com/kubernetes-csi/external-snapshotter
