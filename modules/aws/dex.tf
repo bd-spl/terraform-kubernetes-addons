@@ -2,36 +2,36 @@ locals {
   dex = merge(
     local.helm_defaults,
     {
-      name_idp               = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex")].name
-      chart_idp              = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex")].name
-      repository_idp         = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex")].repository
-      chart_version_idp      = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex")].version
-      name_auth              = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].name
-      chart_auth             = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].name
-      repository_auth        = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].repository
-      chart_version_auth     = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].version
-      namespace              = "dex"
-      enabled                = false
-      default_network_policy = true
-      skip_crds              = false
-      name_prefix            = "${var.cluster-name}-dex"
-      admin_email            = "admin@example.org"
-      ingress_class          = "nginx"
-      ingress_annotaions     = {}
-      infra_ca_secretname    = "infra-ca-secret" # a prefix for auto-generated secrets
-      infra_ca_data          = [{ name = "ipa", pem = "" }]
-      fqdn                   = "dex.example.org"
-      ldap_fqdn              = "openldap.example.org"
-      ldap_groups_search_dn  = "ou=groups,dc=example,dc=org"
-      ldap_users_search_dn   = "ou=users,dc=example,dc=org"
-      ldap_user_filter       = "(objectClass=posixAccount)" # person?
-      ldap_group_filter      = "(objectClass=groupOfNames)" # group?
-      ldap_acc_secretname    = "ldap-acc-secret"
-      cluster_api_endpoint   = ""
-      cluster_ca_pem         = ""
-      cluster_secretname     = "cluster-secret"
-      cluster_client_id      = "kubernetes"
-      create_secrets         = true
+      name_idp                = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex")].name
+      chart_idp               = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex")].name
+      repository_idp          = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex")].repository
+      chart_version_idp       = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex")].version
+      name_auth               = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].name
+      chart_auth              = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].name
+      repository_auth         = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].repository
+      chart_version_auth      = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].version
+      namespace               = "dex"
+      enabled                 = false
+      default_network_policy  = true
+      skip_crds               = false
+      name_prefix             = "${var.cluster-name}-dex"
+      admin_email             = "admin@example.org"
+      ingress_class           = "nginx"
+      ingress_annotaions      = {}
+      infra_ca_secretname     = "infra-ca-secret" # a prefix for auto-generated secrets
+      infra_ca_data           = [{ name = "ipa", pem = "" }]
+      fqdn                    = "dex.example.org"
+      ldap_fqdn               = "openldap.example.org"
+      ldap_groups_search_dn   = "ou=groups,dc=example,dc=org"
+      ldap_users_search_dn    = "ou=users,dc=example,dc=org"
+      ldap_user_filter        = "(objectClass=posixAccount)" # person?
+      ldap_group_filter       = "(objectClass=groupOfNames)" # group?
+      ldap_acc_secretname     = "ldap-acc-secret"
+      cluster_api_endpoint    = ""
+      cluster_ca_pem          = ""
+      oauth_client_secretname = "oauth-client-secret"
+      oauth_client_id         = "kubernetes"
+      create_secrets          = true
 
       cluster_identity_providers = {
         ldap = {
@@ -122,8 +122,8 @@ config:
           nameAttr: cn
 
   staticClients:
-    - id: "${local.dex["cluster_client_id"]}"
-      secretEnv: "$${CLUSTER_CLIENT_SECRET}"
+    - id: "${local.dex["oauth_client_id"]}"
+      secretEnv: OAUTH_CLIENT_SECRET
       name: "EKS"
       redirectURIs:
         - https://login.${local.dex["fqdn"]}/callback
@@ -132,7 +132,7 @@ envFrom:
   - secretRef:
       name: ${local.dex["ldap_acc_secretname"]}
   - secretRef:
-      name: ${local.dex["cluster_secretname"]}
+      name: ${local.dex["oauth_client_secretname"]}
 VALUES
 
   trusted_ca_certs_volumes = [
@@ -164,12 +164,14 @@ config:
       short_description: "EKS cluster SSO"
       description: "EKS cluster SSO authenticator for LDAP Login"
       issuer: https://idp.${local.dex["fqdn"]}
-      client_id: "${local.dex["cluster_client_id"]}"
-      client_secret: "$${CLUSTER_CLIENT_SECRET}"
+      client_id: "${local.dex["oauth_client_id"]}"
+      client_secret: "$${OAUTH_CLIENT_SECRET}"
       redirect_uri: https://login.${local.dex["fqdn"]}/callback
       k8s_master_uri: ${local.dex["cluster_api_endpoint"]}
-      k8s_ca_pem: ${local.dex["cluster_ca_pem"]}
-      idp_ca_pem: "${base64encode(local.trusted_ca_certs_joined["ca"])}"
+      k8s_ca_pem: |
+        ${indent(8, local.dex["cluster_ca_pem"])}
+      idp_ca_pem: |
+        ${indent(8, local.trusted_ca_certs_joined["ca"])}
   trusted_root_ca: ${jsonencode([for cert in local.dex["infra_ca_data"] : cert.pem])}
 
 ingress:
@@ -188,7 +190,7 @@ ingress:
 
 envFrom:
   - secretRef:
-      name: ${local.dex["cluster_secretname"]}
+      name: ${local.dex["oauth_client_secretname"]}
 
 volumes: ${jsonencode(local.trusted_ca_certs_volumes)}
 volumeMounts: ${jsonencode(local.trusted_ca_certs_volume_mounts)}
@@ -207,17 +209,17 @@ resource "kubernetes_namespace" "dex" {
   }
 }
 
-resource "kubernetes_secret" "cluster_secret" {
+resource "kubernetes_secret" "oauth_client_secret" {
   count = local.dex["enabled"] && local.create_secrets ? 1 : 0
   metadata {
-    name      = local.dex["cluster_secretname"]
+    name      = local.dex["oauth_client_secretname"]
     namespace = local.dex["namespace"]
   }
 
   type = "generic"
 
   data = {
-    "CLUSTER_CLIENT_SECRET" = var.cluster_client_secret
+    "OAUTH_CLIENT_SECRET" = var.oauth_client_secret
   }
 
   depends_on = [
@@ -427,7 +429,7 @@ resource "aws_eks_identity_provider_config" "dex" {
   cluster_name = var.cluster-name
 
   oidc {
-    client_id                     = try(each.value.client_id, "") == "" ? local.dex["cluster_client_id"] : each.value.client_id
+    client_id                     = try(each.value.client_id, "") == "" ? local.dex["oauth_client_id"] : each.value.client_id
     groups_claim                  = lookup(each.value, "groups_claim", null)
     groups_prefix                 = lookup(each.value, "groups_prefix", null)
     identity_provider_config_name = try(each.value.identity_provider_config_name, each.key)
@@ -441,7 +443,7 @@ resource "aws_eks_identity_provider_config" "dex" {
   depends_on = [
     helm_release.dex-k8s-authenticator,
     kubernetes_network_policy.dex_allow_namespace,
-    kubernetes_secret.cluster_secret,
+    kubernetes_secret.oauth_client_secret,
     kubernetes_secret.ldap_acc_secret,
   ]
 }

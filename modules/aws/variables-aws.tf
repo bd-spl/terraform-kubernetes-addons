@@ -88,8 +88,8 @@ variable "dex" {
   default     = {}
 }
 
-variable "cluster_client_secret" {
-  description = "OAUTH login secret for Dex (staticClient) IDP OIDC provider. Must match dex[cluster_secret], if pre-created"
+variable "oauth_client_secret" {
+  description = "OAUTH login secret for Dex (staticClient) IDP OIDC provider. Must match dex[oauth_client_secret], if pre-created"
   default     = ""
   sensitive   = true
 }
