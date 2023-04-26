@@ -2,36 +2,39 @@ locals {
   dex = merge(
     local.helm_defaults,
     {
-      name_idp                = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex")].name
-      chart_idp               = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex")].name
-      repository_idp          = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex")].repository
-      chart_version_idp       = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex")].version
-      name_auth               = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].name
-      chart_auth              = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].name
-      repository_auth         = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].repository
-      chart_version_auth      = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].version
-      namespace               = "dex"
-      enabled                 = false
-      default_network_policy  = true
-      skip_crds               = false
-      name_prefix             = "${var.cluster-name}-dex"
-      admin_email             = "admin@example.org"
-      ingress_class           = "nginx"
-      ingress_annotaions      = {}
-      infra_ca_secretname     = "infra-ca-secret" # a prefix for auto-generated secrets
-      infra_ca_data           = [{ name = "ipa", pem = "" }]
-      fqdn                    = "dex.example.org"
-      ldap_fqdn               = "openldap.example.org"
-      ldap_groups_search_dn   = "ou=groups,dc=example,dc=org"
-      ldap_users_search_dn    = "ou=users,dc=example,dc=org"
-      ldap_user_filter        = "(objectClass=posixAccount)" # person?
-      ldap_group_filter       = "(objectClass=groupOfNames)" # group?
-      ldap_acc_secretname     = "ldap-acc-secret"
-      cluster_api_endpoint    = ""
-      cluster_ca_pem          = ""
-      oauth_client_secretname = "oauth-client-secret"
-      oauth_client_id         = "kubernetes"
-      create_secrets          = true
+      name_idp                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex")].name
+      chart_idp                 = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex")].name
+      repository_idp            = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex")].repository
+      chart_version_idp         = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex")].version
+      name_auth                 = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].name
+      chart_auth                = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].name
+      repository_auth           = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].repository
+      chart_version_auth        = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].version
+      namespace                 = "dex"
+      enabled                   = false
+      default_network_policy    = true
+      skip_crds                 = false
+      name_prefix               = "${var.cluster-name}-dex"
+      admin_email               = "admin@example.org"
+      ingress_class             = "nginx"
+      public_ingress_class      = "nginx"
+      ingress_annotaions        = {}
+      public_ingress_annotaions = {}
+      infra_ca_secretname       = "infra-ca-secret" # a prefix for auto-generated secrets
+      infra_ca_data             = [{ name = "ipa", pem = "" }]
+      idp_fqdn                  = "idp.dex.example.org"
+      login_fqdn                = "login.dex.example.org"
+      ldap_fqdn                 = "openldap.example.org"
+      ldap_groups_search_dn     = "ou=groups,dc=example,dc=org"
+      ldap_users_search_dn      = "ou=users,dc=example,dc=org"
+      ldap_user_filter          = "(objectClass=posixAccount)" # person?
+      ldap_group_filter         = "(objectClass=groupOfNames)" # group?
+      ldap_acc_secretname       = "ldap-acc-secret"
+      cluster_api_endpoint      = ""
+      cluster_ca_pem            = ""
+      oauth_client_secretname   = "oauth-client-secret"
+      oauth_client_id           = "kubernetes"
+      create_secrets            = true
 
       cluster_identity_providers = {
         ldap = {
@@ -62,20 +65,20 @@ https:
 
 ingress:
   enabled: true
-  className: ${local.dex["ingress_class"]}
-  annotations: ${jsonencode(local.dex["ingress_annotaions"])}
+  className: ${local.dex["public_ingress_class"]}
+  annotations: ${jsonencode(local.dex["public_ingress_annotaions"])}
   hosts:
-    - host: idp.${local.dex["fqdn"]}
+    - host: ${local.dex["idp_fqdn"]}
       paths:
         - path: /
           pathType: ImplementationSpecific
   tls:
     - secretName: dexidp-tls
       hosts:
-        - idp.${local.dex["fqdn"]}
+        - ${local.dex["idp_fqdn"]}
 
 config:
-  issuer: https://idp.${local.dex["fqdn"]}
+  issuer: https://${local.dex["idp_fqdn"]}
 
   storage:
     type: kubernetes
@@ -92,7 +95,7 @@ config:
       name: LDAP
       config:
         adminEmail: ${local.dex["admin_email"]}
-        redirectURI: https://idp.${local.dex["fqdn"]}/callback
+        redirectURI: https://${local.dex["idp_fqdn"]}/callback
         host: ${local.dex["ldap_fqdn"]}
         port: 636
         insecureNoSSL: false
@@ -126,7 +129,7 @@ config:
       secretEnv: OAUTH_CLIENT_SECRET
       name: "EKS"
       redirectURIs:
-        - https://login.${local.dex["fqdn"]}/callback
+        - https://${local.dex["login_fqdn"]}/callback
 
 envFrom:
   - secretRef:
@@ -163,10 +166,10 @@ config:
     - name: "EKS"
       short_description: "EKS cluster SSO"
       description: "EKS cluster SSO authenticator for LDAP Login"
-      issuer: https://idp.${local.dex["fqdn"]}
+      issuer: https://${local.dex["idp_fqdn"]}
       client_id: "${local.dex["oauth_client_id"]}"
       client_secret: "$${OAUTH_CLIENT_SECRET}"
-      redirect_uri: https://login.${local.dex["fqdn"]}/callback
+      redirect_uri: https://${local.dex["login_fqdn"]}/callback
       k8s_master_uri: ${local.dex["cluster_api_endpoint"]}
       k8s_ca_pem: |
         ${indent(8, local.dex["cluster_ca_pem"])}
@@ -179,14 +182,14 @@ ingress:
   className: ${local.dex["ingress_class"]}
   annotations: ${jsonencode(local.dex["ingress_annotaions"])}
   hosts:
-    - host: login.${local.dex["fqdn"]}
+    - host: ${local.dex["login_fqdn"]}
       paths:
         - path: /
           pathType: ImplementationSpecific
   tls:
     - secretName: dex-k8s-authenticator-tls
       hosts:
-        - login.${local.dex["fqdn"]}
+        - ${local.dex["login_fqdn"]}
 
 envFrom:
   - secretRef:
@@ -433,7 +436,7 @@ resource "aws_eks_identity_provider_config" "dex" {
     groups_claim                  = lookup(each.value, "groups_claim", null)
     groups_prefix                 = lookup(each.value, "groups_prefix", null)
     identity_provider_config_name = try(each.value.identity_provider_config_name, each.key)
-    issuer_url                    = try(each.value.issuer_url, "") == "" ? "https://idp.${local.dex["fqdn"]}" : each.value.issuer_url
+    issuer_url                    = try(each.value.issuer_url, "") == "" ? "https://${local.dex["idp_fqdn"]}" : each.value.issuer_url
     required_claims               = lookup(each.value, "required_claims", null)
     username_claim                = lookup(each.value, "username_claim", null)
     username_prefix               = lookup(each.value, "username_prefix", null)
