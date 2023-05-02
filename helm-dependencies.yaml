@@ -563,6 +563,23 @@ dependencies:
         ver:
           tag: 1.4.0
         source: mintel
+  # https://github.com/kubernetes/dashboard/blob/215d1b3ebdaaf079dae7913a0bbb0a7a33d15212/charts/helm-chart/kubernetes-dashboard/values.yaml
+  - name: kubernetes-dashboard
+    version: 6.0.7
+    repository: https://kubernetes.github.io/dashboard
+    containers:
+      image:
+        name:
+          repository: kubernetesui/dashboard
+        ver:
+          tag: v2.7.0
+        source: kubernetesui
+      metricsScraper.image:
+        name:
+          repository: kubernetesui/metrics-scraper
+        ver:
+          tag: v1.0.9
+        source: kubernetesui
   # Not helm, but kubectl_manifest managed containers data
   # Override path is <manifest_file>.<container_name>
   # https://github.com/kubernetes-csi/external-snapshotter

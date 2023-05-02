@@ -109,3 +109,9 @@ variable "create_secrets" {
   description = "Create k8s secrets from the provided sensitive inputs, or pick already existing ones"
   default     = false
 }
+
+variable "dashboard" {
+  description = "Customize kubernetes-dashboard chart, see `dashboard.tf` for supported values"
+  type        = any
+  default     = {}
+}
