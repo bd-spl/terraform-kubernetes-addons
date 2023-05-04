@@ -506,7 +506,11 @@ resource "kubernetes_network_policy" "dex_allow_monitoring" {
 
     ingress {
       ports {
-        port     = "8085"
+        port     = "5558"
+        protocol = "TCP"
+      }
+      ports {
+        port     = "http"
         protocol = "TCP"
       }
 

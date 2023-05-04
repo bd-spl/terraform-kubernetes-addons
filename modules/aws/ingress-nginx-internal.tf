@@ -317,7 +317,7 @@ resource "kubernetes_network_policy" "ingress-nginx-internal_allow_monitoring" {
 
     ingress {
       ports {
-        port     = "http-metrics"
+        port     = "metrics"
         protocol = "TCP"
       }
 
