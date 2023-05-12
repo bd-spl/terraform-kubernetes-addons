@@ -115,3 +115,9 @@ variable "dashboard" {
   type        = any
   default     = {}
 }
+
+variable "rbac-manager" {
+  description = "Customize rbac-manager chart, see `rbac-manager.tf` for supported values"
+  type        = any
+  default     = {}
+}

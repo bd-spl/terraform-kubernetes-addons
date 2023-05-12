@@ -580,6 +580,18 @@ dependencies:
         ver:
           tag: v1.0.9
         source: kubernetesui
+  # https://github.dev/FairwindsOps/charts/blob/master/stable/rbac-manager/values.yaml
+  - name: rbac-manager
+    version: 1.16.0
+    repository: https://charts.fairwinds.com/stable
+    containers:
+      image:
+        name:
+          repository: quay.io/reactiveops/rbac-manager
+        ver:
+          tag: v1.5.0
+        source: quay.io/reactiveops
+
   # Not helm, but kubectl_manifest managed containers data
   # Override path is <manifest_file>.<container_name>
   # https://github.com/kubernetes-csi/external-snapshotter
