@@ -18,6 +18,10 @@ variable "ecr_kms_key" {
   description = "Preconfigured KMS key arn to encrypt ECR images"
   default     = null
 }
+variable "ecr_tags" {
+  description = "Tags to apply for ECR registry resources (overwrites default provider tags)"
+  default     = {}
+}
 
 locals {
   default_tag = {
@@ -112,6 +116,8 @@ resource "aws_ecr_repository" "this" {
     encryption_type = each.value[0].ecr_encryption_type
     kms_key         = each.value[0].ecr_encryption_type == "KMS" ? each.value[0].ecr_kms_key : null
   }
+
+  tags = jsondecode(var.ecr_tags)
 }
 
 # Push images from public source to ECR repos

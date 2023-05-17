@@ -444,6 +444,7 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 | <a name="input_ecr_kms_key"></a> [ecr\_kms\_key](#input\_ecr\_kms\_key) | Preconfigured KMS key arn to encrypt ECR images | `any` | `null` | no |
 | <a name="input_ecr_prepare_images"></a> [ecr\_prepare\_images](#input\_ecr\_prepare\_images) | Prepare containers images for addons and store it in ECR | `bool` | `false` | no |
 | <a name="input_ecr_scan_on_push"></a> [ecr\_scan\_on\_push](#input\_ecr\_scan\_on\_push) | Scan prepared ECR images on push | `bool` | `false` | no |
+| <a name="input_ecr_tags"></a> [ecr\_tags](#input\_ecr\_tags) | Tags to apply for ECR registry resources (overwrites default provider tags) | `map` | `{}` | no |
 | <a name="input_eks"></a> [eks](#input\_eks) | EKS cluster inputs | `any` | `{}` | no |
 | <a name="input_external-dns"></a> [external-dns](#input\_external-dns) | Map of map for external-dns configuration: see `external_dns.tf` for supported values | `any` | `{}` | no |
 | <a name="input_flux"></a> [flux](#input\_flux) | Customize Flux chart, see `flux.tf` for supported values | `any` | `{}` | no |
