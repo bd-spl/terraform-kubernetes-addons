@@ -108,7 +108,7 @@ dependencies:
   # https://github.dev/kubernetes-sigs/aws-ebs-csi-driver/blob/master/charts/aws-ebs-csi-driver/values.yaml
   - name: aws-ebs-csi-driver
     version: 2.11.1
-    repository: https://kubernetes-sigs.github.io/aws-ebs-csi-driver  # FIXME: deadlink
+    repository: https://kubernetes-sigs.github.io/aws-ebs-csi-driver # FIXME: deadlink
     containers:
       image:
         name:
@@ -139,7 +139,7 @@ dependencies:
           repository: k8s.gcr.io/sig-storage/livenessprobe
         ver:
           tag: v2.6.0
-        source: k8s.gcr.io  # livenessprobe is ambigouse, so leave sig-storage prefix not rewritten
+        source: k8s.gcr.io # livenessprobe is ambigouse, so leave sig-storage prefix not rewritten
       sidecars.resizer.image:
         name:
           repository: k8s.gcr.io/sig-storage/csi-resizer
@@ -258,7 +258,7 @@ dependencies:
         name:
           repository: k8s.gcr.io/ingress-nginx/kube-webhook-certgen
         ver:
-          tag: v1.1.1  # poke v1.3.0?
+          tag: v1.1.1 # poke v1.3.0?
         source: k8s.gcr.io/ingress-nginx
       # used by extra_values, noop for helm and other managers
       extraArgs.acme-http01-solver-image:
@@ -270,7 +270,7 @@ dependencies:
         source: quay.io/jetstack
   - name: cert-manager-csi-driver
     version: v0.4.2
-    repository: https://charts.jetstack.io  # https://artifacthub.io/packages/helm/cert-manager/cert-manager-csi-driver
+    repository: https://charts.jetstack.io # https://artifacthub.io/packages/helm/cert-manager/cert-manager-csi-driver
   # https://github.dev/kubernetes/autoscaler/blob/master/charts/cluster-autoscaler/values.yaml
   - name: cluster-autoscaler
     version: 9.21.0
