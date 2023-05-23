@@ -458,8 +458,15 @@ dependencies:
     version: 3.2.0
     repository: https://grafana.github.io/helm-charts
   - name: promtail
-    version: 6.4.0
+    version: 6.11.2
     repository: https://grafana.github.io/helm-charts
+    containers:
+      promtail.image:
+        name:
+          repository: docker.io/grafana/promtail
+        ver:
+          tag: 2.8.2
+        source: docker.io/grafana
   # https://github.dev/kubernetes-sigs/metrics-server/blob/master/charts/metrics-server/values.yaml
   - name: metrics-server
     version: 3.8.2
