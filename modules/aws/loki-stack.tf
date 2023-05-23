@@ -35,23 +35,6 @@ locals {
         eks.amazonaws.com/role-arn: "${local.loki-stack["enabled"] && local.loki-stack["create_iam_resources_irsa"] ? module.iam_assumable_role_loki-stack.iam_role_arn : ""}"
     persistence:
       enabled: true
-    config:
-      schema_config:
-        configs:
-          - from: 2020-10-24
-            store: boltdb-shipper
-            object_store: s3
-            schema: v11
-            index:
-              prefix: loki_index_
-              period: 24h
-      storage_config:
-        aws:
-          s3: "s3://${data.aws_region.current.name}/${local.loki-stack["bucket"]}"
-        boltdb_shipper:
-          shared_store: s3
-      compactor:
-        shared_store: s3
     VALUES
 }
 
@@ -158,6 +141,49 @@ resource "helm_release" "loki-stack" {
     local.values_loki-stack,
     local.loki-stack["extra_values"]
   ]
+
+  #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
+  dynamic "set" {
+    for_each = {
+      for c, v in local.images_data.loki.containers :
+      c => v if v.rewrite_values.tag != null
+    }
+    content {
+      name  = set.value.rewrite_values.tag.name
+      value = try(local.loki-stack["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
+    }
+  }
+  dynamic "set" {
+    for_each = local.images_data.loki.containers
+    content {
+      name = set.value.rewrite_values.image.name
+      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
+        try(aws_ecr_repository.this[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url, "")}${set.value.rewrite_values.image.tail
+        }" : set.value.ecr_prepare_images ? "${
+        try(aws_ecr_repository.this[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].name, "")
+      }" : set.value.rewrite_values.image.value
+    }
+  }
+  dynamic "set" {
+    for_each = {
+      for c, v in local.images_data.loki.containers :
+      c => v if v.rewrite_values.registry != null
+    }
+    content {
+      name = set.value.rewrite_values.registry.name
+      # when unset, it should be replaced with the one prepared on ECR
+      value = set.value.rewrite_values.registry.value != null ? set.value.rewrite_values.registry.value : split(
+        "/", try(aws_ecr_repository.this[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url, "")
+      )[0]
+    }
+  }
+
   namespace = local.loki-stack["create_ns"] ? kubernetes_namespace.loki-stack.*.metadata.0.name[count.index] : local.loki-stack["namespace"]
 
   depends_on = [
@@ -178,8 +204,10 @@ module "loki_bucket" {
 
   force_destroy = local.loki-stack["bucket_force_destroy"]
 
-  bucket = local.loki-stack["bucket"]
-  acl    = "private"
+  bucket                   = local.loki-stack["bucket"]
+  acl                      = "private"
+  control_object_ownership = true
+  object_ownership         = "ObjectWriter"
 
   server_side_encryption_configuration = {
     rule = {
