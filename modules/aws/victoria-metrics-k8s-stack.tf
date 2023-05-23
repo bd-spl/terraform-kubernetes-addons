@@ -25,7 +25,7 @@ kubeEtcd:
 kubeProxy:
   enabled: false
 grafana:
-  adminPassword: ${join(",", random_string.grafana_password.*.result)}
+  adminPassword: ${join(",", random_password.grafana_password.*.result)}
 prometheus-node-exporter:
   priorityClassName: ${local.priority-class-ds["create"] ? kubernetes_priority_class.kubernetes_addons_ds[0].metadata[0].name : ""}
 victoria-metrics-operator:

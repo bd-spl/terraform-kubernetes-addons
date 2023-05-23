@@ -20,7 +20,7 @@ locals {
 grafana:
   rbac:
     pspEnabled: false
-  adminPassword: ${join(",", random_string.grafana_password.*.result)}
+  adminPassword: ${join(",", random_password.grafana_password.*.result)}
   dashboardProviders:
     dashboardproviders.yaml:
       apiVersion: 1
@@ -105,7 +105,7 @@ resource "kubernetes_namespace" "kube-prometheus-stack" {
   }
 }
 
-resource "random_string" "grafana_password" {
+resource "random_password" "grafana_password" {
   count   = local.kube-prometheus-stack["enabled"] ? 1 : 0
   length  = 16
   special = false
@@ -253,6 +253,6 @@ resource "kubernetes_network_policy" "kube-prometheus-stack_allow_control_plane"
 }
 
 output "grafana_password" {
-  value     = element(concat(random_string.grafana_password.*.result, [""]), 0)
+  value     = element(concat(random_password.grafana_password.*.result, [""]), 0)
   sensitive = true
 }

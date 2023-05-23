@@ -51,7 +51,7 @@ grafana:
     nameTest: ${local.kube-prometheus-stack["grafana_service_account_name"]}-test
     annotations:
       eks.amazonaws.com/role-arn: "${local.kube-prometheus-stack["enabled"] && local.kube-prometheus-stack["grafana_create_iam_resources_irsa"] ? module.iam_assumable_role_kube-prometheus-stack_grafana.iam_role_arn : ""}"
-  adminPassword: ${join(",", random_string.grafana_password.*.result)}
+  adminPassword: ${join(",", random_password.grafana_password.*.result)}
   dashboardProviders:
     dashboardproviders.yaml:
       apiVersion: 1
@@ -434,7 +434,7 @@ resource "kubernetes_namespace" "kube-prometheus-stack" {
   }
 }
 
-resource "random_string" "grafana_password" {
+resource "random_password" "grafana_password" {
   count   = local.kube-prometheus-stack["enabled"] || local.victoria-metrics-k8s-stack["enabled"] ? 1 : 0
   length  = 16
   special = false
@@ -633,6 +633,6 @@ resource "kubernetes_network_policy" "kube-prometheus-stack_allow_control_plane"
 }
 
 output "grafana_password" {
-  value     = element(concat(random_string.grafana_password.*.result, [""]), 0)
+  value     = element(concat(random_password.grafana_password.*.result, [""]), 0)
   sensitive = true
 }
