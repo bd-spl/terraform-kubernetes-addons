@@ -384,14 +384,14 @@ dependencies:
         registry:
           registry: quay.io
         ver:
-          tag: v0.63.0
+          tag: v0.65.1
       prometheusOperator.prometheusConfigReloader.image:
         name:
           repository: prometheus-operator/prometheus-config-reloader
         registry:
           registry: quay.io
         ver:
-          tag: v0.63.0
+          tag: v0.65.1
       prometheusOperator.thanosImage: &thanos
         name:
           repository: thanos/thanos
@@ -405,7 +405,7 @@ dependencies:
         registry:
           registry: quay.io
         ver:
-          tag: v2.43.0
+          tag: v2.44.0
       thanosRuler.thanosRulerSpec.image: *thanos
       # https://github.dev/grafana/helm-charts/blob/main/charts/grafana/values.yaml
       grafana.image:
