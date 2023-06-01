@@ -228,6 +228,16 @@ grafana:
     url: http://${local.thanos["enabled"] ? "${local.thanos["name"]}-query-frontend:9090" : "${local.kube-prometheus-stack["name"]}-prometheus:9090"}
     version: 1
     isDefault: true
+  - name: Alertmanager
+    access: proxy
+    editable: false
+    orgId: 1
+    type: alertmanager
+    url: http://${local.thanos["enabled"] ? "${local.thanos["name"]}-query-frontend:9093" : "${local.kube-prometheus-stack["name"]}-alertmanager:9093"}
+    version: 1
+    isDefault: false
+    jsonData:
+      implementation: prometheus
 VALUES
 
   values_dashboard_thanos = <<VALUES
