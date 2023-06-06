@@ -412,7 +412,7 @@ dependencies:
         name:
           repository: docker.io/grafana/grafana
         ver:
-          tag: 9.4.7
+          tag: 9.5.2
         source: docker.io/grafana
       grafana.downloadDashboardsImage:
         name:
