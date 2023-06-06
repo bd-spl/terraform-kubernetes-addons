@@ -27,9 +27,7 @@
     "enabled": true,
     "fileMatch": ["(^|/)helm-dependencies.yaml$"]
   },
-  "reviewers": [
-    "team:team"
-  ],
+  "reviewersFromCodeOwners": true,
   "prHourlyLimit": 0,
   "packageRules": [
       {
