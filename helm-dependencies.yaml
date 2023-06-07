@@ -1,647 +1,550 @@
-# NOTE: Each dependency may have containers data to prepare images for use in private
-# EKS clusters. Skopeo will copy images from the given source/registry into ensured ECR.
-# There are source/registry paths used to overwrite for helm and/or to prepared images.
-# It also can provide helm values override paths for image/tag data. For addons not
-# managed with helm_release, but kubectl_manifest, you can still provide containers data.
-#
-# Example:
-# - name: foo-addon-charts
-#   containers:
-#     # Examples for Helm manager (default)
-#     app.foo.spec.containers.frontend:
-#       # results in custom.io/prod/foo:v1.1 copied as <ECR repo>/foo:v1.1,
-#       # then its helm values updated via the 'helm set' interface
-#       manager: helm # default. Allowed: helm, kustomize, extra (WIP)
-#       name:
-#         uri: foo # sets image for helm as app.foo.spec.containers.frontend.uri
-#       ver:
-#         # use 'skopeo list-tags' to pick the best value from available tags
-#         version: v1.1 # sets tag for helm as app.foo.spec.containers.frontend.version
-#
-#       # Optional ECR settings (not for helm), override the addons module vars
-#       ecr_immutable_tag: false
-#       ecr_scan_on_push: false
-#       ecr_encryption_type: KMS
-#       ecr_kms_key: my-kms-key
-#
-#       # Either to prepare images in ECR, or just override the helm values.
-#       # Disabling it makes the 'source' data ignored. The name/registry values
-#       # then end up in helm as provided (i.e. no paths rewriting for ECR)
-#       ecr_prepare_images: true
-#
-#       # Assumes the 'name' holds a shortname instead of URI.
-#       # When 'source' is unset, skopeo_copy takes this as a source, and ECR as a dst.
-#       # Helm takes the prepared ECR repo URL value, or the original value, if
-#       # 'ecr_prepare_images' was disabled.
-#       registry:
-#         # sets registry for helm as app.foo.spec.containers.frontend.repository,
-#         # based on ecr_prepare_images enabled, or not
-#         repository: custom.io/prod # used as a source only, or as a final value
-#
-#       # Ignored when ecr_prepare_images is off.
-#       # Use this instead of 'registry', if image name is URI and already includes the
-#       # registry path. Then the registry path in the name will get overwritten by the
-#       # prepared ECR repositroy replacing the source value of it.
-#       # NOTE: to rewrite helm 'source' value, define it as {registry: {source: ...}}
-#       source: custom.io/prod  # cannot end with a slash /
-#
-#     extra.image:
-#       # Has ecr_prepare_images enabled by default
-#       name:
-#         # NOTE: the registry path part of URI must be the same as in the source, e.g.:
-#         # custom.io, or custom.io/dev (ambiguous names might require the former notation)
-#         image_uri: custom.io/dev/baz # Helm takes prepared <ECR>/dev/baz:latest
-#       source: custom.io  # skopeo copies it from custom.io/dev/baz:latest to ECR
-#
-#     sidecar.spec.containers:
-#       # Helm will use custom.io/dev/qux:<whatever tag it defines>
-#       ecr_prepare_images: false
-#       name:
-#         image: dev/qux # sets image for helm as sidecar.spec.containers.image
-#       registry: # sets helm to use sidecar.spec.containers.source registry as provided
-#         source: custom.io
-#       source: custom.io/prod  # will be ignored as ecr_prepare_images is off!
-#
-#     bad.example:
-#       # 'registry' will be ignored when preparing images,
-#       # but helm will take both rewritten registry and uri paths,
-#       # which might result in a misconfigured chart (repo info looks redundant here)
-#       name:
-#         uri: custom.io/quux:v123  # helm takes <ECR>/quux:v123
-#       registry:
-#         repo: custom.io/prod      # helm takes <ECR>/prod?..
-#       source: custom.io
-#
-#     # Other than Helm managers examples
-#
-#     # Key name format: <extra_values_keyname>.<template_var>
-#     # Requires data: foo-addon-charts.extra_values.extraArgs
-#     extraArgs.acme-http01-solver-image:
-#       # rewrites ${acme-http01-solver-image-repo} and/or ${acme-http01-solver-image-tag}
-#       # templates (need to be escaped \$${...} in extra_values),
-#       # in foo-addon-charts.extra_values.extraArgs, with the prepared ECR image URI
-#       manager: extra
-#       name: {repository: ..., ...}
-#
-#     # Key name format: <target_from_foo-addon-charts.kustomizations_images_map>.<target_container_name(s)_template>
-#     # Requires data: foo-addon-charts.kustomizations_images_map, foo-addon-charts.kustomizations
-#     controller-manager.kube-rbac-proxy:
-#       # rewrites kube-rbac-proxy container image URIs in foo-addon-charts.kustomizations with ECR path,
-#       # before applying it with kubectl.
-#       manager: kustomize
-#       name:
-#         # upstream image URI src to prepare its copy in ECR,
-#         # it may match, or differ to <original_image_uri> in the kustomization data source
-#         repository: <image_uri>
-#
-
 apiVersion: v2
+dependencies:
+- name: admiralty
+  repository: https://charts.admiralty.io
+  version: 0.13.2
+- name: secrets-store-csi-driver
+  repository: https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
+  version: 1.2.4
+- containers:
+    image:
+      name:
+        repository: docker.io/amazon/aws-ebs-csi-driver
+      source: docker.io/amazon
+      ver:
+        tag: v1.6.2
+    sidecars.attacher.image:
+      name:
+        repository: k8s.gcr.io/sig-storage/csi-attacher
+      source: k8s.gcr.io/sig-storage
+      ver:
+        tag: v3.4.0
+    sidecars.csiProvisioner.image:
+      name:
+        repository: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner
+      source: public.ecr.aws/eks-distro
+      ver:
+        tag: v2.1.1-eks-1-18-13
+    sidecars.livenessProbe.image:
+      name:
+        repository: k8s.gcr.io/sig-storage/livenessprobe
+      source: k8s.gcr.io
+      ver:
+        tag: v2.6.0
+    sidecars.nodeDriverRegistrar.image:
+      name:
+        repository: k8s.gcr.io/sig-storage/csi-node-driver-registrar
+      source: k8s.gcr.io/sig-storage
+      ver:
+        tag: v2.5.1
+    sidecars.provisioner.image:
+      name:
+        repository: k8s.gcr.io/sig-storage/csi-provisioner
+      source: k8s.gcr.io/sig-storage
+      ver:
+        tag: v3.1.0
+    sidecars.resizer.image:
+      name:
+        repository: k8s.gcr.io/sig-storage/csi-resizer
+      source: k8s.gcr.io/sig-storage
+      ver:
+        tag: v1.4.0
+    sidecars.snapshotter.image:
+      name:
+        repository: k8s.gcr.io/sig-storage/csi-snapshotter
+      source: k8s.gcr.io/sig-storage
+      ver:
+        tag: v6.0.1
+  name: aws-ebs-csi-driver
+  repository: https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+  version: 2.11.1
+- containers:
+    image:
+      name:
+        repository: docker.io/amazon/aws-efs-csi-driver
+      source: docker.io/amazon
+      ver:
+        tag: v1.4.1
+    sidecars.csiProvisioner.image:
+      name:
+        repository: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner
+      source: public.ecr.aws/eks-distro
+      ver:
+        tag: v2.1.1-eks-1-18-13
+    sidecars.livenessProbe.image:
+      name:
+        repository: public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe
+      source: public.ecr.aws/eks-distro
+      ver:
+        tag: v2.2.0-eks-1-18-13
+    sidecars.nodeDriverRegistrar.image:
+      name:
+        repository: public.ecr.aws/eks-distro/kubernetes-csi/node-driver-registrar
+      source: public.ecr.aws/eks-distro
+      ver:
+        tag: v2.1.0-eks-1-18-13
+  name: aws-efs-csi-driver
+  repository: https://kubernetes-sigs.github.io/aws-efs-csi-driver
+  version: 2.2.8
+- name: aws-for-fluent-bit
+  repository: https://aws.github.io/eks-charts
+  version: 0.1.21
+- containers:
+    image:
+      name:
+        repository: docker.io/amazon/aws-alb-ingress-controller
+      source: docker.io/amazon
+      ver:
+        tag: v2.4.3
+  name: aws-load-balancer-controller
+  repository: https://aws.github.io/eks-charts
+  version: 1.4.5
+- name: aws-node-termination-handler
+  repository: https://aws.github.io/eks-charts
+  version: 0.19.3
+- name: aws-calico
+  repository: https://aws.github.io/eks-charts
+  version: 0.3.11
+- containers:
+    acmesolver.image:
+      name:
+        repository: quay.io/jetstack/cert-manager-acmesolver
+      source: quay.io/jetstack
+      ver:
+        tag: v1.11.0
+    cainjector.image:
+      name:
+        repository: quay.io/jetstack/cert-manager-cainjector
+      source: quay.io/jetstack
+      ver:
+        tag: v1.11.0
+    extraArgs.acme-http01-solver-image:
+      manager: extra
+      name:
+        repository: quay.io/jetstack/cert-manager-acmesolver
+      source: quay.io/jetstack
+      ver:
+        tag: v1.9.1
+    gateway-api-admission.create_or_patch:
+      manager: kustomize
+      name:
+        repository: k8s.gcr.io/ingress-nginx/kube-webhook-certgen
+      source: k8s.gcr.io/ingress-nginx
+      ver:
+        tag: v1.1.1
+    gateway-api-admission.webhook:
+      manager: kustomize
+      name:
+        repository: gcr.io/k8s-staging-gateway-api/admission-server
+      source: gcr.io
+      ver:
+        tag: v0.5.1
+    image:
+      name:
+        repository: quay.io/jetstack/cert-manager-controller
+      source: quay.io/jetstack
+      ver:
+        tag: v1.11.0
+    startupapicheck.image:
+      name:
+        repository: quay.io/jetstack/cert-manager-ctl
+      source: quay.io/jetstack
+      ver:
+        tag: v1.11.0
+    webhook.image:
+      name:
+        repository: quay.io/jetstack/cert-manager-webhook
+      source: quay.io/jetstack
+      ver:
+        tag: v1.11.0
+  name: cert-manager
+  repository: https://charts.jetstack.io
+  version: v1.11.0
+- name: cert-manager-csi-driver
+  repository: https://charts.jetstack.io
+  version: v0.4.2
+- containers:
+    image:
+      name:
+        repository: k8s.gcr.io/autoscaling/cluster-autoscaler
+      source: k8s.gcr.io/autoscaling
+      ver:
+        tag: v1.24.0
+  name: cluster-autoscaler
+  repository: https://kubernetes.github.io/autoscaler
+  version: 9.21.0
+- containers:
+    image:
+      name:
+        repository: k8s.gcr.io/external-dns/external-dns
+      source: k8s.gcr.io/external-dns
+      ver:
+        tag: v0.12.2
+  name: external-dns
+  repository: https://kubernetes-sigs.github.io/external-dns/
+  version: 1.11.0
+- name: flux
+  repository: https://charts.fluxcd.io
+  version: 1.13.3
+- containers:
+    controller.admissionWebhooks.patch.image:
+      name:
+        image: ingress-nginx/kube-webhook-certgen
+      registry:
+        registry: registry.k8s.io
+      ver:
+        tag: v20221220-controller-v1.5.1-58-g787ea74b6
+    controller.image:
+      name:
+        image: ingress-nginx/controller
+      registry:
+        registry: registry.k8s.io
+      ver:
+        tag: v1.6.4
+    defaultBackend.image:
+      name:
+        image: defaultbackend-amd64
+      registry:
+        registry: registry.k8s.io
+      ver:
+        tag: '1.5'
+  name: ingress-nginx
+  repository: https://kubernetes.github.io/ingress-nginx
+  version: 4.5.2
+- chart: ingress-nginx
+  containers:
+    controller.admissionWebhooks.patch.image:
+      name:
+        image: ingress-nginx/kube-webhook-certgen
+      registry:
+        registry: registry.k8s.io
+      ver:
+        tag: v20221220-controller-v1.5.1-58-g787ea74b6
+    controller.image:
+      name:
+        image: ingress-nginx/controller
+      registry:
+        registry: registry.k8s.io
+      ver:
+        tag: v1.6.4
+    defaultBackend.image:
+      name:
+        image: defaultbackend-amd64
+      registry:
+        registry: registry.k8s.io
+      ver:
+        tag: '1.5'
+  name: ingress-nginx-internal
+  repository: https://kubernetes.github.io/ingress-nginx
+  version: 4.5.2
+- name: istio-operator
+  repository: https://clusterfrak-dynamics.github.io/istio/
+  version: 1.7.0
+- name: k8gb
+  repository: https://www.k8gb.io
+  version: v0.9.0
+- name: karma
+  repository: https://charts.helm.sh/stable
+  version: 1.7.2
+- name: keda
+  repository: https://kedacore.github.io/charts
+  version: 2.8.2
+- name: keycloak
+  repository: https://codecentric.github.io/helm-charts
+  version: 18.3.0
+- name: kong
+  repository: https://charts.konghq.com
+  version: 2.13.1
+- containers:
+    alertmanager.alertmanagerSpec.image:
+      name:
+        repository: prometheus/alertmanager
+      registry:
+        registry: quay.io
+      ver:
+        tag: v0.25.0
+    grafana.downloadDashboardsImage:
+      name:
+        repository: docker.io/curlimages/curl
+      source: docker.io
+      ver:
+        tag: 8.00.1
+    grafana.image:
+      name:
+        repository: docker.io/grafana/grafana
+      source: docker.io/grafana
+      ver:
+        tag: 9.5.2
+    grafana.imageRenderer.image:
+      name:
+        repository: docker.io/grafana/grafana-image-renderer
+      source: docker.io/grafana
+    grafana.initChownData.image:
+      name:
+        repository: docker.io/busybox
+      source: docker.io
+      ver:
+        tag: 1.31.1
+    grafana.sidecar.image:
+      name:
+        repository: quay.io/kiwigrid/k8s-sidecar
+      source: quay.io
+      ver:
+        tag: 1.23.1
+    kube-state-metrics.image:
+      name:
+        repository: kube-state-metrics/kube-state-metrics
+      registry:
+        registry: registry.k8s.io
+      ver:
+        tag: v2.8.2
+    prometheus-node-exporter.image:
+      name:
+        repository: prometheus/node-exporter
+      registry:
+        registry: quay.io
+      ver:
+        tag: v1.5.0
+    prometheus.prometheusSpec.image:
+      name:
+        repository: prometheus/prometheus
+      registry:
+        registry: quay.io
+      ver:
+        tag: v2.44.0
+    prometheusOperator.admissionWebhooks.patch.image:
+      name:
+        repository: ingress-nginx/kube-webhook-certgen
+      registry:
+        registry: k8s.gcr.io
+      ver:
+        tag: v1.3.0
+    prometheusOperator.image:
+      name:
+        repository: prometheus-operator/prometheus-operator
+      registry:
+        registry: quay.io
+      ver:
+        tag: v0.65.1
+    prometheusOperator.prometheusConfigReloader.image:
+      name:
+        repository: prometheus-operator/prometheus-config-reloader
+      registry:
+        registry: quay.io
+      ver:
+        tag: v0.65.1
+    prometheusOperator.thanosImage:
+      name:
+        repository: thanos/thanos
+      registry:
+        registry: quay.io
+      ver:
+        tag: v0.31.0
+    thanosRuler.thanosRulerSpec.image:
+      name:
+        repository: thanos/thanos
+      registry:
+        registry: quay.io
+      ver:
+        tag: v0.31.0
+  name: kube-prometheus-stack
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 46.4.1
+- name: kyverno
+  repository: https://kyverno.github.io/kyverno/
+  version: v2.5.3
+- name: kyverno-crds
+  repository: https://kyverno.github.io/kyverno/
+  version: v2.0.3
+- name: linkerd2
+  repository: https://helm.linkerd.io/edge
+  version: 21.12.3
+- name: linkerd2-cni
+  repository: https://helm.linkerd.io/edge
+  version: 21.12.4
+- name: linkerd-viz
+  repository: https://helm.linkerd.io/edge
+  version: 21.12.4
+- name: loki-stack
+  repository: https://grafana.github.io/helm-charts
+  version: 2.8.3
+- containers:
+    loki.image:
+      name:
+        repository: docker.io/grafana/loki
+      source: docker.io/grafana
+      ver:
+        tag: 2.8.2
+    nginx-unprivileged.image:
+      name:
+        repository: docker.io/nginxinc/nginx-unprivileged
+      source: docker.io/nginxinc
+      ver:
+        tag: 1.19-alpine
+  name: loki
+  repository: https://grafana.github.io/helm-charts
+  version: 5.5.1
+- containers:
+    promtail.image:
+      name:
+        repository: docker.io/grafana/promtail
+      source: docker.io/grafana
+      ver:
+        tag: 2.8.2
+  name: promtail
+  repository: https://grafana.github.io/helm-charts
+  version: 6.11.2
+- containers:
+    image:
+      name:
+        repository: k8s.gcr.io/metrics-server/metrics-server
+      source: k8s.gcr.io/metrics-server
+      ver:
+        tag: v0.6.1
+  name: metrics-server
+  repository: https://kubernetes-sigs.github.io/metrics-server/
+  version: 3.8.2
+- containers:
+    image:
+      name:
+        repository: k8s.gcr.io/node-problem-detector/node-problem-detector
+      source: k8s.gcr.io/node-problem-detector
+      ver:
+        tag: v0.8.10
+  name: node-problem-detector
+  repository: https://charts.deliveryhero.io/
+  version: 2.2.6
+- name: prometheus-adapter
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 3.4.0
+- name: prometheus-cloudwatch-exporter
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 0.21.0
+- name: prometheus-blackbox-exporter
+  repository: https://prometheus-community.github.io/helm-charts
+  version: 7.1.0
+- name: rabbitmq-cluster-operator
+  repository: https://charts.bitnami.com/bitnami
+  version: 3.1.0
+- name: scaleway-webhook
+  repository: https://particuleio.github.io/charts
+  version: v0.0.1
+- name: sealed-secrets
+  repository: https://bitnami-labs.github.io/sealed-secrets
+  version: 2.6.9
+- name: strimzi-kafka-operator
+  repository: https://strimzi.io/charts/
+  version: 0.31.1
+- name: thanos
+  repository: https://charts.bitnami.com/bitnami
+  version: 11.5.3
+- containers:
+    calicoctl:
+      name:
+        image: docker.io/calico/ctl
+      source: docker.io
+      ver:
+        tag: master
+    tigeraOperator:
+      name:
+        image: tigera/operator
+      registry:
+        registry: quay.io
+      ver:
+        version: master
+  name: tigera-operator
+  repository: https://docs.projectcalico.org/charts
+  version: v3.24.1
+- name: traefik
+  repository: https://helm.traefik.io/traefik
+  version: 10.30.1
+- name: memcached
+  repository: https://charts.bitnami.com/bitnami
+  version: 6.2.5
+- name: vault
+  repository: https://helm.releases.hashicorp.com
+  version: 0.22.0
+- name: velero
+  repository: https://vmware-tanzu.github.io/helm-charts
+  version: 2.31.8
+- name: victoria-metrics-k8s-stack
+  repository: https://victoriametrics.github.io/helm-charts/
+  version: 0.12.4
+- containers:
+    image:
+      name:
+        repository: ghcr.io/dexidp/dex
+      source: ghcr.io/dexidp
+      ver:
+        tag: v2.36.0
+  name: dex
+  repository: https://charts.dexidp.io
+  version: 0.14.0
+- containers:
+    image:
+      name:
+        repository: mintel/dex-k8s-authenticator
+      source: mintel
+      ver:
+        tag: 1.4.0
+  name: dex-k8s-authenticator
+  repository: https://charts.sagikazarmark.dev/
+  version: 0.0.2
+- containers:
+    image:
+      name:
+        repository: kubernetesui/dashboard
+      source: kubernetesui
+      ver:
+        tag: v2.7.0
+    metricsScraper.image:
+      name:
+        repository: kubernetesui/metrics-scraper
+      source: kubernetesui
+      ver:
+        tag: v1.0.9
+  name: kubernetes-dashboard
+  repository: https://kubernetes.github.io/dashboard
+  version: 6.0.7
+- containers:
+    image:
+      name:
+        repository: quay.io/reactiveops/rbac-manager
+      source: quay.io/reactiveops
+      ver:
+        tag: v1.5.0
+  name: rbac-manager
+  repository: https://charts.fairwinds.com/stable
+  version: 1.16.0
+- containers:
+    setup-csi-snapshotter.csi-provisioner:
+      manager: kustomize
+      name:
+        repository: k8s.gcr.io/sig-storage/csi-provisioner
+      source: k8s.gcr.io/sig-storage
+      ver:
+        tag: v3.2.1
+    setup-csi-snapshotter.csi-snapshotter:
+      manager: kustomize
+      name:
+        repository: gcr.io/k8s-staging-sig-storage/csi-snapshotter
+      source: gcr.io/k8s-staging-sig-storage
+      ver:
+        tag: v6.0.1
+    setup-csi-snapshotter.hostpath:
+      manager: kustomize
+      name:
+        repository: k8s.gcr.io/sig-storage/hostpathplugin
+      source: k8s.gcr.io
+      ver:
+        tag: v1.8.0
+    setup-snapshot-controller.snapshot-controller:
+      manager: kustomize
+      name:
+        repository: gcr.io/k8s-staging-sig-storage/snapshot-controller
+      source: gcr.io/k8s-staging-sig-storage
+      ver:
+        tag: v5.0.1
+  name: csi-external-snapshotter
 name: Handle terraform-kubernetes-addons helm chart dependencies update
 version: 1.0.0
-dependencies:
-  - name: admiralty
-    version: 0.13.2
-    repository: https://charts.admiralty.io
-  - name: secrets-store-csi-driver
-    version: 1.2.4
-    repository: https://kubernetes-sigs.github.io/secrets-store-csi-driver/charts
-  # https://github.dev/kubernetes-sigs/aws-ebs-csi-driver/blob/master/charts/aws-ebs-csi-driver/values.yaml
-  - name: aws-ebs-csi-driver
-    version: 2.11.1
-    repository: https://kubernetes-sigs.github.io/aws-ebs-csi-driver # FIXME: deadlink
-    containers:
-      image:
-        name:
-          repository: docker.io/amazon/aws-ebs-csi-driver
-        ver:
-          tag: v1.6.2
-        source: docker.io/amazon
-      sidecars.provisioner.image:
-        name:
-          repository: k8s.gcr.io/sig-storage/csi-provisioner
-        ver:
-          tag: v3.1.0
-        source: k8s.gcr.io/sig-storage
-      sidecars.attacher.image:
-        name:
-          repository: k8s.gcr.io/sig-storage/csi-attacher
-        ver:
-          tag: v3.4.0
-        source: k8s.gcr.io/sig-storage
-      sidecars.snapshotter.image:
-        name:
-          repository: k8s.gcr.io/sig-storage/csi-snapshotter
-        ver:
-          tag: v6.0.1
-        source: k8s.gcr.io/sig-storage
-      sidecars.livenessProbe.image:
-        name:
-          repository: k8s.gcr.io/sig-storage/livenessprobe
-        ver:
-          tag: v2.6.0
-        source: k8s.gcr.io # livenessprobe is ambigouse, so leave sig-storage prefix not rewritten
-      sidecars.resizer.image:
-        name:
-          repository: k8s.gcr.io/sig-storage/csi-resizer
-        ver:
-          tag: v1.4.0
-        source: k8s.gcr.io/sig-storage
-      sidecars.nodeDriverRegistrar.image:
-        name:
-          repository: k8s.gcr.io/sig-storage/csi-node-driver-registrar
-        ver:
-          tag: v2.5.1
-        source: k8s.gcr.io/sig-storage
-      sidecars.csiProvisioner.image:
-        name:
-          repository: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner
-        ver:
-          tag: v2.1.1-eks-1-18-13
-        source: public.ecr.aws/eks-distro
-  # https://github.dev/kubernetes-sigs/aws-efs-csi-driver/blob/master/charts/aws-efs-csi-driver/values.yaml
-  - name: aws-efs-csi-driver
-    version: 2.2.8
-    repository: https://kubernetes-sigs.github.io/aws-efs-csi-driver # FIXME: deadlink
-    containers:
-      image:
-        name:
-          repository: docker.io/amazon/aws-efs-csi-driver
-        ver:
-          tag: v1.4.1
-        source: docker.io/amazon
-      sidecars.livenessProbe.image:
-        name:
-          repository: public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe
-        ver:
-          tag: v2.2.0-eks-1-18-13
-        source: public.ecr.aws/eks-distro
-      sidecars.nodeDriverRegistrar.image:
-        name:
-          repository: public.ecr.aws/eks-distro/kubernetes-csi/node-driver-registrar
-        ver:
-          tag: v2.1.0-eks-1-18-13
-        source: public.ecr.aws/eks-distro
-      sidecars.csiProvisioner.image:
-        name:
-          repository: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner
-        ver:
-          tag: v2.1.1-eks-1-18-13
-        source: public.ecr.aws/eks-distro
-  - name: aws-for-fluent-bit
-    version: 0.1.21
-    repository: https://aws.github.io/eks-charts
-  # https://github.dev/kubernetes-sigs/aws-load-balancer-controller/blob/main/helm/aws-load-balancer-controller/values.yaml
-  - name: aws-load-balancer-controller
-    version: 1.4.5
-    repository: https://aws.github.io/eks-charts
-    containers:
-      image:
-        name:
-          repository: docker.io/amazon/aws-alb-ingress-controller
-        ver:
-          tag: v2.4.3
-        source: docker.io/amazon
-  - name: aws-node-termination-handler
-    version: 0.19.3
-    repository: https://aws.github.io/eks-charts
-  - name: aws-calico
-    version: 0.3.11
-    repository: https://aws.github.io/eks-charts
-  # https://github.dev/cert-manager/cert-manager/blob/master/deploy/charts/cert-manager/values.yaml
-  - name: cert-manager
-    version: v1.11.0
-    repository: https://charts.jetstack.io # NOTE: redirects to https://artifacthub.io/packages/helm/cert-manager/cert-manager
-    containers:
-      image:
-        name:
-          repository: quay.io/jetstack/cert-manager-controller
-        ver:
-          tag: v1.11.0
-        source: quay.io/jetstack
-      webhook.image:
-        name:
-          repository: quay.io/jetstack/cert-manager-webhook
-        ver:
-          tag: v1.11.0
-        source: quay.io/jetstack
-      cainjector.image:
-        name:
-          repository: quay.io/jetstack/cert-manager-cainjector
-        ver:
-          tag: v1.11.0
-        source: quay.io/jetstack
-      startupapicheck.image:
-        name:
-          repository: quay.io/jetstack/cert-manager-ctl
-        ver:
-          tag: v1.11.0
-        source: quay.io/jetstack
-      acmesolver.image:
-        name:
-          repository: quay.io/jetstack/cert-manager-acmesolver
-        ver:
-          tag: v1.11.0
-        source: quay.io/jetstack
-      # used by kustomization, is noop for helm and others
-      gateway-api-admission.webhook:
-        manager: kustomize
-        name:
-          repository: gcr.io/k8s-staging-gateway-api/admission-server
-        ver:
-          tag: v0.5.1
-        source: gcr.io
-      # The same image represents two containers: create and patch.
-      # When those cannot be aggregated in kustomization by its metadata.name wildcard,
-      # split it into different entries, like gateway-api-admission.create
-      gateway-api-admission.create_or_patch:
-        manager: kustomize
-        name:
-          repository: k8s.gcr.io/ingress-nginx/kube-webhook-certgen
-        ver:
-          tag: v1.1.1 # poke v1.3.0?
-        source: k8s.gcr.io/ingress-nginx
-      # used by extra_values, noop for helm and other managers
-      extraArgs.acme-http01-solver-image:
-        manager: extra
-        name:
-          repository: quay.io/jetstack/cert-manager-acmesolver
-        ver:
-          tag: v1.9.1
-        source: quay.io/jetstack
-  - name: cert-manager-csi-driver
-    version: v0.4.2
-    repository: https://charts.jetstack.io # https://artifacthub.io/packages/helm/cert-manager/cert-manager-csi-driver
-  # https://github.dev/kubernetes/autoscaler/blob/master/charts/cluster-autoscaler/values.yaml
-  - name: cluster-autoscaler
-    version: 9.21.0
-    repository: https://kubernetes.github.io/autoscaler # NOTE: link does not open in a browser, is this fine?
-    containers:
-      image:
-        name:
-          repository: k8s.gcr.io/autoscaling/cluster-autoscaler
-        ver:
-          tag: v1.24.0
-        source: k8s.gcr.io/autoscaling
-  # https://github.dev/kubernetes-sigs/external-dns/blob/master/charts/external-dns/values.yaml
-  - name: external-dns
-    version: 1.11.0
-    repository: https://kubernetes-sigs.github.io/external-dns/
-    containers:
-      image:
-        name:
-          repository: k8s.gcr.io/external-dns/external-dns
-        ver:
-          tag: v0.12.2
-        source: k8s.gcr.io/external-dns
-  - name: flux
-    version: 1.13.3
-    repository: https://charts.fluxcd.io
-  # https://github.dev/kubernetes/ingress-nginx/blob/main/charts/ingress-nginx/values.yaml
-  - name: ingress-nginx
-    version: 4.5.2
-    repository: https://kubernetes.github.io/ingress-nginx
-    containers: &ingress_nginx
-      controller.admissionWebhooks.patch.image:
-        name:
-          image: ingress-nginx/kube-webhook-certgen
-        ver:
-          tag: v20221220-controller-v1.5.1-58-g787ea74b6
-        registry:
-          registry: registry.k8s.io
-      defaultBackend.image:
-        name:
-          image: defaultbackend-amd64
-        ver:
-          tag: "1.5"
-        registry:
-          registry: registry.k8s.io
-      controller.image:
-        name:
-          image: ingress-nginx/controller
-        ver:
-          tag: v1.6.4
-        registry:
-          registry: registry.k8s.io
-  - name: ingress-nginx-internal
-    chart: ingress-nginx
-    version: 4.5.2
-    repository: https://kubernetes.github.io/ingress-nginx
-    containers: *ingress_nginx
-  - name: istio-operator
-    version: 1.7.0
-    repository: https://clusterfrak-dynamics.github.io/istio/ # FIXME: dead link
-  - name: k8gb
-    version: v0.9.0
-    repository: https://www.k8gb.io
-  - name: karma
-    version: 1.7.2
-    repository: https://charts.helm.sh/stable
-  - name: keda
-    version: 2.8.2
-    repository: https://kedacore.github.io/charts
-  - name: keycloak
-    version: 18.3.0
-    repository: https://codecentric.github.io/helm-charts # https://github.com/codecentric/helm-charts
-  - name: kong
-    version: 2.13.1
-    repository: https://charts.konghq.com
-  # https://github.dev/prometheus-community/helm-charts/blob/main/charts/kube-prometheus-stack/values.yaml
-  - name: kube-prometheus-stack
-    version: 46.4.1
-    repository: https://prometheus-community.github.io/helm-charts
-    containers:
-      prometheus-node-exporter.image:
-        name:
-          repository: prometheus/node-exporter
-        registry:
-          registry: quay.io
-        ver:
-          tag: v1.5.0
-      kube-state-metrics.image:
-        name:
-          repository: kube-state-metrics/kube-state-metrics
-        registry:
-          registry: registry.k8s.io
-        ver:
-          tag: v2.8.2
-      alertmanager.alertmanagerSpec.image:
-        name:
-          repository: prometheus/alertmanager
-        registry:
-          registry: quay.io
-        ver:
-          tag: v0.25.0
-      prometheusOperator.admissionWebhooks.patch.image:
-        name:
-          repository: ingress-nginx/kube-webhook-certgen
-        registry:
-          registry: k8s.gcr.io
-        ver:
-          tag: v1.3.0
-      prometheusOperator.image:
-        name:
-          repository: prometheus-operator/prometheus-operator
-        registry:
-          registry: quay.io
-        ver:
-          tag: v0.65.1
-      prometheusOperator.prometheusConfigReloader.image:
-        name:
-          repository: prometheus-operator/prometheus-config-reloader
-        registry:
-          registry: quay.io
-        ver:
-          tag: v0.65.1
-      prometheusOperator.thanosImage: &thanos
-        name:
-          repository: thanos/thanos
-        registry:
-          registry: quay.io
-        ver:
-          tag: v0.31.0
-      prometheus.prometheusSpec.image:
-        name:
-          repository: prometheus/prometheus
-        registry:
-          registry: quay.io
-        ver:
-          tag: v2.44.0
-      thanosRuler.thanosRulerSpec.image: *thanos
-      # https://github.dev/grafana/helm-charts/blob/main/charts/grafana/values.yaml
-      grafana.image:
-        name:
-          repository: docker.io/grafana/grafana
-        ver:
-          tag: 9.5.2
-        source: docker.io/grafana
-      grafana.downloadDashboardsImage:
-        name:
-          repository: docker.io/curlimages/curl
-        ver:
-          tag: 8.00.1
-        source: docker.io
-      grafana.initChownData.image:
-        name:
-          repository: docker.io/busybox
-        ver:
-          tag: 1.31.1
-        source: docker.io
-      grafana.sidecar.image:
-        name:
-          repository: quay.io/kiwigrid/k8s-sidecar
-        ver:
-          tag: 1.23.1
-        source: quay.io
-      grafana.imageRenderer.image:
-        name:
-          repository: docker.io/grafana/grafana-image-renderer
-        source: docker.io/grafana
-  - name: kyverno
-    version: v2.5.3
-    repository: https://kyverno.github.io/kyverno/
-  - name: kyverno-crds
-    version: v2.0.3
-    repository: https://kyverno.github.io/kyverno/
-  - name: linkerd2
-    repository: https://helm.linkerd.io/edge # FIXME: dead link
-    version: 21.12.3
-  - name: linkerd2-cni
-    repository: https://helm.linkerd.io/edge # FIXME: dead link
-    version: 21.12.4
-  - name: linkerd-viz
-    repository: https://helm.linkerd.io/edge # FIXME: dead link
-    version: 21.12.4
-  - name: loki-stack
-    version: 2.8.3
-    repository: https://grafana.github.io/helm-charts
-  - name: loki
-    version: 5.5.1
-    repository: https://grafana.github.io/helm-charts
-    containers:
-      nginx-unprivileged.image:
-        name:
-          repository: docker.io/nginxinc/nginx-unprivileged
-        ver:
-          tag: 1.19-alpine
-        source: docker.io/nginxinc
-      loki.image:
-        name:
-          repository: docker.io/grafana/loki
-        ver:
-          tag: 2.8.2
-        source: docker.io/grafana
-  - name: promtail
-    version: 6.11.2
-    repository: https://grafana.github.io/helm-charts
-    containers:
-      promtail.image:
-        name:
-          repository: docker.io/grafana/promtail
-        ver:
-          tag: 2.8.2
-        source: docker.io/grafana
-  # https://github.dev/kubernetes-sigs/metrics-server/blob/master/charts/metrics-server/values.yaml
-  - name: metrics-server
-    version: 3.8.2
-    repository: https://kubernetes-sigs.github.io/metrics-server/
-    containers:
-      image:
-        name:
-          repository: k8s.gcr.io/metrics-server/metrics-server
-        ver:
-          tag: v0.6.1
-        source: k8s.gcr.io/metrics-server
-  # https://github.dev/deliveryhero/helm-charts/blob/master/stable/node-problem-detector/values.yaml
-  - name: node-problem-detector
-    version: 2.2.6
-    repository: https://charts.deliveryhero.io/
-    containers:
-      image:
-        name:
-          repository: k8s.gcr.io/node-problem-detector/node-problem-detector
-        ver:
-          tag: v0.8.10
-        source: k8s.gcr.io/node-problem-detector
-  - name: prometheus-adapter
-    version: 3.4.0
-    repository: https://prometheus-community.github.io/helm-charts
-  - name: prometheus-cloudwatch-exporter
-    version: 0.21.0
-    repository: https://prometheus-community.github.io/helm-charts
-  - name: prometheus-blackbox-exporter
-    version: 7.1.0
-    repository: https://prometheus-community.github.io/helm-charts
-  - name: rabbitmq-cluster-operator
-    version: 3.1.0
-    repository: https://charts.bitnami.com/bitnami
-  - name: scaleway-webhook
-    version: v0.0.1
-    repository: https://particuleio.github.io/charts # FIXME: dead link
-  - name: sealed-secrets
-    version: 2.6.9
-    repository: https://bitnami-labs.github.io/sealed-secrets
-  - name: strimzi-kafka-operator
-    version: 0.31.1
-    repository: https://strimzi.io/charts/ # FIXME: dead link
-  - name: thanos
-    version: 11.5.3
-    repository: https://charts.bitnami.com/bitnami
-  # https://github.dev/projectcalico/calico/blob/master/charts/tigera-operator/values.yaml
-  - name: tigera-operator
-    version: v3.24.1
-    repository: https://docs.projectcalico.org/charts # Access denied
-    containers:
-      tigeraOperator:
-        name:
-          image: tigera/operator
-        ver:
-          version: master
-        registry:
-          registry: quay.io
-      calicoctl:
-        name:
-          image: docker.io/calico/ctl
-        ver:
-          tag: master
-        source: docker.io # ctl is ambiguose, leave calico prefix in ECR repo url
-  - name: traefik
-    version: 10.30.1
-    repository: https://helm.traefik.io/traefik
-  - name: memcached
-    version: 6.2.5
-    repository: https://charts.bitnami.com/bitnami
-  - name: vault
-    version: 0.22.0
-    repository: https://helm.releases.hashicorp.com
-  - name: velero
-    version: 2.31.8
-    repository: https://vmware-tanzu.github.io/helm-charts
-  - name: victoria-metrics-k8s-stack
-    version: 0.12.4
-    repository: https://victoriametrics.github.io/helm-charts/
-  # https://github.com/dexidp/helm-charts/blob/master/charts/dex/values.yaml
-  # TODO: maybe switch to https://github.com/mintel/dex-k8s-authenticator/blob/master/charts/dex/values.yaml
-  - name: dex
-    version: 0.14.0
-    repository: https://charts.dexidp.io
-    containers:
-      image:
-        name:
-          repository: ghcr.io/dexidp/dex
-        ver:
-          tag: v2.36.0
-        source: ghcr.io/dexidp
-  # https://github.dev/sagikazarmark/helm-charts/blob/master/charts/dex-k8s-authenticator/values.yaml
-  # TODO: maybe switch to https://github.com/mintel/dex-k8s-authenticator/blob/master/charts/dex-k8s-authenticator/values.yaml
-  - name: dex-k8s-authenticator
-    version: 0.0.2
-    repository: https://charts.sagikazarmark.dev/
-    containers:
-      image:
-        name:
-          repository: mintel/dex-k8s-authenticator
-        ver:
-          tag: 1.4.0
-        source: mintel
-  # https://github.com/kubernetes/dashboard/blob/215d1b3ebdaaf079dae7913a0bbb0a7a33d15212/charts/helm-chart/kubernetes-dashboard/values.yaml
-  - name: kubernetes-dashboard
-    version: 6.0.7
-    repository: https://kubernetes.github.io/dashboard
-    containers:
-      image:
-        name:
-          repository: kubernetesui/dashboard
-        ver:
-          tag: v2.7.0
-        source: kubernetesui
-      metricsScraper.image:
-        name:
-          repository: kubernetesui/metrics-scraper
-        ver:
-          tag: v1.0.9
-        source: kubernetesui
-  # https://github.dev/FairwindsOps/charts/blob/master/stable/rbac-manager/values.yaml
-  - name: rbac-manager
-    version: 1.16.0
-    repository: https://charts.fairwinds.com/stable
-    containers:
-      image:
-        name:
-          repository: quay.io/reactiveops/rbac-manager
-        ver:
-          tag: v1.5.0
-        source: quay.io/reactiveops
-
-  # Not helm, but kubectl_manifest managed containers data
-  # Override path is <manifest_file>.<container_name>
-  # https://github.com/kubernetes-csi/external-snapshotter
-  - name: csi-external-snapshotter
-    containers:
-      setup-snapshot-controller.snapshot-controller:
-        manager: kustomize
-        name:
-          repository: gcr.io/k8s-staging-sig-storage/snapshot-controller
-        ver:
-          tag: v5.0.1
-        source: gcr.io/k8s-staging-sig-storage
-      setup-csi-snapshotter.csi-provisioner:
-        manager: kustomize
-        name:
-          repository: k8s.gcr.io/sig-storage/csi-provisioner
-        ver:
-          tag: v3.2.1
-        source: k8s.gcr.io/sig-storage
-      setup-csi-snapshotter.csi-snapshotter:
-        manager: kustomize
-        name:
-          repository: gcr.io/k8s-staging-sig-storage/csi-snapshotter
-        ver:
-          tag: v6.0.1
-        source: gcr.io/k8s-staging-sig-storage
-      setup-csi-snapshotter.hostpath:
-        manager: kustomize
-        name:
-          repository: k8s.gcr.io/sig-storage/hostpathplugin
-        ver:
-          tag: v1.8.0
-        source: k8s.gcr.io # hostpathplugin is likely ambigouse, leave the sig prefix
