@@ -18,43 +18,43 @@ dependencies:
         repository: k8s.gcr.io/sig-storage/csi-attacher
       source: k8s.gcr.io/sig-storage
       ver:
-        tag: v3.4.0
+        tag: v4.2.0
     sidecars.csiProvisioner.image:
       name:
         repository: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner
       source: public.ecr.aws/eks-distro
       ver:
-        tag: v2.1.1-eks-1-18-13
+        tag: v3.5.0-eks-1-27-5
     sidecars.livenessProbe.image:
       name:
         repository: k8s.gcr.io/sig-storage/livenessprobe
       source: k8s.gcr.io
       ver:
-        tag: v2.6.0
+        tag: v2.10.0
     sidecars.nodeDriverRegistrar.image:
       name:
         repository: k8s.gcr.io/sig-storage/csi-node-driver-registrar
       source: k8s.gcr.io/sig-storage
       ver:
-        tag: v2.5.1
+        tag: v2.8.0
     sidecars.provisioner.image:
       name:
         repository: k8s.gcr.io/sig-storage/csi-provisioner
       source: k8s.gcr.io/sig-storage
       ver:
-        tag: v3.1.0
+        tag: v3.4.1
     sidecars.resizer.image:
       name:
         repository: k8s.gcr.io/sig-storage/csi-resizer
       source: k8s.gcr.io/sig-storage
       ver:
-        tag: v1.4.0
+        tag: v1.7.0
     sidecars.snapshotter.image:
       name:
         repository: k8s.gcr.io/sig-storage/csi-snapshotter
       source: k8s.gcr.io/sig-storage
       ver:
-        tag: v6.0.1
+        tag: v6.2.1
   name: aws-ebs-csi-driver
   repository: https://kubernetes-sigs.github.io/aws-ebs-csi-driver
   version: 2.11.1
@@ -64,25 +64,25 @@ dependencies:
         repository: docker.io/amazon/aws-efs-csi-driver
       source: docker.io/amazon
       ver:
-        tag: v1.4.1
+        tag: v1.5.6
     sidecars.csiProvisioner.image:
       name:
         repository: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner
       source: public.ecr.aws/eks-distro
       ver:
-        tag: v2.1.1-eks-1-18-13
+        tag: v3.5.0-eks-1-27-5
     sidecars.livenessProbe.image:
       name:
         repository: public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe
       source: public.ecr.aws/eks-distro
       ver:
-        tag: v2.2.0-eks-1-18-13
+        tag: v2.10.0-eks-1-27-5
     sidecars.nodeDriverRegistrar.image:
       name:
         repository: public.ecr.aws/eks-distro/kubernetes-csi/node-driver-registrar
       source: public.ecr.aws/eks-distro
       ver:
-        tag: v2.1.0-eks-1-18-13
+        tag: v2.8.0-eks-1-27-5
   name: aws-efs-csi-driver
   repository: https://kubernetes-sigs.github.io/aws-efs-csi-driver
   version: 2.2.8
@@ -95,7 +95,7 @@ dependencies:
         repository: docker.io/amazon/aws-alb-ingress-controller
       source: docker.io/amazon
       ver:
-        tag: v2.4.3
+        tag: v2.4.5
   name: aws-load-balancer-controller
   repository: https://aws.github.io/eks-charts
   version: 1.4.5
@@ -111,53 +111,54 @@ dependencies:
         repository: quay.io/jetstack/cert-manager-acmesolver
       source: quay.io/jetstack
       ver:
-        tag: v1.11.0
+        tag: v1.12.1
     cainjector.image:
       name:
         repository: quay.io/jetstack/cert-manager-cainjector
       source: quay.io/jetstack
       ver:
-        tag: v1.11.0
+        tag: v1.12.1
     extraArgs.acme-http01-solver-image:
       manager: extra
       name:
         repository: quay.io/jetstack/cert-manager-acmesolver
       source: quay.io/jetstack
       ver:
-        tag: v1.9.1
+        tag: v1.12.1
     gateway-api-admission.create_or_patch:
       manager: kustomize
       name:
         repository: k8s.gcr.io/ingress-nginx/kube-webhook-certgen
       source: k8s.gcr.io/ingress-nginx
       ver:
-        tag: v1.1.1
+        tag: v1.3.0
     gateway-api-admission.webhook:
       manager: kustomize
       name:
         repository: gcr.io/k8s-staging-gateway-api/admission-server
       source: gcr.io
       ver:
-        tag: v0.5.1
+        tag: v0.7.1
     image:
       name:
         repository: quay.io/jetstack/cert-manager-controller
       source: quay.io/jetstack
       ver:
-        tag: v1.11.0
+        tag: v1.12.1
     startupapicheck.image:
       name:
         repository: quay.io/jetstack/cert-manager-ctl
       source: quay.io/jetstack
       ver:
-        tag: v1.11.0
+        tag: v1.12.1
     webhook.image:
       name:
         repository: quay.io/jetstack/cert-manager-webhook
       source: quay.io/jetstack
       ver:
-        tag: v1.11.0
+        tag: v1.12.1
   name: cert-manager
+  manifests_version: v0.5.1
   repository: https://charts.jetstack.io
   version: v1.11.0
 - name: cert-manager-csi-driver
@@ -169,7 +170,7 @@ dependencies:
         repository: k8s.gcr.io/autoscaling/cluster-autoscaler
       source: k8s.gcr.io/autoscaling
       ver:
-        tag: v1.24.0
+        tag: v1.26.2
   name: cluster-autoscaler
   repository: https://kubernetes.github.io/autoscaler
   version: 9.21.0
@@ -179,7 +180,7 @@ dependencies:
         repository: k8s.gcr.io/external-dns/external-dns
       source: k8s.gcr.io/external-dns
       ver:
-        tag: v0.12.2
+        tag: v0.13.4
   name: external-dns
   repository: https://kubernetes-sigs.github.io/external-dns/
   version: 1.11.0
@@ -193,14 +194,14 @@ dependencies:
       registry:
         registry: registry.k8s.io
       ver:
-        tag: v20221220-controller-v1.5.1-58-g787ea74b6
+        tag: v1.3.0
     controller.image:
       name:
         image: ingress-nginx/controller
       registry:
         registry: registry.k8s.io
       ver:
-        tag: v1.6.4
+        tag: v1.8.0
     defaultBackend.image:
       name:
         image: defaultbackend-amd64
@@ -219,14 +220,14 @@ dependencies:
       registry:
         registry: registry.k8s.io
       ver:
-        tag: v20221220-controller-v1.5.1-58-g787ea74b6
+        tag: v1.3.0
     controller.image:
       name:
         image: ingress-nginx/controller
       registry:
         registry: registry.k8s.io
       ver:
-        tag: v1.6.4
+        tag: v1.8.0
     defaultBackend.image:
       name:
         image: defaultbackend-amd64
@@ -268,13 +269,13 @@ dependencies:
         repository: docker.io/curlimages/curl
       source: docker.io
       ver:
-        tag: 8.00.1
+        tag: 8.1.2
     grafana.image:
       name:
         repository: docker.io/grafana/grafana
       source: docker.io/grafana
       ver:
-        tag: 9.5.2
+        tag: 10.0.0
     grafana.imageRenderer.image:
       name:
         repository: docker.io/grafana/grafana-image-renderer
@@ -290,28 +291,28 @@ dependencies:
         repository: quay.io/kiwigrid/k8s-sidecar
       source: quay.io
       ver:
-        tag: 1.23.1
+        tag: 1.24.4
     kube-state-metrics.image:
       name:
         repository: kube-state-metrics/kube-state-metrics
       registry:
         registry: registry.k8s.io
       ver:
-        tag: v2.8.2
+        tag: v2.9.2
     prometheus-node-exporter.image:
       name:
         repository: prometheus/node-exporter
       registry:
         registry: quay.io
       ver:
-        tag: v1.5.0
+        tag: v1.6.0
     prometheus.prometheusSpec.image:
       name:
         repository: prometheus/prometheus
       registry:
         registry: quay.io
       ver:
-        tag: v2.44.0
+        tag: v2.45.0-rc.0
     prometheusOperator.admissionWebhooks.patch.image:
       name:
         repository: ingress-nginx/kube-webhook-certgen
@@ -325,14 +326,14 @@ dependencies:
       registry:
         registry: quay.io
       ver:
-        tag: v0.65.1
+        tag: v0.65.2
     prometheusOperator.prometheusConfigReloader.image:
       name:
         repository: prometheus-operator/prometheus-config-reloader
       registry:
         registry: quay.io
       ver:
-        tag: v0.65.1
+        tag: v0.65.2
     prometheusOperator.thanosImage:
       name:
         repository: thanos/thanos
@@ -380,7 +381,7 @@ dependencies:
         repository: docker.io/nginxinc/nginx-unprivileged
       source: docker.io/nginxinc
       ver:
-        tag: 1.19-alpine
+        tag: 1.25.0
   name: loki
   repository: https://grafana.github.io/helm-charts
   version: 5.5.1
@@ -400,7 +401,7 @@ dependencies:
         repository: k8s.gcr.io/metrics-server/metrics-server
       source: k8s.gcr.io/metrics-server
       ver:
-        tag: v0.6.1
+        tag: v0.6.3
   name: metrics-server
   repository: https://kubernetes-sigs.github.io/metrics-server/
   version: 3.8.2
@@ -410,7 +411,7 @@ dependencies:
         repository: k8s.gcr.io/node-problem-detector/node-problem-detector
       source: k8s.gcr.io/node-problem-detector
       ver:
-        tag: v0.8.10
+        tag: v0.8.13
   name: node-problem-detector
   repository: https://charts.deliveryhero.io/
   version: 2.2.6
@@ -444,7 +445,7 @@ dependencies:
         image: docker.io/calico/ctl
       source: docker.io
       ver:
-        tag: master
+        tag: v3.26.0
     tigeraOperator:
       name:
         image: tigera/operator
@@ -512,7 +513,7 @@ dependencies:
         repository: quay.io/reactiveops/rbac-manager
       source: quay.io/reactiveops
       ver:
-        tag: v1.5.0
+        tag: v1.6.4
   name: rbac-manager
   repository: https://charts.fairwinds.com/stable
   version: 1.16.0
@@ -523,28 +524,29 @@ dependencies:
         repository: k8s.gcr.io/sig-storage/csi-provisioner
       source: k8s.gcr.io/sig-storage
       ver:
-        tag: v3.2.1
+        tag: v3.4.1
     setup-csi-snapshotter.csi-snapshotter:
       manager: kustomize
       name:
         repository: gcr.io/k8s-staging-sig-storage/csi-snapshotter
       source: gcr.io/k8s-staging-sig-storage
       ver:
-        tag: v6.0.1
+        tag: v6.2.2
     setup-csi-snapshotter.hostpath:
       manager: kustomize
       name:
         repository: k8s.gcr.io/sig-storage/hostpathplugin
       source: k8s.gcr.io
       ver:
-        tag: v1.8.0
+        tag: v1.11.0
     setup-snapshot-controller.snapshot-controller:
       manager: kustomize
       name:
         repository: gcr.io/k8s-staging-sig-storage/snapshot-controller
       source: gcr.io/k8s-staging-sig-storage
       ver:
-        tag: v5.0.1
+        tag: v6.2.2
   name: csi-external-snapshotter
+  manifests_version: v6.0.1
 name: Handle terraform-kubernetes-addons helm chart dependencies update
 version: 1.0.0

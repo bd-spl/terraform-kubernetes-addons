@@ -1,5 +1,7 @@
 locals {
-
+  cert-manager_manifests_version = try(
+    var.cert-manager.manifests_version, ""
+  ) != "" ? var.cert-manager.manifests_version : local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].manifests_version
   cert-manager = merge(
     local.helm_defaults,
     {
@@ -37,8 +39,12 @@ locals {
       allowed_cidrs             = ["0.0.0.0/0"]
       csi_driver                = false
       name_prefix               = "${var.cluster-name}-cert-manager"
-      kustomize_external        = false
       extra_tpl                 = {}
+      kustomize_external        = false
+      # Kustomize resources
+      resources = [
+        "https://github.com/kubernetes-sigs/gateway-api/releases/download/${local.cert-manager_manifests_version}/standard-install.yaml"
+      ]
     },
     var.cert-manager
   )
@@ -99,7 +105,7 @@ VALUES
   cert-manager_extra_tpl = [
     for i in [
       for k, v in local.cert-manager_extra_tpl_vars :
-      { "${k}" = yamldecode(replace(
+      { "${k}" = yamldecode(replace( # tflint-ignore: terraform_deprecated_interpolation
         replace(
           yamlencode(local.cert-manager.extra_tpl),
           format("$%s", keys(v.params)[0]), "$${${keys(v.params)[0]}}"
@@ -115,32 +121,43 @@ VALUES
   cert-manager_kustomizations_patched = flatten([
     for k, data in local.cert-manager.kustomizations :
     [for v in compact(split("---", data)) :
-      yamlencode(merge(
-        try(yamldecode(v), {}),
-        {
-          images = [
-            for c in try(yamldecode(v).images, []) :
-            {
-              # Remove unique identifiers distinguishing same images used for different containers
-              name = split("::", c.name)[0]
-              newName = local.cert-manager_containers_data[
-                format(
-                  "%s.%s.repository",
-                  k,
-                  split("::", local.cert-manager.kustomizations_images_map[k][c.name])[0]
-                )
-              ].repo
-              newTag = try(c.newTag, local.cert-manager_containers_data[
-                format(
-                  "%s.%s.repository",
-                  k,
-                  split("::", local.cert-manager.kustomizations_images_map[k][c.name])[0]
-                )
-              ].tag)
-            }
-          ]
-        }
-    ))]
+      replace(
+        yamlencode(merge(
+          try(yamldecode(v), {}),
+          {
+            resources = lookup(
+              try(yamldecode(v), {}),
+              "resources",
+              local.cert-manager.resources
+            )
+          },
+          lookup(try(yamldecode(v), {}), "images", null) == null ? {} : {
+            images = [
+              for c in try(yamldecode(v).images, []) :
+              {
+                # Remove unique identifiers distinguishing same images used for different containers
+                name = split("::", c.name)[0]
+                newName = local.cert-manager_containers_data[
+                  format(
+                    "%s.%s.repository",
+                    k,
+                    split("::", local.cert-manager.kustomizations_images_map[k][c.name])[0]
+                  )
+                ].repo
+                newTag = try(c.newTag, "") != "" ? c.newTag : local.cert-manager_containers_data[
+                  format(
+                    "%s.%s.repository",
+                    k,
+                    split("::", local.cert-manager.kustomizations_images_map[k][c.name])[0]
+                  )
+                ].tag
+              }
+            ]
+          }
+          )
+        ),
+      "$manifest_version", local.cert-manager_manifests_version)
+    ]
   ])
 }
 
@@ -171,8 +188,13 @@ resource "null_resource" "cert-manager-kustomize" {
     filemd5       = filemd5("cert-manager.tf")
   }
 
+  # NOTE: cannot update Jobs' spec immutable container images data
   provisioner "local-exec" {
-    command = local.cert-manager.kustomize_external ? "kustomize build ./kustomization-${each.key}/kustomization | kubectl apply -f -" : "kubectl apply -k ./kustomization-${each.key}/kustomization"
+    command = <<-EOT
+    kubectl delete job gateway-api-admission -n gateway-system --ignore-not-found
+    kubectl delete job gateway-api-admission-patch -n gateway-system --ignore-not-found
+    ${local.cert-manager.kustomize_external ? "kustomize build ./kustomization-${each.key}/kustomization | kubectl apply -f -" : "kubectl apply -k ./kustomization-${each.key}/kustomization"}
+  EOT
   }
 
   depends_on = [

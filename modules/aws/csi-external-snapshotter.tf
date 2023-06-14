@@ -1,5 +1,7 @@
 locals {
-
+  csi-external-snapshotter_manifests_version = try(
+    var.csi-external-snapshotter.manifests_version, ""
+  ) != "" ? var.csi-external-snapshotter.manifests_version : local.helm_dependencies[index(local.helm_dependencies.*.name, "csi-external-snapshotter")].manifests_version
   csi-external-snapshotter = merge(
     {
       create_ns          = false
@@ -9,12 +11,12 @@ locals {
       kustomize_external = false
       # Kustomize resources
       resources = [
-        "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml",
-        "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml",
-        "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml",
-        "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml",
-        "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/deploy/kubernetes/csi-snapshotter/setup-csi-snapshotter.yaml",
-        "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${var.csi-external-snapshotter.version}/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml"
+        "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${local.csi-external-snapshotter_manifests_version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotclasses.yaml",
+        "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${local.csi-external-snapshotter_manifests_version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshotcontents.yaml",
+        "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${local.csi-external-snapshotter_manifests_version}/client/config/crd/snapshot.storage.k8s.io_volumesnapshots.yaml",
+        "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${local.csi-external-snapshotter_manifests_version}/deploy/kubernetes/snapshot-controller/setup-snapshot-controller.yaml",
+        "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${local.csi-external-snapshotter_manifests_version}/deploy/kubernetes/csi-snapshotter/setup-csi-snapshotter.yaml",
+        "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${local.csi-external-snapshotter_manifests_version}/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml"
       ]
     },
     var.csi-external-snapshotter
@@ -46,39 +48,43 @@ locals {
   csi-external-snapshotter_kustomizations_patched = flatten([
     for k, data in local.csi-external-snapshotter.kustomizations :
     [for v in compact(split("---", data)) :
-      yamlencode(merge(
-        try(yamldecode(v), {}),
-        {
-          resources = lookup(
-            try(yamldecode(v), {}),
-            "resources",
-            local.csi-external-snapshotter.resources
+      replace(
+        yamlencode(merge(
+          try(yamldecode(v), {}),
+          {
+            resources = lookup(
+              try(yamldecode(v), {}),
+              "resources",
+              local.csi-external-snapshotter.resources
+            )
+          },
+          lookup(try(yamldecode(v), {}), "images", null) == null ? {} : {
+            images = [
+              for c in try(yamldecode(v).images, []) :
+              {
+                # Remove unique identifiers distinguishing same images used for different containers
+                name = split("::", c.name)[0]
+                newName = local.csi-external-snapshotter_containers_data[
+                  format(
+                    "%s.%s.repository",
+                    k,
+                    split("::", local.csi-external-snapshotter.kustomizations_images_map[k][c.name])[0]
+                  )
+                ].repo
+                newTag = try(c.newTag, "") != "" ? c.newTag : local.csi-external-snapshotter_containers_data[
+                  format(
+                    "%s.%s.repository",
+                    k,
+                    split("::", local.csi-external-snapshotter.kustomizations_images_map[k][c.name])[0]
+                  )
+                ].tag
+              }
+            ]
+          }
           )
-        },
-        lookup(try(yamldecode(v), {}), "images", null) == null ? {} : {
-          images = [
-            for c in try(yamldecode(v).images, []) :
-            {
-              # Remove unique identifiers distinguishing same images used for different containers
-              name = split("::", c.name)[0]
-              newName = local.csi-external-snapshotter_containers_data[
-                format(
-                  "%s.%s.repository",
-                  k,
-                  split("::", local.csi-external-snapshotter.kustomizations_images_map[k][c.name])[0]
-                )
-              ].repo
-              newTag = try(c.newTag, local.csi-external-snapshotter_containers_data[
-                format(
-                  "%s.%s.repository",
-                  k,
-                  split("::", local.csi-external-snapshotter.kustomizations_images_map[k][c.name])[0]
-                )
-              ].tag)
-            }
-          ]
-        }
-    ))]
+        ),
+      "$manifest_version", local.csi-external-snapshotter_manifests_version)
+    ]
   ])
 }
 
