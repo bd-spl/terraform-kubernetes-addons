@@ -454,7 +454,7 @@ dependencies:
         version: master
   name: tigera-operator
   repository: https://docs.projectcalico.org/charts
-  version: v3.24.6
+  version: v3.26.0
 - name: traefik
   repository: https://helm.traefik.io/traefik
   version: 23.1.0
