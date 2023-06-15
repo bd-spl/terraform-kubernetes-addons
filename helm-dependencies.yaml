@@ -361,7 +361,7 @@ dependencies:
   version: 21.12.3
 - name: linkerd2-cni
   repository: https://helm.linkerd.io/edge
-  version: 21.12.4
+  version: 30.8.1
 - name: linkerd-viz
   repository: https://helm.linkerd.io/edge
   version: 21.12.4
