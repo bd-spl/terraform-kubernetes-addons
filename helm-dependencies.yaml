@@ -437,7 +437,7 @@ dependencies:
   version: 0.31.1
 - name: thanos
   repository: https://charts.bitnami.com/bitnami
-  version: 11.5.3
+  version: 12.6.3
 - containers:
     calicoctl:
       name:
