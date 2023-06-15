@@ -416,7 +416,7 @@ dependencies:
   version: 2.2.6
 - name: prometheus-adapter
   repository: https://prometheus-community.github.io/helm-charts
-  version: 3.4.0
+  version: 3.4.2
 - name: prometheus-cloudwatch-exporter
   repository: https://prometheus-community.github.io/helm-charts
   version: 0.21.0
