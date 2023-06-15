@@ -434,7 +434,7 @@ dependencies:
   version: 2.6.9
 - name: strimzi-kafka-operator
   repository: https://strimzi.io/charts/
-  version: 0.31.1
+  version: 0.35.1
 - name: thanos
   repository: https://charts.bitnami.com/bitnami
   version: 12.6.3
