@@ -67,14 +67,14 @@ VALUES
         v.rewrite_values.tag.value,
         v.rewrite_values.image.tail
       )
-      repo = v.ecr_prepare_images && v.source_provided ? "${
-        try(aws_ecr_repository.this[
+      repo = v.ecr_prepare_images && v.source_provided ? try(
+        aws_ecr_repository.this[
           format("%s.%s", split(".", k)[0], split(".", k)[2])
-        ].repository_url, "")}" : v.ecr_prepare_images ? "${
-        try(aws_ecr_repository.this[
+        ].repository_url, "") : v.ecr_prepare_images ? try(
+        aws_ecr_repository.this[
           format("%s.%s", split(".", k)[0], split(".", k)[2])
-        ].name, "")
-      }" : v.rewrite_values.image.value
+        ].name, ""
+      ) : v.rewrite_values.image.value
       src = v.src
     } if v.manager == "kustomize" || v.manager == "extra"
   }
@@ -99,7 +99,7 @@ VALUES
   cert-manager_extra_tpl = [
     for i in [
       for k, v in local.cert-manager_extra_tpl_vars :
-      { "${k}" = yamldecode(replace(
+      { k = yamldecode(replace(
         replace(
           yamlencode(local.cert-manager.extra_tpl),
           format("$%s", keys(v.params)[0]), "$${${keys(v.params)[0]}}"
@@ -304,11 +304,11 @@ resource "helm_release" "cert-manager" {
         try(aws_ecr_repository.this[
           format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
         ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? "${
-        try(aws_ecr_repository.this[
+        }" : set.value.ecr_prepare_images ? try(
+        aws_ecr_repository.this[
           format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, "")
-      }" : set.value.rewrite_values.image.value
+        ].name, ""
+      ) : set.value.rewrite_values.image.value
     }
   }
   dynamic "set" {

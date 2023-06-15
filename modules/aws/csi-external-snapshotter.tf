@@ -29,15 +29,14 @@ locals {
         v.rewrite_values.tag.value,
         v.rewrite_values.image.tail
       )
-      repo = v.ecr_prepare_images && v.source_provided ? "${
-        try(aws_ecr_repository.this[
+      repo = v.ecr_prepare_images && v.source_provided ? try(
+        aws_ecr_repository.this[
           format("%s.%s", split(".", k)[0], split(".", k)[2])
-        ].repository_url, "")}" : v.ecr_prepare_images ? "${
-        try(aws_ecr_repository.this[
+        ].repository_url, "") : v.ecr_prepare_images ? try(
+        aws_ecr_repository.this[
           format("%s.%s", split(".", k)[0], split(".", k)[2])
-        ].name, "")
-      }" : v.rewrite_values.image.value
-      src = v.src
+        ].name, ""
+      ) : v.rewrite_values.image.value
     } if v.manager == "kustomize" || v.manager == "extra"
   }
 

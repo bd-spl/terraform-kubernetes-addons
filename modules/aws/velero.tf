@@ -85,7 +85,7 @@ data "aws_iam_policy_document" "velero" {
   count = local.velero.enabled && local.velero.create_iam_resources_irsa ? 1 : 0
   source_policy_documents = [
     data.aws_iam_policy_document.velero_default.0.json,
-    local.velero.kms_key_arn_access_list != [] ? data.aws_iam_policy_document.velero_kms.0.json : jsonencode({})
+    length(local.velero.kms_key_arn_access_list) != 0 ? data.aws_iam_policy_document.velero_kms.0.json : jsonencode({})
   ]
 }
 
@@ -127,7 +127,7 @@ data "aws_iam_policy_document" "velero_default" {
 }
 
 data "aws_iam_policy_document" "velero_kms" {
-  count = local.velero.enabled && local.velero.create_iam_resources_irsa && local.velero.kms_key_arn_access_list != [] ? 1 : 0
+  count = local.velero.enabled && local.velero.create_iam_resources_irsa && length(local.velero.kms_key_arn_access_list) != 0 ? 1 : 0
 
   statement {
     effect = "Allow"

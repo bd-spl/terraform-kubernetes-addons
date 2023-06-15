@@ -13,7 +13,7 @@ locals {
       create_iam_resources_irsa = true
       iam_policy_override       = null
       default_network_policy    = true
-      name_prefix               = "${var.cluster-name}"
+      name_prefix               = var.cluster-name
     },
     v,
   ) }
@@ -142,11 +142,11 @@ resource "helm_release" "external-dns" {
         try(aws_ecr_repository.this[
           format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
         ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? "${
-        try(aws_ecr_repository.this[
+        }" : set.value.ecr_prepare_images ? try(
+        aws_ecr_repository.this[
           format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, "")
-      }" : set.value.rewrite_values.image.value
+        ].name, ""
+      ) : set.value.rewrite_values.image.value
     }
   }
   dynamic "set" {

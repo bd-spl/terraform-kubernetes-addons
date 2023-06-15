@@ -55,7 +55,7 @@ resource "helm_release" "admiralty" {
     local.values_admiralty,
     local.admiralty["extra_values"]
   ]
-  namespace = local.admiralty["create_ns"] ? kubernetes_namespace.admiralty.*.metadata.0.name[count.index] : local.admiralty["namespace"]
+  namespace = local.admiralty["create_ns"] ? kubernetes_namespace.admiralty.*.metadata[0].name[count.index] : local.admiralty["namespace"]
 }
 
 resource "kubernetes_network_policy" "admiralty_default_deny" {

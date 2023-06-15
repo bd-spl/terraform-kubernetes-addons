@@ -90,23 +90,27 @@ variable "dex" {
 
 variable "oauth_client_secret" {
   description = "OAUTH login secret for Dex (staticClient) IDP OIDC provider. Must match dex[oauth_client_secret], if pre-created"
+  type        = string
   default     = ""
   sensitive   = true
 }
 
 variable "ldap_user_dn" {
   description = "FreeIPA reader user DN for Dex IDP LDAP connector. Must match dex[ldap_acc_secret], if pre-created"
+  type        = string
   default     = ""
 }
 
 variable "ldap_user_password" {
   description = "FreeIPA reader user password for Dex IDP LDAP connector. Must match dex[ldap_acc_secret], if pre-created"
+  type        = string
   default     = ""
   sensitive   = true
 }
 
 variable "create_secrets" {
   description = "Create k8s secrets from the provided sensitive inputs, or pick already existing ones"
+  type        = bool
   default     = false
 }
 

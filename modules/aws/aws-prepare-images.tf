@@ -1,25 +1,31 @@
 variable "ecr_prepare_images" {
   description = "Prepare containers images for addons and store it in ECR"
+  type        = bool
   default     = false
 }
 variable "ecr_immutable_tag" {
   description = "Use immutable tags for ECR images"
+  type        = bool
   default     = false
 }
 variable "ecr_scan_on_push" {
   description = "Scan prepared ECR images on push"
+  type        = bool
   default     = false
 }
 variable "ecr_encryption_type" {
   description = "Encryption type for ECR images"
+  type        = string
   default     = "AES256"
 }
 variable "ecr_kms_key" {
   description = "Preconfigured KMS key arn to encrypt ECR images"
+  type        = string
   default     = null
 }
 variable "ecr_tags" {
   description = "Tags to apply for ECR registry resources (overwrites default provider tags)"
+  type        = any
   default     = {}
 }
 
