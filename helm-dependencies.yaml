@@ -419,7 +419,7 @@ dependencies:
   version: 4.2.0
 - name: prometheus-cloudwatch-exporter
   repository: https://prometheus-community.github.io/helm-charts
-  version: 0.21.1
+  version: 0.25.0
 - name: prometheus-blackbox-exporter
   repository: https://prometheus-community.github.io/helm-charts
   version: 7.1.3
