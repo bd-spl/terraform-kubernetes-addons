@@ -99,7 +99,7 @@ VALUES
   cert-manager_extra_tpl = [
     for i in [
       for k, v in local.cert-manager_extra_tpl_vars :
-      { k = yamldecode(replace(
+      { "${k}" = yamldecode(replace(
         replace(
           yamlencode(local.cert-manager.extra_tpl),
           format("$%s", keys(v.params)[0]), "$${${keys(v.params)[0]}}"

@@ -123,7 +123,7 @@ resource "aws_ecr_repository" "this" {
     kms_key         = each.value[0].ecr_encryption_type == "KMS" ? each.value[0].ecr_kms_key : null
   }
 
-  tags = jsondecode(var.ecr_tags)
+  tags = var.ecr_tags
 }
 
 # Push images from public source to ECR repos
