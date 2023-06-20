@@ -1,79 +1,44 @@
-name: Pre-Commit
+name: 'terraform-kubernetes-addons'
 
 on:
   pull_request:
     branches:
       - main
-      - master
+    paths:
+      - 'modules/aws/*'
   workflow_dispatch:
 
-env:
-  TERRAFORM_DOCS_VERSION: v0.16.0
-
 jobs:
-  collectInputs:
-    name: Collect workflow inputs
+  renovate-config-check:
+    name: 'renovate:config'
     runs-on: ubuntu-latest
-    outputs:
-      directories: ${{ steps.dirs.outputs.directories }}
+    if: github.ref != 'refs/heads/release'
     steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+    - name: Checkout
+      uses: actions/checkout@v3
 
-      - name: Get root directories
-        id: dirs
-        uses: clowdhaus/terraform-composite-actions/directories@v1.6.0
+    - uses: actions/setup-node@v3
+      with:
+        node-version: '18'
+        check-latest: true
 
-  preCommitMinVersions:
-    name: Min TF pre-commit
-    needs: collectInputs
-    runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        directory: ${{ fromJson(needs.collectInputs.outputs.directories) }}
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
+    - name: Install Renovate
+      run: npm install -g renovate
 
-      - name: Terraform min/max versions
-        id: minMax
-        uses: clowdhaus/terraform-min-max@v1.2.6
-        with:
-          directory: ${{ matrix.directory }}
+    - name: Check Renovate configuraton
+      run: renovate-config-validator
 
-      - name: Pre-commit Terraform ${{ steps.minMax.outputs.minVersion }}
-        # Run only validate pre-commit check on min version supported
-        if: ${{ matrix.directory !=  '.' }}
-        uses: clowdhaus/terraform-composite-actions/pre-commit@v1.6.0
-        with:
-          terraform-version: ${{ steps.minMax.outputs.minVersion }}
-          args: 'terraform_validate --color=always --show-diff-on-failure --files ${{ matrix.directory }}/*'
+  lint:
+    - name: 'asdf:install'                                                                                                                                                       
+      uses: asdf-vm/actions/install@v2.2.0
 
-      - name: Pre-commit Terraform ${{ steps.minMax.outputs.minVersion }}
-        # Run only validate pre-commit check on min version supported
-        if: ${{ matrix.directory ==  '.' }}
-        uses: clowdhaus/terraform-composite-actions/pre-commit@v1.6.0
-        with:
-          terraform-version: ${{ steps.minMax.outputs.minVersion }}
-          args: 'terraform_validate --color=always --show-diff-on-failure --files $(ls *.tf)'
+    - uses: actions/setup-python@v4
 
-  preCommitMaxVersion:
-    name: Max TF pre-commit
-    runs-on: ubuntu-latest
-    needs: collectInputs
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v3
-        with:
-          ref: ${{ github.event.pull_request.head.ref }}
-          repository: ${{github.event.pull_request.head.repo.full_name}}
+    - name: Init tooling
+      run: |
+        tflint --init
 
-      - name: Terraform min/max versions
-        id: minMax
-        uses: clowdhaus/terraform-min-max@v1.2.6
-
-      - name: Pre-commit Terraform ${{ steps.minMax.outputs.maxVersion }}
-        uses: clowdhaus/terraform-composite-actions/pre-commit@v1.6.0
-        with:
-          terraform-version: ${{ steps.minMax.outputs.maxVersion }}
-          terraform-docs-version: ${{ env.TERRAFORM_DOCS_VERSION }}
+    - name: Check modules
+      uses: pre-commit/action@v3.0.0
+      with:
+        extra_args: --show-diff-on-failure --all-files
