@@ -26,6 +26,12 @@ locals {
       default_global_limits             = false
       manage_crds                       = true
       name_prefix                       = "${var.cluster-name}-kps"
+      ldap_enabled                      = false
+      ldap_toml                         = ""
+      ldap_acc_secretname               = "ldap-acc-secret"
+      infra_ca_secretname               = "infra-ca-secret" # a name for auto-generated secret
+      infra_ca_data                     = [{ name = "ipa", pem = "" }]
+      create_secrets                    = true
     },
     var.kube-prometheus-stack
   )
@@ -238,6 +244,29 @@ grafana:
     isDefault: false
     jsonData:
       implementation: prometheus
+VALUES
+
+  values_grafana_ldap = <<VALUES
+grafana:
+  grafana.ini:
+    auth.ldap:
+      enabled: true
+      allow_sign_up: true
+      config_file: /etc/grafana/ldap.toml
+  ldap:
+    enabled: true
+    config: |-
+      root_ca_cert = "/etc/certs/ca.crt"
+  ${indent(6, local.kube-prometheus-stack["ldap_toml"])}
+  envFromSecret: ${local.kube-prometheus-stack["ldap_acc_secretname"]}
+  extraSecretMounts:
+    - name: ca
+      mountPath: /etc/certs
+      readOnly: true
+  extraContainerVolumes:
+    - name: ca
+      secret:
+        secretName: ${local.kube-prometheus-stack["infra_ca_secretname"]}
 VALUES
 
   values_dashboard_thanos = <<VALUES
@@ -483,6 +512,7 @@ resource "helm_release" "kube-prometheus-stack" {
     local.kube-prometheus-stack["thanos_sidecar_enabled"] ? local.values_grafana_ds : null,
     local.kube-prometheus-stack["default_global_requests"] ? local.values_kps_global_requests : null,
     local.kube-prometheus-stack["default_global_limits"] ? local.values_kps_global_limits : null,
+    local.kube-prometheus-stack["ldap_enabled"] ? local.values_grafana_ldap : null,
     local.kube-prometheus-stack["extra_values"]
   ])
 
@@ -641,6 +671,44 @@ resource "kubernetes_network_policy" "kube-prometheus-stack_allow_control_plane"
     policy_types = ["Ingress"]
   }
 }
+
+resource "kubernetes_secret" "grafana_ldap_acc_secret" {
+  count = local.kube-prometheus-stack["enabled"] && local.kube-prometheus-stack["ldap_enabled"] && local.create_secrets ? 1 : 0
+  metadata {
+    name      = local.kube-prometheus-stack["ldap_acc_secretname"]
+    namespace = local.kube-prometheus-stack["namespace"]
+  }
+
+  type = "generic"
+
+  data = {
+    "LDAP_USER_DN"       = var.ldap_user_dn
+    "LDAP_USER_PASSWORD" = var.ldap_user_password
+  }
+
+  depends_on = [
+    kubernetes_namespace.kube-prometheus-stack
+  ]
+}
+
+resource "kubernetes_secret" "grafana_infra_ca_secret" {
+  count = local.kube-prometheus-stack["enabled"] && local.kube-prometheus-stack["ldap_enabled"] ? 1 : 0
+  metadata {
+    name      = local.kube-prometheus-stack["infra_ca_secretname"]
+    namespace = local.kube-prometheus-stack["namespace"]
+  }
+
+  type = "generic"
+
+  data = {
+    "ca.crt" = base64encode(join("\n", [for cert in local.kube-prometheus-stack["infra_ca_data"] : cert.pem]))
+  }
+
+  depends_on = [
+    kubernetes_namespace.kube-prometheus-stack
+  ]
+}
+
 
 output "grafana_password" {
   value     = element(concat(random_password.grafana_password.*.result, [""]), 0)
