@@ -20,7 +20,6 @@ locals {
 grafana:
   rbac:
     pspEnabled: false
-  adminPassword: ${join(",", random_password.grafana_password.*.result)}
   dashboardProviders:
     dashboardproviders.yaml:
       apiVersion: 1
@@ -141,6 +140,11 @@ resource "helm_release" "kube-prometheus-stack" {
     local.values_dashboard_node_exporter
   ])
   namespace = kubernetes_namespace.kube-prometheus-stack.*.metadata.0.name[count.index]
+
+  set_sensitive {
+    name  = "grafana.adminPassword"
+    value = join(",", random_password.grafana_password.*.result)
+  }
 
   depends_on = [
     helm_release.ingress-nginx,

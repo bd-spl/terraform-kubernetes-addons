@@ -16,8 +16,6 @@ locals {
   )
 
   values_victoria-metrics-k8s-stack = <<VALUES
-grafana:
-  adminPassword: ${join(",", random_password.grafana_password.*.result)}
 prometheus-node-exporter:
   priorityClassName: ${local.priority-class-ds["create"] ? kubernetes_priority_class.kubernetes_addons_ds[0].metadata[0].name : ""}
 victoria-metrics-operator:
@@ -89,6 +87,11 @@ resource "helm_release" "victoria-metrics-k8s-stack" {
     local.victoria-metrics-k8s-stack["extra_values"]
   ])
   namespace = kubernetes_namespace.victoria-metrics-k8s-stack.*.metadata.0.name[count.index]
+
+  set_sensitive {
+    name  = "grafana.adminPassword"
+    value = join(",", random_password.grafana_password.*.result)
+  }
 
   depends_on = [
     helm_release.ingress-nginx,

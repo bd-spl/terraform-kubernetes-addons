@@ -57,7 +57,6 @@ grafana:
     nameTest: ${local.kube-prometheus-stack["grafana_service_account_name"]}-test
     annotations:
       eks.amazonaws.com/role-arn: "${local.kube-prometheus-stack["enabled"] && local.kube-prometheus-stack["grafana_create_iam_resources_irsa"] ? module.iam_assumable_role_kube-prometheus-stack_grafana.iam_role_arn : ""}"
-  adminPassword: ${join(",", random_password.grafana_password.*.result)}
   dashboardProviders:
     dashboardproviders.yaml:
       apiVersion: 1
@@ -515,6 +514,11 @@ resource "helm_release" "kube-prometheus-stack" {
     local.kube-prometheus-stack["ldap_enabled"] ? local.values_grafana_ldap : null,
     local.kube-prometheus-stack["extra_values"]
   ])
+
+  set_sensitive {
+    name  = "grafana.adminPassword"
+    value = join(",", random_password.grafana_password.*.result)
+  }
 
   #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
   dynamic "set" {
