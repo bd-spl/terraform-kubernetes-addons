@@ -9,7 +9,7 @@ on:
   workflow_dispatch:
 
 jobs:
-  renovate-config-check:
+  terraform-lint:
     name: 'renovate:config'
     runs-on: ubuntu-latest
     if: github.ref != 'refs/heads/release'
@@ -28,7 +28,6 @@ jobs:
     - name: Check Renovate configuraton
       run: renovate-config-validator
 
-  lint:
     - name: 'asdf:install'                                                                                                                                                       
       uses: asdf-vm/actions/install@v2.2.0
 
