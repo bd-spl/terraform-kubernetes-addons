@@ -6,13 +6,35 @@ on:
       - main
     paths:
       - 'modules/aws/*'
-  workflow_dispatch:
+      - '.github/workflows'
+  # Enable it only for manual scheduling, while debugging jobs
+  #workflow_dispatch:
 
 jobs:
+  # Enable this, when we also start caring of modules other than AWS (eks)
+  #collectInputs:
+  #  if: github.ref != 'refs/heads/release'
+  #  name: Collect workflow inputs
+  #  runs-on: ubuntu-latest
+  #  outputs:
+  #    directories: ${{ steps.dirs.outputs.directories }}
+  #  steps:
+  #    - name: Checkout
+  #      uses: actions/checkout@v3
+  #
+  #    - name: Get root directories
+  #      id: dirs
+  #      uses: clowdhaus/terraform-composite-actions/directories@v1.6.0
+
   terraform-lint:
-    name: 'renovate:config'
-    runs-on: ubuntu-latest
+    name: 'renovate:config and tf-lint'
     if: github.ref != 'refs/heads/release'
+    runs-on: ubuntu-latest
+    # Enable this, when we also start caring of modules other than AWS (eks)
+    #needs: collectInputs
+    #strategy:
+    #  matrix:
+    #    directory: ${{ fromJson(needs.collectInputs.outputs.directories) }}
     steps:
     - name: Checkout
       uses: actions/checkout@v3
@@ -28,11 +50,38 @@ jobs:
     - name: Check Renovate configuraton
       run: renovate-config-validator
 
-    - name: 'asdf:install'                                                                                                                                                       
+    - name: Terraform min/max versions
+      id: minMax
+      uses: clowdhaus/terraform-min-max@v1.2.6
+      with:
+        directory: "./modules/aws"
+        #directory: ${{ matrix.directory }}
+
+    - name: Pre-commit Terraform ${{ steps.minMax.outputs.minVersion }}
+      uses: clowdhaus/terraform-composite-actions/pre-commit@v1.6.0
+      with:
+        terraform-version: ${{ steps.minMax.outputs.minVersion }}
+        args: 'terraform_validate --color=always --show-diff-on-failure --files $(ls *.tf ./modules/aws/*.tf)'
+        # Use this instead, when we also start caring of modules other than AWS (eks)
+        #args: 'terraform_validate --color=always --show-diff-on-failure --files $(ls *.tf ${{ matrix.directory }}/*.tf'
+    
+    - name: Remove installed terraform/tflint
+      run: |
+        sudo rm -f /usr/bin/terraform
+        sudo rm -f /usr/bin/tflint
+
+    - name: Pre-commit Terraform ${{ steps.minMax.outputs.maxVersion }}
+      uses: clowdhaus/terraform-composite-actions/pre-commit@v1.6.0
+      with:
+        terraform-version: ${{ steps.minMax.outputs.maxVersion }}
+        args: 'terraform_validate --color=always --show-diff-on-failure --files $(ls *.tf ./modules/aws/*.tf)'
+
+    - name: 'asdf:install'
+
       uses: asdf-vm/actions/install@v2.2.0
 
     - uses: actions/setup-python@v4
-
+      
     - name: Init tooling
       run: |
         tflint --init
