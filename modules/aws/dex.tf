@@ -35,6 +35,8 @@ locals {
       oauth_client_secretname   = "oauth-client-secret"
       oauth_client_id           = "kubernetes"
       create_secrets            = true
+      hpa                       = ""
+      resources                 = {}
 
       cluster_identity_providers = {
         ldap = {
@@ -53,6 +55,8 @@ locals {
 
   values_dex_idp = <<VALUES
 nameOverride: "${local.dex["name_idp"]}"
+resources: ${jsonencode(local.dex["resources"])}
+${yamldecode(jsonencode(local.dex["hpa"]))}
 
 serviceMonitor:
   enabled: ${local.kube-prometheus-stack["enabled"] || local.victoria-metrics-k8s-stack["enabled"]}
@@ -161,6 +165,8 @@ VALUES
 
   values_dex_auth = <<VALUES
 nameOverride: "${local.dex["name_auth"]}"
+resources: ${jsonencode(local.dex["resources"])}
+${yamldecode(jsonencode(local.dex["hpa"]))}
 config:
   clusters:
     - name: "EKS"

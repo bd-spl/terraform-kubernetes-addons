@@ -649,8 +649,19 @@ The list of the source repositories for helm-charts that we use in these forks o
 --
   # https://github.dev/sagikazarmark/helm-charts/blob/master/charts/dex-k8s-authenticator/values.yaml
   # TODO: maybe switch to https://github.com/mintel/dex-k8s-authenticator/blob/master/charts/dex-k8s-authenticator/values.yaml
+  # https://github.dev/dexidp/helm-charts/blob/master/charts/dex/values.yaml
+  - name: dex
 --
   # https://github.dev/FairwindsOps/charts/blob/master/stable/rbac-manager/values.yaml
   - name: rbac-manager
-```
+--
+  # https://github.dev/helm/charts/blob/master/stable/kubernetes-dashboard/values.yaml
+  # TODO: maybe switch to https://github.com/kubernetes/dashboard/blob/master/charts/helm-chart/kubernetes-dashboard
+  - name: kubernetes-dashboard
+--
+  # https://github.dev/grafana/loki/blob/main/production/helm/loki/values.yaml
+  - name: loki-stack
+--
+  # https://github.com/grafana/helm-charts/blob/main/charts/promtail/values.yaml
+  - name: promtail
 ```
