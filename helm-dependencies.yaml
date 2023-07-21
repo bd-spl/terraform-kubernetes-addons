@@ -426,7 +426,7 @@ dependencies:
   version: 7.10.0
 - name: rabbitmq-cluster-operator
   repository: https://charts.bitnami.com/bitnami
-  version: 3.4.2
+  version: 3.4.3
 - name: scaleway-webhook
   repository: https://particuleio.github.io/charts
   version: v0.0.1
