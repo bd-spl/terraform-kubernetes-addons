@@ -85,7 +85,7 @@ dependencies:
         tag: v2.8.0-eks-1-27-5
   name: aws-efs-csi-driver
   repository: https://kubernetes-sigs.github.io/aws-efs-csi-driver
-  version: 2.2.8
+  version: 2.4.7
 - name: aws-for-fluent-bit
   repository: https://aws.github.io/eks-charts
   version: 0.1.27
