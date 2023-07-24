@@ -53,7 +53,7 @@ query issues {
     }
   }
 EOF
-curl -sH "Authorization: bearer $GHTOKEN" -X POST -d "{\"query\": $(ruby -e 'puts `cat /tmp/ghq2`.inspect')\"}" https://api.github.com/graphql |\
+curl -sH "Authorization: bearer $GHTOKEN" -X POST -d "{\"query\": $(ruby -e 'puts `cat /tmp/ghq`.inspect')\"}" https://api.github.com/graphql |\
  jq -r '.data.search.edges[] | select((.node.title?) and (.node.title|contains("update"))) | "\(.node.title) \(.node.url)"' > /tmp/gh_prs
 
 # Reduce the PRs by issues
