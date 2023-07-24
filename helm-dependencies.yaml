@@ -516,7 +516,7 @@ dependencies:
         tag: v1.6.4
   name: rbac-manager
   repository: https://charts.fairwinds.com/stable
-  version: 1.16.0
+  version: 1.17.2
 - containers:
     setup-csi-snapshotter.csi-provisioner:
       manager: kustomize
