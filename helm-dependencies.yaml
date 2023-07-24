@@ -480,7 +480,7 @@ dependencies:
         tag: v2.36.0
   name: dex
   repository: https://charts.dexidp.io
-  version: 0.14.0
+  version: 0.15.2
 - containers:
     image:
       name:
