@@ -57,7 +57,7 @@ dependencies:
         tag: v6.2.1
   name: aws-ebs-csi-driver
   repository: https://kubernetes-sigs.github.io/aws-ebs-csi-driver
-  version: 2.11.1
+  version: 2.21.0
 - containers:
     image:
       name:
