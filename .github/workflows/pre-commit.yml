@@ -58,7 +58,7 @@ jobs:
         #directory: ${{ matrix.directory }}
 
     - name: Pre-commit Terraform ${{ steps.minMax.outputs.minVersion }}
-      uses: clowdhaus/terraform-composite-actions/pre-commit@v1.6.0
+      uses: clowdhaus/terraform-composite-actions/pre-commit@v1.8.3
       with:
         terraform-version: ${{ steps.minMax.outputs.minVersion }}
         args: 'terraform_validate --color=always --show-diff-on-failure --files $(ls *.tf ./modules/aws/*.tf)'
@@ -71,7 +71,7 @@ jobs:
         sudo rm -f /usr/bin/tflint
 
     - name: Pre-commit Terraform ${{ steps.minMax.outputs.maxVersion }}
-      uses: clowdhaus/terraform-composite-actions/pre-commit@v1.6.0
+      uses: clowdhaus/terraform-composite-actions/pre-commit@v1.8.3
       with:
         terraform-version: ${{ steps.minMax.outputs.maxVersion }}
         args: 'terraform_validate --color=always --show-diff-on-failure --files $(ls *.tf ./modules/aws/*.tf)'
