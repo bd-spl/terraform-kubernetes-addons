@@ -255,7 +255,7 @@ dependencies:
   version: 18.4.3
 - name: kong
   repository: https://charts.konghq.com
-  version: 2.23.0
+  version: 2.25.0
 - containers:
     alertmanager.alertmanagerSpec.image:
       name:
