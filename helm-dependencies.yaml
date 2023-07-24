@@ -384,7 +384,7 @@ dependencies:
         tag: 1.25.0
   name: loki
   repository: https://grafana.github.io/helm-charts
-  version: 5.5.1
+  version: 5.8.11
 - containers:
     promtail.image:
       name:
