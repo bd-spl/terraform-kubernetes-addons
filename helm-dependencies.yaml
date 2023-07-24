@@ -368,7 +368,7 @@ dependencies:
   version: 21.12.4
 - name: loki-stack
   repository: https://grafana.github.io/helm-charts
-  version: 2.8.3
+  version: 2.9.10
 - containers:
     loki.image:
       name:
