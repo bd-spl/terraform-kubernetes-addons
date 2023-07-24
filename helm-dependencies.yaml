@@ -414,7 +414,7 @@ dependencies:
         tag: v0.8.13
   name: node-problem-detector
   repository: https://charts.deliveryhero.io/
-  version: 2.2.6
+  version: 2.3.5
 - name: prometheus-adapter
   repository: https://prometheus-community.github.io/helm-charts
   version: 4.2.0
