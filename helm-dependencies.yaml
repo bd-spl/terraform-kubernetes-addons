@@ -353,7 +353,7 @@ dependencies:
   version: 46.4.1
 - name: kyverno
   repository: https://kyverno.github.io/kyverno/
-  version: 3.0.1
+  version: 3.0.2
 - name: kyverno-crds
   repository: https://kyverno.github.io/kyverno/
   version: v2.0.3
