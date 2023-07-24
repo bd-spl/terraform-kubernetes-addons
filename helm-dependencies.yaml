@@ -9,46 +9,46 @@ dependencies:
 - containers:
     image:
       name:
-        repository: docker.io/amazon/aws-ebs-csi-driver
-      source: docker.io/amazon
+        repository: public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver
+      source: public.ecr.aws/ebs-csi-driver
       ver:
-        tag: v1.6.2
+        tag: v1.21.0
     sidecars.attacher.image:
       name:
-        repository: k8s.gcr.io/sig-storage/csi-attacher
-      source: k8s.gcr.io/sig-storage
+        repository: public.ecr.aws/eks-distro/kubernetes-csi/external-attacher
+      source: public.ecr.aws/eks-distro
       ver:
-        tag: v4.2.0
+        tag: v4.3.0-eks-1-27-8
     sidecars.csiProvisioner.image:
       name:
         repository: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner
       source: public.ecr.aws/eks-distro
       ver:
-        tag: v3.5.0-eks-1-27-5
+        tag: v3.5.0-eks-1-27-8
     sidecars.livenessProbe.image:
       name:
-        repository: k8s.gcr.io/sig-storage/livenessprobe
-      source: k8s.gcr.io
+        repository: public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe
+      source: public.ecr.aws/eks-distro
       ver:
-        tag: v2.10.0
+        tag: v2.10.0-eks-1-27-8
     sidecars.nodeDriverRegistrar.image:
       name:
-        repository: k8s.gcr.io/sig-storage/csi-node-driver-registrar
-      source: k8s.gcr.io/sig-storage
+        repository: public.ecr.aws/eks-distro/kubernetes-csi/node-driver-registrar
+      source: public.ecr.aws/eks-distro
       ver:
-        tag: v2.8.0
+        tag: v2.8.0-eks-1-27-8
     sidecars.provisioner.image:
       name:
-        repository: k8s.gcr.io/sig-storage/csi-provisioner
-      source: k8s.gcr.io/sig-storage
+        repository: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner
+      source: public.ecr.aws/eks-distro
       ver:
-        tag: v3.4.1
+        tag: v3.5.0-eks-1-27-8
     sidecars.resizer.image:
       name:
-        repository: k8s.gcr.io/sig-storage/csi-resizer
-      source: k8s.gcr.io/sig-storage
+        repository: public.ecr.aws/eks-distro/kubernetes-csi/external-resizer
+      source: public.ecr.aws/eks-distro
       ver:
-        tag: v1.7.0
+        tag: v1.8.0-eks-1-27-8
     sidecars.snapshotter.image:
       name:
         repository: k8s.gcr.io/sig-storage/csi-snapshotter
@@ -64,25 +64,25 @@ dependencies:
         repository: docker.io/amazon/aws-efs-csi-driver
       source: docker.io/amazon
       ver:
-        tag: v1.5.6
+        tag: v1.5.8
     sidecars.csiProvisioner.image:
       name:
         repository: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner
       source: public.ecr.aws/eks-distro
       ver:
-        tag: v3.5.0-eks-1-27-5
+        tag: v3.5.0-eks-1-27-8
     sidecars.livenessProbe.image:
       name:
         repository: public.ecr.aws/eks-distro/kubernetes-csi/livenessprobe
       source: public.ecr.aws/eks-distro
       ver:
-        tag: v2.10.0-eks-1-27-5
+        tag: v2.10.0-eks-1-27-8
     sidecars.nodeDriverRegistrar.image:
       name:
         repository: public.ecr.aws/eks-distro/kubernetes-csi/node-driver-registrar
       source: public.ecr.aws/eks-distro
       ver:
-        tag: v2.8.0-eks-1-27-5
+        tag: v2.8.0-eks-1-27-8
   name: aws-efs-csi-driver
   repository: https://kubernetes-sigs.github.io/aws-efs-csi-driver
   version: 2.4.7
@@ -201,7 +201,7 @@ dependencies:
       registry:
         registry: registry.k8s.io
       ver:
-        tag: v1.8.0
+        tag: v1.8.1
     defaultBackend.image:
       name:
         image: defaultbackend-amd64
@@ -227,7 +227,7 @@ dependencies:
       registry:
         registry: registry.k8s.io
       ver:
-        tag: v1.8.0
+        tag: v1.8.1
     defaultBackend.image:
       name:
         image: defaultbackend-amd64
@@ -269,13 +269,13 @@ dependencies:
         repository: docker.io/curlimages/curl
       source: docker.io
       ver:
-        tag: 8.1.2
+        tag: 8.2.0
     grafana.image:
       name:
         repository: docker.io/grafana/grafana
       source: docker.io/grafana
       ver:
-        tag: 10.0.0
+        tag: 10.0.2
     grafana.imageRenderer.image:
       name:
         repository: docker.io/grafana/grafana-image-renderer
@@ -291,7 +291,7 @@ dependencies:
         repository: quay.io/kiwigrid/k8s-sidecar
       source: quay.io
       ver:
-        tag: 1.24.4
+        tag: 1.25.0
     kube-state-metrics.image:
       name:
         repository: kube-state-metrics/kube-state-metrics
@@ -305,14 +305,14 @@ dependencies:
       registry:
         registry: quay.io
       ver:
-        tag: v1.6.0
+        tag: v1.6.1
     prometheus.prometheusSpec.image:
       name:
         repository: prometheus/prometheus
       registry:
         registry: quay.io
       ver:
-        tag: v2.45.0-rc.0
+        tag: v2.46.0-rc.0
     prometheusOperator.admissionWebhooks.patch.image:
       name:
         repository: ingress-nginx/kube-webhook-certgen
@@ -326,14 +326,14 @@ dependencies:
       registry:
         registry: quay.io
       ver:
-        tag: v0.65.2
+        tag: v0.66.0
     prometheusOperator.prometheusConfigReloader.image:
       name:
         repository: prometheus-operator/prometheus-config-reloader
       registry:
         registry: quay.io
       ver:
-        tag: v0.65.2
+        tag: v0.66.0
     prometheusOperator.thanosImage:
       name:
         repository: thanos/thanos
@@ -375,13 +375,13 @@ dependencies:
         repository: docker.io/grafana/loki
       source: docker.io/grafana
       ver:
-        tag: 2.8.2
+        tag: 2.8.3
     nginx-unprivileged.image:
       name:
         repository: docker.io/nginxinc/nginx-unprivileged
       source: docker.io/nginxinc
       ver:
-        tag: 1.25.0
+        tag: 1.25.1
   name: loki
   repository: https://grafana.github.io/helm-charts
   version: 5.8.11
@@ -391,7 +391,7 @@ dependencies:
         repository: docker.io/grafana/promtail
       source: docker.io/grafana
       ver:
-        tag: 2.8.2
+        tag: 2.8.3
   name: promtail
   repository: https://grafana.github.io/helm-charts
   version: 6.11.8
@@ -445,7 +445,7 @@ dependencies:
         image: docker.io/calico/ctl
       source: docker.io
       ver:
-        tag: v3.26.0
+        tag: v3.26.1
     tigeraOperator:
       name:
         image: tigera/operator
@@ -477,7 +477,7 @@ dependencies:
         repository: ghcr.io/dexidp/dex
       source: ghcr.io/dexidp
       ver:
-        tag: v2.36.0
+        tag: v2.37.0
   name: dex
   repository: https://charts.dexidp.io
   version: 0.15.2
@@ -546,7 +546,7 @@ dependencies:
       source: gcr.io/k8s-staging-sig-storage
       ver:
         tag: v6.2.2
-  name: csi-external-snapshotter
   manifests_version: v6.0.1
+  name: csi-external-snapshotter
 name: Handle terraform-kubernetes-addons helm chart dependencies update
 version: 1.0.0
