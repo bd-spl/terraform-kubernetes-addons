@@ -183,7 +183,7 @@ dependencies:
         tag: v0.13.4
   name: external-dns
   repository: https://kubernetes-sigs.github.io/external-dns/
-  version: 1.11.0
+  version: 1.13.0
 - name: flux
   repository: https://charts.fluxcd.io
   version: 1.13.3
