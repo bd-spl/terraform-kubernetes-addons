@@ -92,10 +92,10 @@ dependencies:
 - containers:
     image:
       name:
-        repository: docker.io/amazon/aws-alb-ingress-controller
-      source: docker.io/amazon
+        repository: public.ecr.aws/eks/aws-load-balancer-controller
+      source: public.ecr.aws/eks
       ver:
-        tag: v2.4.5
+        tag: v2.5.4
   name: aws-load-balancer-controller
   repository: https://aws.github.io/eks-charts
   version: 1.5.5
