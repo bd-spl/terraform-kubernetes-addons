@@ -132,6 +132,7 @@ resource "null_resource" "csi-external-snapshotter-kubectl" {
   triggers = {
     kustomization = each.value
     filemd5       = filemd5("csi-external-snapshotter.tf")
+    filemd5       = filemd5("helm-dependencies.yaml")
   }
 
   provisioner "local-exec" {
