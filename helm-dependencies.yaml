@@ -243,7 +243,7 @@ dependencies:
   version: 1.7.0
 - name: k8gb
   repository: https://www.k8gb.io
-  version: v0.11.1
+  version: v0.11.2
 - name: karma
   repository: https://charts.helm.sh/stable
   version: 1.7.2
