@@ -470,7 +470,7 @@ dependencies:
   version: 4.1.5
 - name: victoria-metrics-k8s-stack
   repository: https://victoriametrics.github.io/helm-charts/
-  version: 0.16.4
+  version: 0.17.3
 - containers:
     image:
       name:
