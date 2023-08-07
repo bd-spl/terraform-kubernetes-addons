@@ -88,7 +88,7 @@ dependencies:
   version: 2.4.7
 - name: aws-for-fluent-bit
   repository: https://aws.github.io/eks-charts
-  version: 0.1.27
+  version: 0.1.28
 - containers:
     image:
       name:
