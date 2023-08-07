@@ -237,7 +237,7 @@ dependencies:
         tag: '1.5'
   name: ingress-nginx-internal
   repository: https://kubernetes.github.io/ingress-nginx
-  version: 4.5.2
+  version: 4.7.1
 - name: istio-operator
   repository: https://clusterfrak-dynamics.github.io/istio/
   version: 1.7.0
