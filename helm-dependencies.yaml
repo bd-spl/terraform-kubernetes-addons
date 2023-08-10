@@ -458,7 +458,7 @@ dependencies:
   version: v3.26.1
 - name: traefik
   repository: https://helm.traefik.io/traefik
-  version: 23.2.0
+  version: 24.0.0
 - name: memcached
   repository: https://charts.bitnami.com/bitnami
   version: 6.5.6
