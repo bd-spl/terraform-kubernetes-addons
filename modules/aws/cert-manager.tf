@@ -186,7 +186,7 @@ resource "null_resource" "cert-manager-kustomize" {
   triggers = {
     kustomization = each.key
     filemd5       = filemd5("cert-manager.tf")
-    filemd5       = filemd5("helm-dependencies.yaml")
+    filemd5       = filemd5("../../helm-dependencies.yaml")
   }
 
   # NOTE: cannot update Jobs' spec immutable container images data
