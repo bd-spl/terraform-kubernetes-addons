@@ -3,18 +3,19 @@ locals {
   ingress-nginx = merge(
     local.helm_defaults,
     {
-      name                   = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].name
-      chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].name
-      repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].repository
-      chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].version
-      namespace              = "ingress-nginx"
-      use_nlb                = false
-      use_nlb_ip             = false
-      use_l7                 = false
-      enabled                = false
-      default_network_policy = true
-      ingress_cidrs          = ["0.0.0.0/0"]
-      allowed_cidrs          = ["0.0.0.0/0"]
+      name                    = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].name
+      chart                   = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].name
+      repository              = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].repository
+      chart_version           = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx")].version
+      namespace               = "ingress-nginx"
+      use_nlb                 = false
+      use_nlb_ip              = false
+      use_l7                  = false
+      enabled                 = false
+      default_network_policy  = true
+      albc_pod_readiness_gate = "disabled"
+      ingress_cidrs           = ["0.0.0.0/0"]
+      allowed_cidrs           = ["0.0.0.0/0"]
     },
     var.ingress-nginx
   )
@@ -135,6 +136,11 @@ resource "kubernetes_namespace" "ingress-nginx" {
     labels = {
       name                               = local.ingress-nginx["namespace"]
       "${local.labels_prefix}/component" = "ingress"
+      # If nginx uses aws-load-balancer controller (albc) with svc=LoadBalancer to create NLB, then enable 
+      # pod-readiness gates. Next pod will not come up till previous pod becomes a Healthy NLB target. This is crucial
+      # to prevent service outage. Acceptable values: enabled | disabled
+      # More details - https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.5/deploy/pod_readiness_gate/
+      "elbv2.k8s.aws/pod-readiness-gate-inject" = local.ingress-nginx-internal["albc_pod_readiness_gate"]
     }
 
     name = local.ingress-nginx["namespace"]
