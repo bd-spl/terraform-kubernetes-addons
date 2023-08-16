@@ -461,7 +461,7 @@ dependencies:
   version: 24.0.0
 - name: memcached
   repository: https://charts.bitnami.com/bitnami
-  version: 6.5.6
+  version: 6.5.7
 - name: vault
   repository: https://helm.releases.hashicorp.com
   version: 0.25.0
