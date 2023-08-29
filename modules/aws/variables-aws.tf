@@ -125,3 +125,9 @@ variable "rbac-manager" {
   type        = any
   default     = {}
 }
+
+variable "reloader" {
+  description = "Customize reloader chart, see `reloader.tf` for supported values"
+  type        = any
+  default     = {}
+}

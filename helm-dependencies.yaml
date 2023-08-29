@@ -518,6 +518,16 @@ dependencies:
   repository: https://charts.fairwinds.com/stable
   version: 1.17.2
 - containers:
+    image:
+      name:
+        repository: ghcr.io/stakater/reloader
+      source: ghcr.io/stakater
+      ver:
+        tag: v1.0.38
+  name: reloader
+  repository: https://stakater.github.io/stakater-charts
+  version: 1.0.38
+- containers:
     setup-csi-snapshotter.csi-provisioner:
       manager: kustomize
       name:
