@@ -82,7 +82,7 @@ data "flux_install" "main" {
 }
 
 # Split multi-doc YAML with
-# https://registry.terraform.io/providers/gavinbunney/kubectl/latest
+# https://registry.terraform.io/providers/alekc-forks/kubectl/latest
 data "kubectl_file_documents" "apply" {
   count   = local.flux2["enabled"] ? 1 : 0
   content = data.flux_install.main[0].content
@@ -106,7 +106,7 @@ data "flux_sync" "main" {
 }
 
 # Split multi-doc YAML with
-# https://registry.terraform.io/providers/gavinbunney/kubectl/latest
+# https://registry.terraform.io/providers/alekc-forks/kubectl/latest
 data "kubectl_file_documents" "sync" {
   count   = local.flux2["enabled"] ? 1 : 0
   content = data.flux_sync.main[0].content
