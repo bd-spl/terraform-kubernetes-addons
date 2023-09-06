@@ -45,6 +45,8 @@ locals {
       resources = [
         "https://github.com/kubernetes-sigs/gateway-api/releases/download/${local.cert-manager_manifests_version}/standard-install.yaml"
       ]
+      vpa_enable         = false
+      vpa_only_recommend = false
     },
     var.cert-manager
   )
@@ -265,9 +267,11 @@ resource "kubernetes_namespace" "cert-manager" {
       "certmanager.k8s.io/disable-validation" = "true"
     }
 
-    labels = {
+    labels = merge({
       name = local.cert-manager["namespace"]
-    }
+      }, local.cert-manager["vpa_only_recommend"] && local.cert-manager["vpa_enable"] ? {
+      "goldilocks.fairwinds.com/enabled" = "true"
+    } : {})
 
     name = local.cert-manager["namespace"]
   }

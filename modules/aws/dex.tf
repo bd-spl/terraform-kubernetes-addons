@@ -47,6 +47,13 @@ locals {
           groups_claim                  = "groups"
         }
       }
+
+      extra_values = {
+        idp  = ""
+        auth = ""
+      }
+      vpa_enable         = false
+      vpa_only_recommend = false
     },
     var.dex
   )
@@ -210,9 +217,11 @@ resource "kubernetes_namespace" "dex" {
   count = local.dex["enabled"] ? 1 : 0
 
   metadata {
-    labels = {
+    labels = merge({
       name = local.dex["namespace"]
-    }
+      }, local.dex["vpa_only_recommend"] && local.dex["vpa_enable"] ? {
+      "goldilocks.fairwinds.com/enabled" = "true"
+    } : {})
 
     name = local.dex["namespace"]
   }

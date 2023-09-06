@@ -26,6 +26,8 @@ locals {
       sg_auto_ingress_with_self                      = []
       sg_input_ingress_with_source_security_group_id = []
       name_prefix                                    = "${var.cluster-name}-aws-efs-csi-driver"
+      vpa_enable                                     = false
+      vpa_only_recommend                             = false
     },
     var.aws-efs-csi-driver
   )
@@ -78,9 +80,11 @@ resource "kubernetes_namespace" "aws-efs-csi-driver" {
   count = local.aws-efs-csi-driver["enabled"] && local.aws-efs-csi-driver["create_ns"] ? 1 : 0
 
   metadata {
-    labels = {
+    labels = merge({
       name = local.aws-efs-csi-driver["namespace"]
-    }
+      }, local.aws-efs-csi-driver["vpa_only_recommend"] && local.aws-efs-csi-driver["vpa_enable"] ? {
+      "goldilocks.fairwinds.com/enabled" = "true"
+    } : {})
 
     name = local.aws-efs-csi-driver["namespace"]
   }

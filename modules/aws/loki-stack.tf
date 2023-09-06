@@ -21,6 +21,8 @@ locals {
       create_promtail_cert      = true
       create_grafana_ds_cm      = true
       name_prefix               = "${var.cluster-name}-loki"
+      vpa_enable                = false
+      vpa_only_recommend        = false
     },
     var.loki-stack
   )
@@ -82,10 +84,12 @@ resource "kubernetes_namespace" "loki-stack" {
   count = local.loki-stack["enabled"] && local.loki-stack["create_ns"] ? 1 : 0
 
   metadata {
-    labels = {
+    labels = merge({
       name                               = local.loki-stack["namespace"]
       "${local.labels_prefix}/component" = "monitoring"
-    }
+      }, local.loki-stack["vpa_only_recommend"] && local.loki-stack["vpa_enable"] ? {
+      "goldilocks.fairwinds.com/enabled" = "true"
+    } : {})
 
     name = local.loki-stack["namespace"]
   }

@@ -11,6 +11,8 @@ locals {
       service_account_name   = "reloader"
       default_network_policy = true
       enabled                = false
+      vpa_enable             = false
+      vpa_only_recommend     = false
     },
     var.reloader
   )
@@ -23,9 +25,11 @@ resource "kubernetes_namespace" "reloader" {
   count = local.reloader["enabled"] ? 1 : 0
 
   metadata {
-    labels = {
+    labels = merge({
       name = local.reloader["namespace"]
-    }
+      }, local.reloader["vpa_only_recommend"] && local.reloader["vpa_enable"] ? {
+      "goldilocks.fairwinds.com/enabled" = "true"
+    } : {})
 
     name = local.reloader["namespace"]
   }

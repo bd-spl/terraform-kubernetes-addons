@@ -18,6 +18,8 @@ locals {
         "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${local.csi-external-snapshotter_manifests_version}/deploy/kubernetes/csi-snapshotter/setup-csi-snapshotter.yaml",
         "https://raw.githubusercontent.com/kubernetes-csi/external-snapshotter/${local.csi-external-snapshotter_manifests_version}/deploy/kubernetes/snapshot-controller/rbac-snapshot-controller.yaml"
       ]
+      vpa_enable         = false
+      vpa_only_recommend = false
     },
     var.csi-external-snapshotter
   )
@@ -118,9 +120,11 @@ resource "kubernetes_namespace" "csi-external-snapshotter" {
   count = local.csi-external-snapshotter.enabled && local.csi-external-snapshotter.create_ns ? 1 : 0
 
   metadata {
-    labels = {
+    labels = merge({
       name = local.csi-external-snapshotter.namespace
-    }
+      }, local.csi-external-snapshotter["vpa_only_recommend"] && local.csi-external-snapshotter["vpa_enable"] ? {
+      "goldilocks.fairwinds.com/enabled" = "true"
+    } : {})
 
     name = local.csi-external-snapshotter.namespace
   }

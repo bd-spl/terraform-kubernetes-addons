@@ -37,6 +37,8 @@ locals {
           deletionPolicy: Retain
         VOLUME_SNAPSHOT_CLASS
       name_prefix               = "${var.cluster-name}-aws-ebs-csi-driver"
+      vpa_enable                = false
+      vpa_only_recommend        = false
     },
     var.aws-ebs-csi-driver
   )
@@ -103,9 +105,11 @@ resource "kubernetes_namespace" "aws-ebs-csi-driver" {
   count = local.aws-ebs-csi-driver["enabled"] && local.aws-ebs-csi-driver["create_ns"] ? 1 : 0
 
   metadata {
-    labels = {
+    labels = merge({
       name = local.aws-ebs-csi-driver["namespace"]
-    }
+      }, local.aws-ebs-csi-driver["vpa_only_recommend"] && local.aws-ebs-csi-driver["vpa_enable"] ? {
+      "goldilocks.fairwinds.com/enabled" = "true"
+    } : {})
 
     name = local.aws-ebs-csi-driver["namespace"]
   }

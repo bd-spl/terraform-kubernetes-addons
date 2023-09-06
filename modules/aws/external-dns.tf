@@ -14,6 +14,8 @@ locals {
       iam_policy_override       = null
       default_network_policy    = true
       name_prefix               = var.cluster-name
+      vpa_enable                = false
+      vpa_only_recommend        = false
     },
     v,
   ) }
@@ -89,9 +91,11 @@ resource "kubernetes_namespace" "external-dns" {
   for_each = { for k, v in local.external-dns : k => v if v["enabled"] }
 
   metadata {
-    labels = {
+    labels = merge({
       name = each.value["namespace"]
-    }
+      }, each.value["vpa_only_recommend"] && each.value["vpa_enable"] ? {
+      "goldilocks.fairwinds.com/enabled" = "true"
+    } : {})
 
     name = each.value["namespace"]
   }

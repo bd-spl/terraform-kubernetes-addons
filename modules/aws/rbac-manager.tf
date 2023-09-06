@@ -12,6 +12,8 @@ locals {
       enabled                = false
       default_network_policy = true
       allow_cluster_view     = false
+      vpa_enable             = false
+      vpa_only_recommend     = false
     },
     var.rbac-manager
   )
@@ -29,9 +31,11 @@ resource "kubernetes_namespace" "rbac-manager" {
   count = local.rbac-manager["enabled"] ? 1 : 0
 
   metadata {
-    labels = {
+    labels = merge({
       name = local.rbac-manager["namespace"]
-    }
+      }, local.rbac-manager["vpa_only_recommend"] && local.rbac-manager["vpa_enable"] ? {
+      "goldilocks.fairwinds.com/enabled" = "true"
+    } : {})
 
     name = local.rbac-manager["namespace"]
   }

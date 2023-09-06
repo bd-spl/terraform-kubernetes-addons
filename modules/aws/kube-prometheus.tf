@@ -32,6 +32,8 @@ locals {
       infra_ca_secretname               = "infra-ca-secret" # a name for auto-generated secret
       infra_ca_data                     = [{ name = "ipa", pem = "" }]
       create_secrets                    = true
+      vpa_enable                        = false
+      vpa_only_recommend                = false
     },
     var.kube-prometheus-stack
   )
@@ -463,10 +465,13 @@ resource "kubernetes_namespace" "kube-prometheus-stack" {
   count = local.kube-prometheus-stack["enabled"] ? 1 : 0
 
   metadata {
-    labels = {
+    labels = merge({
       name                               = local.kube-prometheus-stack["namespace"]
       "${local.labels_prefix}/component" = "monitoring"
-    }
+      }, local.kube-prometheus-stack["vpa_only_recommend"] && local.kube-prometheus-stack["vpa_enable"] ? {
+      "goldilocks.fairwinds.com/enabled" = "true"
+      #goldilocks.fairwinds.com/exclude-containers = "foo,bar"
+    } : {})
 
     name = local.kube-prometheus-stack["namespace"]
   }

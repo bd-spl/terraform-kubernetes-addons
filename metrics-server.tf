@@ -10,6 +10,8 @@ locals {
       enabled                = false
       default_network_policy = true
       allowed_cidrs          = ["0.0.0.0/0"]
+      vpa_enable             = false
+      vpa_only_recommend     = false
     },
     var.metrics-server
   )
@@ -26,9 +28,11 @@ resource "kubernetes_namespace" "metrics-server" {
   count = local.metrics-server["enabled"] ? 1 : 0
 
   metadata {
-    labels = {
+    labels = merge({
       name = local.metrics-server["namespace"]
-    }
+      }, local.metrics-server["vpa_only_recommend"] && local.metrics-server["vpa_enable"] ? {
+      "goldilocks.fairwinds.com/enabled" = "true"
+    } : {})
 
     name = local.metrics-server["namespace"]
   }
