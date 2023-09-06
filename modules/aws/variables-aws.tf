@@ -131,3 +131,9 @@ variable "reloader" {
   type        = any
   default     = {}
 }
+
+variable "vpa" {
+  description = "Customize vpa and goldilocks charts, see `vpa.tf` for supported values"
+  type        = any
+  default     = {}
+}

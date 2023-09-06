@@ -558,5 +558,35 @@ dependencies:
         tag: v6.2.2
   manifests_version: v6.0.1
   name: csi-external-snapshotter
+- name: vpa
+  repository: https://charts.fairwinds.com/stable
+  version: 2.5.1
+  containers:
+    recommender.image:
+      name:
+        repository: registry.k8s.io/autoscaling/vpa-recommender
+      source: registry.k8s.io/autoscaling
+      ver:
+        tag: 0.14.0
+    updater.image:
+      name:
+        repository: registry.k8s.io/autoscaling/vpa-updater
+      source: registry.k8s.io/autoscaling
+      ver:
+        tag: 0.14.0
+    tests.image:
+      name:
+        repository: bitnami/kubectl
+      source: bitnami
+- name: goldilocks
+  repository: https://charts.fairwinds.com/stable
+  version: 7.1.2
+  containers:
+    image:
+      name:
+        repository: us-docker.pkg.dev/fairwinds-ops/oss/goldilocks
+      source: us-docker.pkg.dev/fairwinds-ops/oss/goldilocks
+      ver:
+        tag: v4.9.0
 name: Handle terraform-kubernetes-addons helm chart dependencies update
 version: 1.0.0
