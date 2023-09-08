@@ -25,6 +25,16 @@ locals {
       }
       vpa_enable         = false
       vpa_only_recommend = false
+      images_data = {
+        goldilocks = {}
+        vpa        = {}
+      }
+      images_repos = {
+        goldilocks = {}
+        vpa        = {}
+      }
+      containers_versions = {}
+
     },
     var.vpa
   )
@@ -82,12 +92,16 @@ resource "kubernetes_namespace" "vpa" {
   }
 }
 
-resource "helm_release" "vpa" {
+module "deploy_vpa" {
   count                 = local.vpa["enabled"] ? 1 : 0
+  source                = "./deploy"
+  images_data           = local.vpa["images_data"]["vpa"]
+  images_repos          = local.vpa["images_repos"]["vpa"]
+  containers_versions   = local.vpa["containers_versions"]
   repository            = local.vpa["repository_vpa"]
   name                  = local.vpa["name_vpa"]
   chart                 = local.vpa["chart_vpa"]
-  version               = local.vpa["chart_version_vpa"]
+  chart_version         = local.vpa["chart_version_vpa"]
   timeout               = local.vpa["timeout"]
   force_update          = local.vpa["force_update"]
   recreate_pods         = local.vpa["recreate_pods"]
@@ -108,65 +122,26 @@ resource "helm_release" "vpa" {
     local.vpa["extra_values"]["vpa"]
   ]
 
-  #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.vpa.containers :
-      c => v if v.rewrite_values.tag != null
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.vpa["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = local.images_data.vpa.containers
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.vpa.containers :
-      c => v if v.rewrite_values.registry != null
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != null ? set.value.rewrite_values.registry.value : split(
-        "/", try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
   namespace = kubernetes_namespace.vpa.*.metadata.0.name[count.index]
 
   depends_on = [
-    skopeo_copy.this,
-    helm_release.ingress-nginx,
+    module.deploy_ingress-nginx,
   ]
 }
 
 # NOTE: always deploy goldilocks alongside vpa - if core addons have no use of it, other workloads may still need it
 # TODO: secure access to VPA recommender UI (Goldilocks), if it allows changing anything for pods resources.
 # Or may be leave it open for infra-only access, for everyone, if it only recommends new values for requests/limits resources.
-resource "helm_release" "goldilocks" {
+module "deploy_goldilocks" {
   count                 = local.vpa["enabled"] ? 1 : 0
+  source                = "./deploy"
+  images_data           = local.vpa["images_data"]["goldilocks"]
+  images_repos          = local.vpa["images_repos"]["goldilocks"]
+  containers_versions   = local.vpa["containers_versions"]
   repository            = local.vpa["repository_goldilocks"]
   name                  = local.vpa["name_goldilocks"]
   chart                 = local.vpa["chart_goldilocks"]
-  version               = local.vpa["chart_version_goldilocks"]
+  chart_version         = local.vpa["chart_version_goldilocks"]
   timeout               = local.vpa["timeout"]
   force_update          = local.vpa["force_update"]
   recreate_pods         = local.vpa["recreate_pods"]
@@ -187,53 +162,10 @@ resource "helm_release" "goldilocks" {
     local.vpa["extra_values"]["goldilocks"]
   ]
 
-  #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.goldilocks.containers :
-      c => v if v.rewrite_values.tag != null
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.vpa["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = local.images_data.goldilocks.containers
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.goldilocks.containers :
-      c => v if v.rewrite_values.registry != null
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != null ? set.value.rewrite_values.registry.value : split(
-        "/", try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
   namespace = kubernetes_namespace.vpa.*.metadata.0.name[count.index]
 
   depends_on = [
-    skopeo_copy.this,
-    helm_release.vpa
+    module.deploy_vpa
   ]
 }
 

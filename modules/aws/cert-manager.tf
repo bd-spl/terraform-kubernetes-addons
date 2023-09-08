@@ -40,12 +40,17 @@ locals {
       csi_driver                = false
       name_prefix               = "${var.cluster-name}-cert-manager"
       extra_tpl                 = {}
-      kustomize_external        = false
+      extra_values              = ""
+      kustomizations            = {}
+      kustomizations_images_map = {}
       # Kustomize resources
       resources = [
         "https://github.com/kubernetes-sigs/gateway-api/releases/download/${local.cert-manager_manifests_version}/standard-install.yaml"
       ]
-      vpa_enable = false
+      vpa_enable          = false
+      images_data         = {}
+      images_repos        = {}
+      containers_versions = {}
     },
     var.cert-manager
   )
@@ -64,144 +69,24 @@ securityContext:
   fsGroup: 1001
 installCRDs: true
 VALUES
-
-  #TODO(bogdando): create a shared template, or a module, and refer it in addons managed by kustomize (copy-pasta until then)
-  cert-manager_containers_data = {
-    for k, v in local.images_data.cert-manager.containers :
-    v.rewrite_values.image.name => {
-      tag = try(
-        local.cert-manager["containers_versions"][v.rewrite_values.tag.name],
-        v.rewrite_values.tag.value,
-        v.rewrite_values.image.tail
-      )
-      repo = v.ecr_prepare_images && v.source_provided ? try(
-        aws_ecr_repository.this[
-          format("%s.%s", split(".", k)[0], split(".", k)[2])
-        ].repository_url, "") : v.ecr_prepare_images ? try(
-        aws_ecr_repository.this[
-          format("%s.%s", split(".", k)[0], split(".", k)[2])
-        ].name, ""
-      ) : v.rewrite_values.image.value
-      src = v.src
-    } if v.manager == "kustomize" || v.manager == "extra"
-  }
-
-  ## Extra values prepare images manager
-
-  # Get variables names and values to template them in
-  cert-manager_extra_tpl_vars = {
-    for k, v in local.cert-manager_containers_data :
-    k => {
-      params = {
-        "${split(".", k)[1]}-repo" = v.repo
-        "${split(".", k)[1]}-tag"  = v.tag
-      }
-      } if lookup(
-      local.cert-manager.extra_tpl, split(".", k)[0], null
-    ) != null
-  }
-  cert-manager_extra_tpl_data = [for v in values(local.cert-manager_extra_tpl_vars) : v.params]
-
-  # FIXME: workaround limitation to pass templates with vars in it (even if escaped) via the module input var.cert-manager
-  cert-manager_extra_tpl = [
-    for i in [
-      for k, v in local.cert-manager_extra_tpl_vars :
-      { "${k}" = yamldecode(replace( # tflint-ignore: terraform_deprecated_interpolation
-        replace(
-          yamlencode(local.cert-manager.extra_tpl),
-          format("$%s", keys(v.params)[0]), "$${${keys(v.params)[0]}}"
-        ),
-        format("$%s", keys(v.params)[1]), "$${${keys(v.params)[1]}}"
-      )) }
-    ] : { for k, v in i : split(".", k)[0] => v[split(".", k)[0]] }
-  ]
-
-  ## Kuztomize prepare images manager
-
-  # Update kustomizations with the prepared containers images data
-  cert-manager_kustomizations_patched = flatten([
-    for k, data in local.cert-manager.kustomizations :
-    [for v in compact(split("---", data)) :
-      replace(
-        yamlencode(merge(
-          try(yamldecode(v), {}),
-          {
-            resources = lookup(
-              try(yamldecode(v), {}),
-              "resources",
-              local.cert-manager.resources
-            )
-          },
-          lookup(try(yamldecode(v), {}), "images", null) == null ? {} : {
-            images = [
-              for c in try(yamldecode(v).images, []) :
-              {
-                # Remove unique identifiers distinguishing same images used for different containers
-                name = split("::", c.name)[0]
-                newName = local.cert-manager_containers_data[
-                  format(
-                    "%s.%s.repository",
-                    k,
-                    split("::", local.cert-manager.kustomizations_images_map[k][c.name])[0]
-                  )
-                ].repo
-                newTag = try(c.newTag, "") != "" ? c.newTag : local.cert-manager_containers_data[
-                  format(
-                    "%s.%s.repository",
-                    k,
-                    split("::", local.cert-manager.kustomizations_images_map[k][c.name])[0]
-                  )
-                ].tag
-              }
-            ]
-          }
-          )
-        ),
-      "$manifest_version", local.cert-manager_manifests_version)
-    ]
-  ])
 }
 
-data "template_file" "cert-manager_extra_values_patched" {
-  count    = local.cert-manager.extra_tpl != {} && length(local.cert-manager_extra_tpl_vars) > 0 ? 1 : 0
-  template = yamlencode(merge(local.cert-manager_extra_tpl...))
-  vars     = merge(local.cert-manager_extra_tpl_data...)
-}
-
-# FIXME: local_sensitive_file maybe?
-resource "local_file" "cert-manager-kustomization" {
-  for_each = local.cert-manager["enabled"] ? zipmap(
-    [for c in local.cert-manager_kustomizations_patched : md5(c)],
-    local.cert-manager_kustomizations_patched
-  ) : {}
-  content  = each.value
-  filename = "./kustomization-${each.key}/kustomization/kustomization.yaml"
-}
-
-resource "null_resource" "cert-manager-kustomize" {
-  for_each = local.cert-manager["enabled"] ? zipmap(
-    [for c in local.cert-manager_kustomizations_patched : md5(c)],
-    local.cert-manager_kustomizations_patched
-  ) : {}
+# NOTE: Gateway admission jobs need to be removed, before kustomize can rebuild them with new ECR containers images data rewritted for it
+# That is because kustomize uses patching, which cannot update Jobs' spec immutable container images data
+resource "null_resource" "cert-manager-kustomize-prepare" {
+  count = length(local.cert-manager.kustomizations) > 0 ? 1 : 0
 
   triggers = {
-    kustomization = each.key
-    filemd5       = filemd5("cert-manager.tf")
-    filemd5       = filemd5("../../helm-dependencies.yaml")
+    filemd5 = filemd5("cert-manager.tf")
+    filemd5 = filemd5("../../helm-dependencies.yaml")
   }
 
-  # NOTE: cannot update Jobs' spec immutable container images data
   provisioner "local-exec" {
     command = <<-EOT
     kubectl delete job gateway-api-admission -n gateway-system --ignore-not-found
     kubectl delete job gateway-api-admission-patch -n gateway-system --ignore-not-found
-    ${local.cert-manager.kustomize_external ? "kustomize build ./kustomization-${each.key}/kustomization | kubectl apply -f -" : "kubectl apply -k ./kustomization-${each.key}/kustomization"}
   EOT
   }
-
-  depends_on = [
-    local_file.cert-manager-kustomization,
-  ]
 }
 
 module "iam_assumable_role_cert-manager" {
@@ -276,12 +161,25 @@ resource "kubernetes_namespace" "cert-manager" {
   }
 }
 
-resource "helm_release" "cert-manager" {
-  count                 = local.cert-manager["enabled"] ? 1 : 0
+module "deploy_cert-manager" {
+  count  = local.cert-manager["enabled"] ? 1 : 0
+  source = "./deploy"
+  # Kustomize manager data
+  kustomizations                        = local.cert-manager.kustomizations
+  kustomizations_images_map             = local.cert-manager.kustomizations_images_map
+  kustomize_resources                   = local.cert-manager.resources
+  kustomize_resources_manifests_version = local.cert-manager_manifests_version
+  # Extra manager data
+  extra_tpl           = local.cert-manager.extra_tpl
+  extra_values        = local.cert-manager.extra_values
+  images_data         = local.cert-manager["images_data"]
+  images_repos        = local.cert-manager["images_repos"]
+  containers_versions = local.cert-manager["containers_versions"]
+  # Helm manager data
   repository            = local.cert-manager["repository"]
   name                  = local.cert-manager["name"]
   chart                 = local.cert-manager["chart"]
-  version               = local.cert-manager["chart_version"]
+  chart_version         = local.cert-manager["chart_version"]
   timeout               = local.cert-manager["timeout"]
   force_update          = local.cert-manager["force_update"]
   recreate_pods         = local.cert-manager["recreate_pods"]
@@ -297,69 +195,13 @@ resource "helm_release" "cert-manager" {
   reuse_values          = local.cert-manager["reuse_values"]
   skip_crds             = local.cert-manager["skip_crds"]
   verify                = local.cert-manager["verify"]
-  values = [
-    local.values_cert-manager,
-    yamlencode(
-      merge(
-        yamldecode(local.cert-manager["extra_values"]),
-        try(yamldecode(data.template_file.cert-manager_extra_values_patched.0.rendered), {})
-      )
-    )
-  ]
-
-  ## Helm prepare images manager
-  #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.cert-manager.containers :
-      c => v if v.rewrite_values.tag != null && v.manager == "helm"
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.cert-manager["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.cert-manager.containers :
-      c => v if v.manager == "helm"
-    }
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.cert-manager.containers :
-      c => v if v.rewrite_values.registry != null && v.manager == "helm"
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != null ? set.value.rewrite_values.registry.value : split(
-        "/", try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
+  values                = [local.values_cert-manager]
 
   namespace = kubernetes_namespace.cert-manager.*.metadata.0.name[count.index]
 
   depends_on = [
-    skopeo_copy.this,
     kubectl_manifest.prometheus-operator_crds,
-    data.template_file.cert-manager_extra_values_patched,
-    resource.null_resource.cert-manager-kustomize # reguires gateway API CRD installed firstly
+    resource.null_resource.cert-manager-kustomize-prepare # reguires gateway API CRD installed firstly
   ]
 }
 
@@ -383,7 +225,7 @@ data "kubectl_path_documents" "cert-manager_cluster_issuers" {
 
 resource "time_sleep" "cert-manager_sleep" {
   count           = local.cert-manager["enabled"] && (local.cert-manager["acme_http01_enabled"] || local.cert-manager["acme_dns01_enabled"]) ? 1 : 0
-  depends_on      = [helm_release.cert-manager]
+  depends_on      = [module.deploy_cert-manager]
   create_duration = "120s"
 }
 
@@ -397,7 +239,7 @@ resource "kubectl_manifest" "cert-manager_cluster_issuers" {
   } : {}
   yaml_body = join("\n---\n", each.value)
   depends_on = [
-    helm_release.cert-manager,
+    module.deploy_cert-manager,
     kubernetes_namespace.cert-manager,
     time_sleep.cert-manager_sleep
   ]

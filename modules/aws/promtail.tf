@@ -16,6 +16,9 @@ locals {
       tls_key                = null
       default_network_policy = false
       vpa_enable             = false
+      images_data            = {}
+      images_repos           = {}
+      containers_versions    = {}
     },
     var.promtail
   )
@@ -88,12 +91,16 @@ resource "kubernetes_namespace" "promtail" {
   }
 }
 
-resource "helm_release" "promtail" {
+module "deploy_promtail" {
   count                 = local.promtail["enabled"] ? 1 : 0
+  source                = "./deploy"
+  images_data           = local.promtail["images_data"]
+  images_repos          = local.promtail["images_repos"]
+  containers_versions   = local.promtail["containers_versions"]
   repository            = local.promtail["repository"]
   name                  = local.promtail["name"]
   chart                 = local.promtail["chart"]
-  version               = local.promtail["chart_version"]
+  chart_version         = local.promtail["chart_version"]
   timeout               = local.promtail["timeout"]
   force_update          = local.promtail["force_update"]
   recreate_pods         = local.promtail["recreate_pods"]
@@ -115,54 +122,11 @@ resource "helm_release" "promtail" {
     local.promtail["extra_values"]
   ])
 
-  #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.promtail.containers :
-      c => v if v.rewrite_values.tag != null
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.promtail["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = local.images_data.promtail.containers
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.promtail.containers :
-      c => v if v.rewrite_values.registry != null
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != null ? set.value.rewrite_values.registry.value : split(
-        "/", try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
-
   namespace = local.promtail["namespace"]
 
   depends_on = [
     kubectl_manifest.prometheus-operator_crds,
-    helm_release.loki-stack,
+    module.deploy_loki-stack,
     kubernetes_secret.loki-stack-ca,
     kubernetes_secret.promtail-tls
   ]

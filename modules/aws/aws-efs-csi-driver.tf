@@ -27,6 +27,9 @@ locals {
       sg_input_ingress_with_source_security_group_id = []
       name_prefix                                    = "${var.cluster-name}-aws-efs-csi-driver"
       vpa_enable                                     = false
+      images_data                                    = {}
+      images_repos                                   = {}
+      containers_versions                            = {}
     },
     var.aws-efs-csi-driver
   )
@@ -128,12 +131,16 @@ module "security-group-efs-csi-driver" {
   tags                                  = local.tags
 }
 
-resource "helm_release" "aws-efs-csi-driver" {
+module "deploy_aws-efs-csi-driver" {
   count                 = local.aws-efs-csi-driver["enabled"] ? 1 : 0
+  source                = "./deploy"
+  images_data           = local.aws-efs-csi-driver["images_data"]
+  images_repos          = local.aws-efs-csi-driver["images_repos"]
+  containers_versions   = local.aws-efs-csi-driver["containers_versions"]
   repository            = local.aws-efs-csi-driver["repository"]
   name                  = local.aws-efs-csi-driver["name"]
   chart                 = local.aws-efs-csi-driver["chart"]
-  version               = local.aws-efs-csi-driver["chart_version"]
+  chart_version         = local.aws-efs-csi-driver["chart_version"]
   timeout               = local.aws-efs-csi-driver["timeout"]
   force_update          = local.aws-efs-csi-driver["force_update"]
   recreate_pods         = local.aws-efs-csi-driver["recreate_pods"]
@@ -154,53 +161,7 @@ resource "helm_release" "aws-efs-csi-driver" {
     local.aws-efs-csi-driver["extra_values"]
   ]
 
-  #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.aws-efs-csi-driver.containers :
-      c => v if v.rewrite_values.tag != null
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.aws-efs-csi-driver["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = local.images_data.aws-efs-csi-driver.containers
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.aws-efs-csi-driver.containers :
-      c => v if v.rewrite_values.registry != null
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != null ? set.value.rewrite_values.registry.value : split(
-        "/", try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
   namespace = local.aws-efs-csi-driver["create_ns"] ? kubernetes_namespace.aws-efs-csi-driver.*.metadata.0.name[count.index] : local.aws-efs-csi-driver["namespace"]
-
-  depends_on = [
-    skopeo_copy.this
-  ]
 }
 
 resource "kubernetes_storage_class" "aws-efs-csi-driver" {

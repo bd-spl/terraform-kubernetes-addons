@@ -6,6 +6,7 @@ on:
       - main
     paths:
       - 'modules/aws/*'
+      - 'modules/aws/*/*'
       - '.github/workflows'
   # Enable it only for manual scheduling, while debugging jobs
   #workflow_dispatch:

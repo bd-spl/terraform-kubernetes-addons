@@ -103,7 +103,7 @@ resource "helm_release" "victoria-metrics-k8s-stack" {
   }
 
   depends_on = [
-    helm_release.ingress-nginx,
+    module.deploy_ingress-nginx,
   ]
 }
 

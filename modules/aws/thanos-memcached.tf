@@ -52,6 +52,6 @@ resource "helm_release" "thanos-memcached" {
   namespace = local.thanos-memcached["namespace"]
 
   depends_on = [
-    helm_release.kube-prometheus-stack,
+    module.deploy_kube-prometheus-stack
   ]
 }

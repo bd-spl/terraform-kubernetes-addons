@@ -54,6 +54,15 @@ locals {
         auth = ""
       }
       vpa_enable = false
+      images_data = {
+        idp  = {}
+        auth = {}
+      }
+      images_repos = {
+        idp  = {}
+        auth = {}
+      }
+      containers_versions = {}
     },
     var.dex
   )
@@ -288,12 +297,16 @@ resource "kubernetes_secret" "infra_ca_secret" {
   ]
 }
 
-resource "helm_release" "dex" {
+module "deploy_dex" {
+  source                = "./deploy"
+  images_data           = local.dex["images_data"]["idp"]
+  images_repos          = local.dex["images_repos"]["idp"]
+  containers_versions   = local.dex["containers_versions"]
   count                 = local.dex["enabled"] ? 1 : 0
   repository            = local.dex["repository_idp"]
   name                  = local.dex["name_idp"]
   chart                 = local.dex["chart_idp"]
-  version               = local.dex["chart_version_idp"]
+  chart_version         = local.dex["chart_version_idp"]
   timeout               = local.dex["timeout"]
   force_update          = local.dex["force_update"]
   recreate_pods         = local.dex["recreate_pods"]
@@ -314,62 +327,23 @@ resource "helm_release" "dex" {
     local.dex["extra_values"]["idp"]
   ]
 
-  #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.dex.containers :
-      c => v if v.rewrite_values.tag != null
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.dex["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = local.images_data.dex.containers
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.dex.containers :
-      c => v if v.rewrite_values.registry != null
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != null ? set.value.rewrite_values.registry.value : split(
-        "/", try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
   namespace = kubernetes_namespace.dex.*.metadata.0.name[count.index]
 
   depends_on = [
-    skopeo_copy.this,
-    helm_release.ingress-nginx,
+    module.deploy_ingress-nginx
   ]
 }
 
-resource "helm_release" "dex-k8s-authenticator" {
+module "deploy_dex-k8s-authenticator" {
   count                 = local.dex["enabled"] ? 1 : 0
+  source                = "./deploy"
+  images_data           = local.dex["images_data"]["auth"]
+  images_repos          = local.dex["images_repos"]["auth"]
+  containers_versions   = local.dex["containers_versions"]
   repository            = local.dex["repository_auth"]
   name                  = local.dex["name_auth"]
   chart                 = local.dex["chart_auth"]
-  version               = local.dex["chart_version_auth"]
+  chart_version         = local.dex["chart_version_auth"]
   timeout               = local.dex["timeout"]
   force_update          = local.dex["force_update"]
   recreate_pods         = local.dex["recreate_pods"]
@@ -390,53 +364,10 @@ resource "helm_release" "dex-k8s-authenticator" {
     local.dex["extra_values"]["auth"]
   ]
 
-  #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.dex-k8s-authenticator.containers :
-      c => v if v.rewrite_values.tag != null
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.dex["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = local.images_data.dex-k8s-authenticator.containers
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.dex-k8s-authenticator.containers :
-      c => v if v.rewrite_values.registry != null
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != null ? set.value.rewrite_values.registry.value : split(
-        "/", try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
   namespace = kubernetes_namespace.dex.*.metadata.0.name[count.index]
 
   depends_on = [
-    skopeo_copy.this,
-    helm_release.dex
+    module.deploy_dex
   ]
 }
 
@@ -459,7 +390,7 @@ resource "aws_eks_identity_provider_config" "dex" {
 
   tags = local.tags
   depends_on = [
-    helm_release.dex-k8s-authenticator,
+    module.deploy_dex-k8s-authenticator,
     kubernetes_network_policy.dex_allow_namespace,
     kubernetes_secret.oauth_client_secret,
     kubernetes_secret.ldap_acc_secret,

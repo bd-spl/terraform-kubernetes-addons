@@ -1,18 +1,33 @@
 repos:
 - repo: https://github.com/antonbabenko/pre-commit-terraform
-  rev: v1.74.2
+  rev: v1.83.4
   hooks:
     - id: terraform_fmt
     - id: terraform_validate
     - id: terraform_docs
+      args:
+        - --hook-config=--config=.terraform-docs.yml'
+        - --hook-config=--path-to-file=TFDOCS.md
+        - --hook-config=--add-to-exiting-file=false
+        - --hook-config=--create-file-if-not-exist=true
     - id: terraform_tflint
       args:
         - --args=--disable-rule=terraform_required_providers
         - --args=--disable-rule=terraform_required_version
         - --args=--disable-rule=terraform_deprecated_index
         - --args=--disable-rule=terraform_unused_declarations # do not enable it
+# Also check docs for submodules
+- repo: https://github.com/antonbabenko/pre-commit-terraform
+  rev: v1.83.4
+  hooks:
+    - id: terraform_docs
+      args:
+        - --hook-config=--config=.terraform-docs-submodules.yml'
+        - --hook-config=--path-to-file=TFDOCS.md
+        - --hook-config=--add-to-exiting-file=false
+        - --hook-config=--create-file-if-not-exist=true
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.3.0
+  rev: v4.4.0
   hooks:
     - id: check-merge-conflict
     - id: end-of-file-fixer

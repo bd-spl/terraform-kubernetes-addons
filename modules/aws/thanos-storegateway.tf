@@ -132,6 +132,6 @@ resource "helm_release" "thanos-storegateway" {
   namespace = local.thanos["create_ns"] ? kubernetes_namespace.thanos.*.metadata.0.name[0] : local.thanos["namespace"]
 
   depends_on = [
-    helm_release.kube-prometheus-stack,
+    module.deploy_kube-prometheus-stack,
   ]
 }

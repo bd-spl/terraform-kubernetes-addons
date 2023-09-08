@@ -1,2 +1,15 @@
 settings:
   lockfile: false
+
+formatter: "markdown"
+
+recursive:
+  enabled: true
+  path: modules
+
+output:
+  file: "TFDOCS.md"
+  mode: replace
+  template: |-
+    {{ .Content }}
+    {{/** End of file fixer */}}
