@@ -73,12 +73,15 @@ resource "kubernetes_namespace" "vpa" {
   }
 }
 
-resource "helm_release" "vpa" {
+module "helm_release_ecr_prepare_vpa" {
+  source                = "./helm_release_ecr_prepare"
+  helm_dependencies     = [for _, d in local.helm_dependencies : d if d.name == "vpa"]
+  containers_versions   = local.vpa["containers_versions"]
   count                 = local.vpa["enabled"] ? 1 : 0
   repository            = local.vpa["repository_vpa"]
   name                  = local.vpa["name_vpa"]
   chart                 = local.vpa["chart_vpa"]
-  version               = local.vpa["chart_version_vpa"]
+  chart_version         = local.vpa["chart_version_vpa"]
   timeout               = local.vpa["timeout"]
   force_update          = local.vpa["force_update"]
   recreate_pods         = local.vpa["recreate_pods"]
@@ -99,62 +102,22 @@ resource "helm_release" "vpa" {
     local.vpa["extra_values"]["vpa"]
   ]
 
-  #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.vpa.containers :
-      c => v if v.rewrite_values.tag != null
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.vpa["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = local.images_data.vpa.containers
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.vpa.containers :
-      c => v if v.rewrite_values.registry != null
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != null ? set.value.rewrite_values.registry.value : split(
-        "/", try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
   namespace = kubernetes_namespace.vpa.*.metadata.0.name[count.index]
 
   depends_on = [
-    skopeo_copy.this,
-    helm_release.ingress-nginx,
+    module.helm_release_ecr_prepare_ingress-nginx,
   ]
 }
 
-resource "helm_release" "goldilocks" {
+module "helm_release_ecr_prepare_goldilocks" {
+  source                = "./helm_release_ecr_prepare"
+  helm_dependencies     = [for _, d in local.helm_dependencies : d if d.name == "goldilocks"]
+  containers_versions   = local.vpa["containers_versions"]
   count                 = local.vpa["enabled"] ? 1 : 0
   repository            = local.vpa["repository_goldilocks"]
   name                  = local.vpa["name_goldilocks"]
   chart                 = local.vpa["chart_goldilocks"]
-  version               = local.vpa["chart_version_goldilocks"]
+  chart_version         = local.vpa["chart_version_goldilocks"]
   timeout               = local.vpa["timeout"]
   force_update          = local.vpa["force_update"]
   recreate_pods         = local.vpa["recreate_pods"]
@@ -175,53 +138,10 @@ resource "helm_release" "goldilocks" {
     local.vpa["extra_values"]["goldilocks"]
   ]
 
-  #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.goldilocks.containers :
-      c => v if v.rewrite_values.tag != null
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.vpa["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = local.images_data.goldilocks.containers
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.goldilocks.containers :
-      c => v if v.rewrite_values.registry != null
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != null ? set.value.rewrite_values.registry.value : split(
-        "/", try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
   namespace = kubernetes_namespace.vpa.*.metadata.0.name[count.index]
 
   depends_on = [
-    skopeo_copy.this,
-    helm_release.vpa
+    module.helm_release_ecr_prepare_vpa
   ]
 }
 

@@ -111,12 +111,16 @@ resource "kubernetes_namespace" "aws-ebs-csi-driver" {
   }
 }
 
-resource "helm_release" "aws-ebs-csi-driver" {
+module "helm_release_ecr_prepare_aws-ebs-csi-driver" {
+  source = "./helm_release_ecr_prepare"
+  # NOTE: must also process containers data for csi-external-snapshotter
+  helm_dependencies     = [for _, d in local.helm_dependencies : d if d.name == "aws-ebs-csi-driver" || d.name == "csi-external-snapshotter"]
+  containers_versions   = local.aws-ebs-csi-driver["containers_versions"]
   count                 = local.aws-ebs-csi-driver["enabled"] ? 1 : 0
   repository            = local.aws-ebs-csi-driver["repository"]
   name                  = local.aws-ebs-csi-driver["name"]
   chart                 = local.aws-ebs-csi-driver["chart"]
-  version               = local.aws-ebs-csi-driver["chart_version"]
+  chart_version         = local.aws-ebs-csi-driver["version"]
   timeout               = local.aws-ebs-csi-driver["timeout"]
   force_update          = local.aws-ebs-csi-driver["force_update"]
   recreate_pods         = local.aws-ebs-csi-driver["recreate_pods"]
@@ -137,53 +141,10 @@ resource "helm_release" "aws-ebs-csi-driver" {
     local.aws-ebs-csi-driver["extra_values"]
   ]
 
-  #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.aws-ebs-csi-driver.containers :
-      c => v if v.rewrite_values.tag != null
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.aws-ebs-csi-driver["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = local.images_data.aws-ebs-csi-driver.containers
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.aws-ebs-csi-driver.containers :
-      c => v if v.rewrite_values.registry != null
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != null ? set.value.rewrite_values.registry.value : split(
-        "/", try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
   namespace = local.aws-ebs-csi-driver["create_ns"] ? kubernetes_namespace.aws-ebs-csi-driver.*.metadata.0.name[count.index] : local.aws-ebs-csi-driver["namespace"]
 
   depends_on = [
-    null_resource.csi-external-snapshotter-kustomize,
-    skopeo_copy.this
+    null_resource.csi-external-snapshotter-kustomize
   ]
 }
 
@@ -267,7 +228,7 @@ resource "kubectl_manifest" "aws-ebs-csi-driver_vsc" {
 
   depends_on = [
     null_resource.csi-external-snapshotter-kustomize,
-    helm_release.aws-ebs-csi-driver
+    module.helm_release_ecr_prepare_aws-ebs-csi-driver
   ]
   server_side_apply = true
 }

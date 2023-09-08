@@ -37,12 +37,13 @@ resource "kubernetes_namespace" "rbac-manager" {
   }
 }
 
-resource "helm_release" "rbac-manager" {
+module "helm_release_ecr_prepare_rbac-manager" {
+  source                = "./helm_release_ecr_prepare"
   count                 = local.rbac-manager["enabled"] ? 1 : 0
   repository            = local.rbac-manager["repository"]
   name                  = local.rbac-manager["name"]
   chart                 = local.rbac-manager["chart"]
-  version               = local.rbac-manager["chart_version"]
+  chart_version         = local.rbac-manager["chart_version"]
   timeout               = local.rbac-manager["timeout"]
   force_update          = local.rbac-manager["force_update"]
   recreate_pods         = local.rbac-manager["recreate_pods"]
@@ -63,52 +64,10 @@ resource "helm_release" "rbac-manager" {
     local.rbac-manager["extra_values"]
   ]
 
-  #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.rbac-manager.containers :
-      c => v if v.rewrite_values.tag != null
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.rbac-manager["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = local.images_data.rbac-manager.containers
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.rbac-manager.containers :
-      c => v if v.rewrite_values.registry != null
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != null ? set.value.rewrite_values.registry.value : split(
-        "/", try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
   namespace = kubernetes_namespace.rbac-manager.*.metadata.0.name[count.index]
 
   depends_on = [
-    kubectl_manifest.prometheus-operator_crds, skopeo_copy.this
+    kubectl_manifest.prometheus-operator_crds
   ]
 }
 

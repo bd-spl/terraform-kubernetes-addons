@@ -66,7 +66,7 @@ VALUES
 
   #TODO(bogdando): create a shared template, or a module, and refer it in addons managed by kustomize (copy-pasta until then)
   cert-manager_containers_data = {
-    for k, v in local.images_data.cert-manager.containers :
+    for k, v in module.helm_release_ecr_prepare_cert-manager.images_data.cert-manager.containers :
     v.rewrite_values.image.name => {
       tag = try(
         local.cert-manager["containers_versions"][v.rewrite_values.tag.name],
@@ -74,10 +74,10 @@ VALUES
         v.rewrite_values.image.tail
       )
       repo = v.ecr_prepare_images && v.source_provided ? try(
-        aws_ecr_repository.this[
+        module.helm_release_ecr_prepare_cert-manager.aws_ecr_repository[
           format("%s.%s", split(".", k)[0], split(".", k)[2])
         ].repository_url, "") : v.ecr_prepare_images ? try(
-        aws_ecr_repository.this[
+        module.helm_release_ecr_prepare_cert-manager.aws_ecr_repository[
           format("%s.%s", split(".", k)[0], split(".", k)[2])
         ].name, ""
       ) : v.rewrite_values.image.value
@@ -273,12 +273,15 @@ resource "kubernetes_namespace" "cert-manager" {
   }
 }
 
-resource "helm_release" "cert-manager" {
+module "helm_release_ecr_prepare_cert-manager" {
+  source                = "./helm_release_ecr_prepare"
+  helm_dependencies     = [for _, d in local.helm_dependencies : d if d.name == "cert-manager"]
+  containers_versions   = local.cert-manager["containers_versions"]
   count                 = local.cert-manager["enabled"] ? 1 : 0
   repository            = local.cert-manager["repository"]
   name                  = local.cert-manager["name"]
   chart                 = local.cert-manager["chart"]
-  version               = local.cert-manager["chart_version"]
+  chart_version         = local.cert-manager["chart_version"]
   timeout               = local.cert-manager["timeout"]
   force_update          = local.cert-manager["force_update"]
   recreate_pods         = local.cert-manager["recreate_pods"]
@@ -304,56 +307,9 @@ resource "helm_release" "cert-manager" {
     )
   ]
 
-  ## Helm prepare images manager
-  #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.cert-manager.containers :
-      c => v if v.rewrite_values.tag != null && v.manager == "helm"
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.cert-manager["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.cert-manager.containers :
-      c => v if v.manager == "helm"
-    }
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.cert-manager.containers :
-      c => v if v.rewrite_values.registry != null && v.manager == "helm"
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != null ? set.value.rewrite_values.registry.value : split(
-        "/", try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
   namespace = kubernetes_namespace.cert-manager.*.metadata.0.name[count.index]
 
   depends_on = [
-    skopeo_copy.this,
     kubectl_manifest.prometheus-operator_crds,
     data.template_file.cert-manager_extra_values_patched,
     resource.null_resource.cert-manager-kustomize # reguires gateway API CRD installed firstly
@@ -380,7 +336,7 @@ data "kubectl_path_documents" "cert-manager_cluster_issuers" {
 
 resource "time_sleep" "cert-manager_sleep" {
   count           = local.cert-manager["enabled"] && (local.cert-manager["acme_http01_enabled"] || local.cert-manager["acme_dns01_enabled"]) ? 1 : 0
-  depends_on      = [helm_release.cert-manager]
+  depends_on      = [module.helm_release_ecr_prepare_cert-manager]
   create_duration = "120s"
 }
 
@@ -394,7 +350,7 @@ resource "kubectl_manifest" "cert-manager_cluster_issuers" {
   } : {}
   yaml_body = join("\n---\n", each.value)
   depends_on = [
-    helm_release.cert-manager,
+    module.helm_release_ecr_prepare_cert-manager,
     kubernetes_namespace.cert-manager,
     time_sleep.cert-manager_sleep
   ]

@@ -24,7 +24,8 @@ locals {
 
   #TODO(bogdando): create a shared template, or a module, and refer it in addons managed by kustomize (copy-pasta until then)
   csi-external-snapshotter_containers_data = {
-    for k, v in local.images_data.csi-external-snapshotter.containers :
+    # FIXME: no ECR prep module for csi snapshotter, rely on global data in the EBS CSI ECR prep module outputs
+    for k, v in module.helm_release_ecr_prepare_aws-ebs-csi-driver.images_data.csi-external-snapshotter.containers :
     v.rewrite_values.image.name => {
       tag = try(
         local.csi-external-snapshotter["containers_versions"][v.rewrite_values.tag.name],
@@ -32,10 +33,10 @@ locals {
         v.rewrite_values.image.tail
       )
       repo = v.ecr_prepare_images && v.source_provided ? try(
-        aws_ecr_repository.this[
+        module.helm_release_ecr_prepare_aws-ebs-csi-driver.aws_ecr_repository[
           format("%s.%s", split(".", k)[0], split(".", k)[2])
         ].repository_url, "") : v.ecr_prepare_images ? try(
-        aws_ecr_repository.this[
+        module.helm_release_ecr_prepare_aws-ebs-csi-driver.aws_ecr_repository[
           format("%s.%s", split(".", k)[0], split(".", k)[2])
         ].name, ""
       ) : v.rewrite_values.image.value
@@ -108,10 +109,6 @@ resource "local_file" "csi-external-snapshotter-manifests" {
 
   content  = each.value
   filename = "kustomizations-extra-resources/${each.key}.yaml"
-
-  depends_on = [
-    skopeo_copy.this
-  ]
 }
 
 resource "kubernetes_namespace" "csi-external-snapshotter" {

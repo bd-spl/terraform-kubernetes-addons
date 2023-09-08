@@ -1,39 +1,12 @@
-variable "ecr_prepare_images" {
-  description = "Prepare containers images for addons and store it in ECR"
-  type        = bool
-  default     = false
-}
-variable "ecr_immutable_tag" {
-  description = "Use immutable tags for ECR images"
-  type        = bool
-  default     = false
-}
-variable "ecr_scan_on_push" {
-  description = "Scan prepared ECR images on push"
-  type        = bool
-  default     = false
-}
-variable "ecr_encryption_type" {
-  description = "Encryption type for ECR images"
-  type        = string
-  default     = "AES256"
-}
-variable "ecr_kms_key" {
-  description = "Preconfigured KMS key arn to encrypt ECR images"
-  type        = string
-  default     = null
-}
-variable "ecr_tags" {
-  description = "Tags to apply for ECR registry resources (overwrites default provider tags)"
-  type        = any
-  default     = {}
-}
-
+# FIXME: make it the addon specific instead of global.
+# That should remove the need in custom terraform -target skopeo.this calls, whenever adding a new addon.
 locals {
+  helm_dependencies = var.helm_dependencies
   default_tag = {
     tag = "latest"
   }
-  # image data can inlcude registry and/or tag, which will be handled properly
+  # NOTE: image data can inlcude registry and/or tag, which will be handled properly
+  # FIXME: make it containing the addon specific containers images data instead of global data for all addons defined in helm_dependencies.yaml
   images_data = {
     for _, item in local.helm_dependencies :
     item.name => {
@@ -140,63 +113,3 @@ resource "skopeo_copy" "this" {
     aws_ecr_repository.this
   ]
 }
-
-/*
-# NOTE: No data type resource for helm_release yet.
-# Can be refered as:
-# data.null_data_source.helm_values[<addon>].outputs["set_tags"]
-# data.null_data_source.helm_values[<addon>].outputs["set_tags"]
-# data.null_data_source.helm_values[<addon>].outputs["set_image"]
-# data.null_data_source.helm_values[<addon>].outputs["set_registry"]
-data "null_data_source" "helm_values" {
-  for_each = {
-    for addon, data in local.images_data :
-    addon => {
-      for _, cfg in values(data)[0] :
-      addon => cfg.rewrite_values... if cfg.helm_managed
-    }
-  }
-
-  depends_on = [
-    skopeo_copy.this
-  ]
-
-  inputs = {
-    set_tags = {
-      for_each = {
-        for v in each.value : each.key => v[each.key] if v[each.key].tag != null
-      }
-      content = {
-        name  = each.tag.name
-        value = try(local[each.key]["containers_versions"][each.tag.name], each.tag.value)
-      }
-    }
-
-  /*
-  dynamic "set" {
-    for_each = local.images_data.aws-load-balancer-controller.containers
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.rewrite_values.registry != null ? "${
-        aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-      ].repository_url}${set.value.rewrite_values.image.tail}" : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.aws-load-balancer-controller.containers :
-      c => v if v.rewrite_values.registry != null
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = try(set.value.rewrite_values.registry.value, split(
-        "/", aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url
-      )[0])
-    }
-  }
-  }
-}*/

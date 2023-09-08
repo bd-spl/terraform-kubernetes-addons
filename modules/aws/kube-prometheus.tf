@@ -478,12 +478,15 @@ resource "random_password" "grafana_password" {
   special = false
 }
 
-resource "helm_release" "kube-prometheus-stack" {
+module "helm_release_ecr_prepare_kube-prometheus-stack" {
+  source                = "./helm_release_ecr_prepare"
+  helm_dependencies     = [for _, d in local.helm_dependencies : d if d.name == "kube-prometheus-stack"]
+  containers_versions   = local.kube-prometheus-stack["containers_versions"]
   count                 = local.kube-prometheus-stack["enabled"] ? 1 : 0
   repository            = local.kube-prometheus-stack["repository"]
   name                  = local.kube-prometheus-stack["name"]
   chart                 = local.kube-prometheus-stack["chart"]
-  version               = local.kube-prometheus-stack["chart_version"]
+  chart_version         = local.kube-prometheus-stack["chart_version"]
   timeout               = local.kube-prometheus-stack["timeout"]
   force_update          = local.kube-prometheus-stack["force_update"]
   recreate_pods         = local.kube-prometheus-stack["recreate_pods"]
@@ -515,60 +518,17 @@ resource "helm_release" "kube-prometheus-stack" {
     local.kube-prometheus-stack["extra_values"]
   ])
 
-  set_sensitive {
+  set_sensitive = [{
     name  = "grafana.adminPassword"
     value = join(",", random_password.grafana_password.*.result)
-  }
-
-  #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.kube-prometheus-stack.containers :
-      c => v if v.rewrite_values.tag != null
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.kube-prometheus-stack["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = local.images_data.kube-prometheus-stack.containers
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.kube-prometheus-stack.containers :
-      c => v if v.rewrite_values.registry != null
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != null ? set.value.rewrite_values.registry.value : split(
-        "/", try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
+  }]
 
   namespace = kubernetes_namespace.kube-prometheus-stack.*.metadata.0.name[count.index]
 
   depends_on = [
-    helm_release.ingress-nginx,
-    helm_release.cluster-autoscaler,
-    kubectl_manifest.prometheus-operator_crds,
-    skopeo_copy.this
+    module.helm_release_ecr_prepare_ingress-nginx,
+    module.helm_release_ecr_prepare_cluster-autoscaler,
+    kubectl_manifest.prometheus-operator_crds
   ]
 }
 

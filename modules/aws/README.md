@@ -45,7 +45,6 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 | <a name="provider_local"></a> [local](#provider\_local) | n/a |
 | <a name="provider_null"></a> [null](#provider\_null) | n/a |
 | <a name="provider_random"></a> [random](#provider\_random) | n/a |
-| <a name="provider_skopeo"></a> [skopeo](#provider\_skopeo) | 0.0.4 |
 | <a name="provider_template"></a> [template](#provider\_template) | n/a |
 | <a name="provider_time"></a> [time](#provider\_time) | n/a |
 | <a name="provider_tls"></a> [tls](#provider\_tls) | ~> 4.0 |
@@ -54,6 +53,26 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 
 | Name | Source | Version |
 |------|--------|---------|
+| <a name="module_helm_release_ecr_prepare_aws-ebs-csi-driver"></a> [helm\_release\_ecr\_prepare\_aws-ebs-csi-driver](#module\_helm\_release\_ecr\_prepare\_aws-ebs-csi-driver) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_aws-efs-csi-driver"></a> [helm\_release\_ecr\_prepare\_aws-efs-csi-driver](#module\_helm\_release\_ecr\_prepare\_aws-efs-csi-driver) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_aws-load-balancer-controller"></a> [helm\_release\_ecr\_prepare\_aws-load-balancer-controller](#module\_helm\_release\_ecr\_prepare\_aws-load-balancer-controller) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_cert-manager"></a> [helm\_release\_ecr\_prepare\_cert-manager](#module\_helm\_release\_ecr\_prepare\_cert-manager) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_cluster-autoscaler"></a> [helm\_release\_ecr\_prepare\_cluster-autoscaler](#module\_helm\_release\_ecr\_prepare\_cluster-autoscaler) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_dashboard"></a> [helm\_release\_ecr\_prepare\_dashboard](#module\_helm\_release\_ecr\_prepare\_dashboard) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_dex"></a> [helm\_release\_ecr\_prepare\_dex](#module\_helm\_release\_ecr\_prepare\_dex) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_dex-k8s-authenticator"></a> [helm\_release\_ecr\_prepare\_dex-k8s-authenticator](#module\_helm\_release\_ecr\_prepare\_dex-k8s-authenticator) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_external-dns"></a> [helm\_release\_ecr\_prepare\_external-dns](#module\_helm\_release\_ecr\_prepare\_external-dns) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_goldilocks"></a> [helm\_release\_ecr\_prepare\_goldilocks](#module\_helm\_release\_ecr\_prepare\_goldilocks) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_ingress-nginx"></a> [helm\_release\_ecr\_prepare\_ingress-nginx](#module\_helm\_release\_ecr\_prepare\_ingress-nginx) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_ingress-nginx-internal"></a> [helm\_release\_ecr\_prepare\_ingress-nginx-internal](#module\_helm\_release\_ecr\_prepare\_ingress-nginx-internal) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_kube-prometheus-stack"></a> [helm\_release\_ecr\_prepare\_kube-prometheus-stack](#module\_helm\_release\_ecr\_prepare\_kube-prometheus-stack) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_loki-stack"></a> [helm\_release\_ecr\_prepare\_loki-stack](#module\_helm\_release\_ecr\_prepare\_loki-stack) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_metrics-server"></a> [helm\_release\_ecr\_prepare\_metrics-server](#module\_helm\_release\_ecr\_prepare\_metrics-server) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_node-problem-detector"></a> [helm\_release\_ecr\_prepare\_node-problem-detector](#module\_helm\_release\_ecr\_prepare\_node-problem-detector) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_promtail"></a> [helm\_release\_ecr\_prepare\_promtail](#module\_helm\_release\_ecr\_prepare\_promtail) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_rbac-manager"></a> [helm\_release\_ecr\_prepare\_rbac-manager](#module\_helm\_release\_ecr\_prepare\_rbac-manager) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_reloader"></a> [helm\_release\_ecr\_prepare\_reloader](#module\_helm\_release\_ecr\_prepare\_reloader) | ./helm_release_ecr_prepare | n/a |
+| <a name="module_helm_release_ecr_prepare_vpa"></a> [helm\_release\_ecr\_prepare\_vpa](#module\_helm\_release\_ecr\_prepare\_vpa) | ./helm_release_ecr_prepare | n/a |
 | <a name="module_iam_assumable_role_aws-ebs-csi-driver"></a> [iam\_assumable\_role\_aws-ebs-csi-driver](#module\_iam\_assumable\_role\_aws-ebs-csi-driver) | terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc | ~> 5.0 |
 | <a name="module_iam_assumable_role_aws-efs-csi-driver"></a> [iam\_assumable\_role\_aws-efs-csi-driver](#module\_iam\_assumable\_role\_aws-efs-csi-driver) | terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc | ~> 5.0 |
 | <a name="module_iam_assumable_role_aws-for-fluent-bit"></a> [iam\_assumable\_role\_aws-for-fluent-bit](#module\_iam\_assumable\_role\_aws-for-fluent-bit) | terraform-aws-modules/iam/aws//modules/iam-assumable-role-with-oidc | ~> 5.0 |
@@ -81,7 +100,6 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 | Name | Type |
 |------|------|
 | [aws_cloudwatch_log_group.aws-for-fluent-bit](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/cloudwatch_log_group) | resource |
-| [aws_ecr_repository.this](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/ecr_repository) | resource |
 | [aws_efs_file_system.aws-efs-csi-driver](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/efs_file_system) | resource |
 | [aws_efs_mount_target.aws-efs-csi-driver](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/efs_mount_target) | resource |
 | [aws_eks_identity_provider_config.dex](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/eks_identity_provider_config) | resource |
@@ -112,45 +130,26 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 | [github_repository_file.kustomize](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_file) | resource |
 | [github_repository_file.sync](https://registry.terraform.io/providers/integrations/github/latest/docs/resources/repository_file) | resource |
 | [helm_release.admiralty](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.aws-ebs-csi-driver](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.aws-efs-csi-driver](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.aws-for-fluent-bit](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.aws-load-balancer-controller](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.aws-node-termination-handler](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.calico](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.cert-manager](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.cert-manager-csi-driver](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.cluster-autoscaler](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.dashboard](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.dex](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.dex-k8s-authenticator](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.external-dns](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.flux](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.goldilocks](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.ingress-nginx](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.ingress-nginx-internal](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.istio-operator](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.k8gb](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.karma](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.keda](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.keycloak](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.kong](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.kube-prometheus-stack](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.kyverno](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.kyverno-crds](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.linkerd-viz](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.linkerd2](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.linkerd2-cni](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.loki-stack](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.metrics-server](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.node-problem-detector](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.prometheus-adapter](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.prometheus-blackbox-exporter](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.prometheus-cloudwatch-exporter](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.promtail](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.rabbitmq-operator](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.rbac-manager](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.reloader](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.sealed-secrets](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.secrets-store-csi-driver](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.strimzi-kafka-operator](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
@@ -163,7 +162,6 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 | [helm_release.vault](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.velero](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.victoria-metrics-k8s-stack](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.vpa](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [kubectl_manifest.apply](https://registry.terraform.io/providers/alekc/kubectl/latest/docs/resources/manifest) | resource |
 | [kubectl_manifest.aws-ebs-csi-driver_vsc](https://registry.terraform.io/providers/alekc/kubectl/latest/docs/resources/manifest) | resource |
 | [kubectl_manifest.cert-manager_cluster_issuers](https://registry.terraform.io/providers/alekc/kubectl/latest/docs/resources/manifest) | resource |
@@ -371,7 +369,6 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 | [null_resource.csi-external-snapshotter-kubectl](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
 | [null_resource.csi-external-snapshotter-kustomize](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
 | [random_password.grafana_password](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password) | resource |
-| [skopeo_copy.this](https://registry.terraform.io/providers/abergmeier/skopeo/0.0.4/docs/resources/copy) | resource |
 | [time_sleep.cert-manager_sleep](https://registry.terraform.io/providers/hashicorp/time/latest/docs/resources/sleep) | resource |
 | [tls_cert_request.promtail-csr](https://registry.terraform.io/providers/hashicorp/tls/latest/docs/resources/cert_request) | resource |
 | [tls_cert_request.thanos-tls-querier-cert-csr](https://registry.terraform.io/providers/hashicorp/tls/latest/docs/resources/cert_request) | resource |
@@ -452,13 +449,7 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 | <a name="input_csi-external-snapshotter"></a> [csi-external-snapshotter](#input\_csi-external-snapshotter) | Kustomizations for csi-external-snapshotter, see `csi-external-snapshotter.tf` for supported values | `any` | <pre>{<br>  "kustomizations": {},<br>  "kustomizations_extra_resources": {},<br>  "kustomizations_images_map": {},<br>  "version": "v6.0.1"<br>}</pre> | no |
 | <a name="input_dashboard"></a> [dashboard](#input\_dashboard) | Customize kubernetes-dashboard chart, see `dashboard.tf` for supported values | `any` | `{}` | no |
 | <a name="input_dex"></a> [dex](#input\_dex) | Customize dex charts, see `dex.tf` for supported values | `any` | `{}` | no |
-| <a name="input_ecr_encryption_type"></a> [ecr\_encryption\_type](#input\_ecr\_encryption\_type) | Encryption type for ECR images | `string` | `"AES256"` | no |
-| <a name="input_ecr_immutable_tag"></a> [ecr\_immutable\_tag](#input\_ecr\_immutable\_tag) | Use immutable tags for ECR images | `bool` | `false` | no |
-| <a name="input_ecr_kms_key"></a> [ecr\_kms\_key](#input\_ecr\_kms\_key) | Preconfigured KMS key arn to encrypt ECR images | `string` | `null` | no |
-| <a name="input_ecr_prepare_images"></a> [ecr\_prepare\_images](#input\_ecr\_prepare\_images) | Prepare containers images for addons and store it in ECR | `bool` | `false` | no |
-| <a name="input_ecr_scan_on_push"></a> [ecr\_scan\_on\_push](#input\_ecr\_scan\_on\_push) | Scan prepared ECR images on push | `bool` | `false` | no |
-| <a name="input_ecr_tags"></a> [ecr\_tags](#input\_ecr\_tags) | Tags to apply for ECR registry resources (overwrites default provider tags) | `any` | `{}` | no |
-| <a name="input_eks"></a> [eks](#input\_eks) | EKS cluster inputs | `any` | `{}` | no |
+| <a name="input_eks"></a> [eks](#input\_eks) | EKS cluster inputs | `any` | <pre>{<br>  "cluster_oidc_issuer_url": ""<br>}</pre> | no |
 | <a name="input_external-dns"></a> [external-dns](#input\_external-dns) | Map of map for external-dns configuration: see `external_dns.tf` for supported values | `any` | `{}` | no |
 | <a name="input_flux"></a> [flux](#input\_flux) | Customize Flux chart, see `flux.tf` for supported values | `any` | `{}` | no |
 | <a name="input_flux2"></a> [flux2](#input\_flux2) | Customize Flux chart, see `flux2.tf` for supported values | `any` | `{}` | no |
@@ -525,14 +516,20 @@ This module can uses [IRSA](https://aws.amazon.com/blogs/opensource/introducing-
 
 ## Containers manager for AWS ECR
 
-Each dependency may have containers data to prepare images for use in private
-EKS clusters. Skopeo will copy images from the given source/registry into ensured ECR.
+Each EKS addon in this repo may be given additional data in ``helm-dependencies.yaml``
+to prepare ECR containers images for using it in private EKS clusters, for example.
+Skopeo will copy images from the given source/registry into ensured ECR repos.
+
 There are source/registry paths used to overwrite for helm and/or to prepared images.
 It also can provide helm values override paths for image/tag data. For addons not
-managed with helm_release, but kubectl_manifest, you can still provide containers data.
+managed with ``helm_release``, but ``kubectl_manifest``, or kustomize, you can still
+provide containers data in the same file and similar format.
 
-Example:
+Supported containers images data managers are: ``helm`` (default), ``kustomize``, and ``extra``.
+
+An example ``helm-dependencies.yaml`` contents snippet:
 ```
+...
 - name: foo-addon-charts
   containers:
     # Examples for Helm manager (default)
@@ -621,8 +618,9 @@ Example:
         # upstream image URI src to prepare its copy in ECR,
         # it may match, or differ to <original_image_uri> in the kustomization data source
         repository: <image_uri>
+```
 
-The list of the source repositories for helm-charts that we use in these forks of tEKS/addons repos:
+Required for Helm charts containers images sources and versions info is provided in ``helm-dependencies.yaml`` based on the following list of the source repositories (followed by the Helm chart name):
 ```
   # https://github.dev/kubernetes-sigs/aws-ebs-csi-driver/blob/master/charts/aws-ebs-csi-driver/values.yaml
   - name: aws-ebs-csi-driver

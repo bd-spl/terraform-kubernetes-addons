@@ -334,7 +334,7 @@ resource "helm_release" "thanos" {
   namespace = local.thanos["create_ns"] ? kubernetes_namespace.thanos.*.metadata.0.name[count.index] : local.thanos["namespace"]
 
   depends_on = [
-    helm_release.kube-prometheus-stack,
+    module.helm_release_ecr_prepare_kube-prometheus-stack,
     helm_release.thanos-memcached
   ]
 }

@@ -136,7 +136,7 @@ resource "kubernetes_namespace" "ingress-nginx" {
     labels = {
       name                               = local.ingress-nginx["namespace"]
       "${local.labels_prefix}/component" = "ingress"
-      # If nginx uses aws-load-balancer controller (albc) with svc=LoadBalancer to create NLB, then enable 
+      # If nginx uses aws-load-balancer controller (albc) with svc=LoadBalancer to create NLB, then enable
       # pod-readiness gates. Next pod will not come up till previous pod becomes a Healthy NLB target. This is crucial
       # to prevent service outage. Acceptable values: enabled | disabled
       # More details - https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.5/deploy/pod_readiness_gate/
@@ -147,12 +147,15 @@ resource "kubernetes_namespace" "ingress-nginx" {
   }
 }
 
-resource "helm_release" "ingress-nginx" {
+module "helm_release_ecr_prepare_ingress-nginx" {
+  source                = "./helm_release_ecr_prepare"
+  helm_dependencies     = [for _, d in local.helm_dependencies : d if d.name == "ingress-nginx"]
+  containers_versions   = local.ingress-nginx["containers_versions"]
   count                 = local.ingress-nginx["enabled"] ? 1 : 0
   repository            = local.ingress-nginx["repository"]
   name                  = local.ingress-nginx["name"]
   chart                 = local.ingress-nginx["chart"]
-  version               = local.ingress-nginx["chart_version"]
+  chart_version         = local.ingress-nginx["chart_version"]
   timeout               = local.ingress-nginx["timeout"]
   force_update          = local.ingress-nginx["force_update"]
   recreate_pods         = local.ingress-nginx["recreate_pods"]
@@ -173,52 +176,10 @@ resource "helm_release" "ingress-nginx" {
     local.ingress-nginx["extra_values"],
   ]
 
-  #TODO(bogdando): create a shared template and refer it in addons (copy-pasta until then)
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.ingress-nginx.containers :
-      c => v if v.rewrite_values.tag != null
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.ingress-nginx["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = local.images_data.ingress-nginx.containers
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.images_data.ingress-nginx.containers :
-      c => v if v.rewrite_values.registry != null
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != null ? set.value.rewrite_values.registry.value : split(
-        "/", try(aws_ecr_repository.this[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
   namespace = kubernetes_namespace.ingress-nginx.*.metadata.0.name[count.index]
 
   depends_on = [
-    kubectl_manifest.prometheus-operator_crds, skopeo_copy.this
+    kubectl_manifest.prometheus-operator_crds
   ]
 }
 
