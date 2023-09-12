@@ -38,7 +38,6 @@ locals {
         VOLUME_SNAPSHOT_CLASS
       name_prefix               = "${var.cluster-name}-aws-ebs-csi-driver"
       vpa_enable                = false
-      vpa_only_recommend        = false
     },
     var.aws-ebs-csi-driver
   )
@@ -107,7 +106,7 @@ resource "kubernetes_namespace" "aws-ebs-csi-driver" {
   metadata {
     labels = merge({
       name = local.aws-ebs-csi-driver["namespace"]
-      }, local.aws-ebs-csi-driver["vpa_only_recommend"] && local.aws-ebs-csi-driver["vpa_enable"] ? {
+      }, local.vpa["vpa_only_recommend"] && local.aws-ebs-csi-driver["vpa_enable"] ? {
       "goldilocks.fairwinds.com/enabled" = "true"
     } : {})
 

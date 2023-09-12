@@ -13,7 +13,6 @@ locals {
       default_network_policy = true
       allow_cluster_view     = false
       vpa_enable             = false
-      vpa_only_recommend     = false
     },
     var.rbac-manager
   )

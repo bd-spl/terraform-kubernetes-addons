@@ -10,7 +10,6 @@ locals {
       enabled                = false
       default_network_policy = true
       vpa_enable             = false
-      vpa_only_recommend     = false
     },
     var.npd
   )
@@ -27,7 +26,7 @@ resource "kubernetes_namespace" "node-problem-detector" {
   metadata {
     labels = merge({
       name = local.npd["namespace"]
-      }, local.npd["vpa_only_recommend"] && local.npd["vpa_enable"] ? {
+      }, local.vpa["vpa_only_recommend"] && local.npd["vpa_enable"] ? {
       "goldilocks.fairwinds.com/enabled" = "true"
     } : {})
 

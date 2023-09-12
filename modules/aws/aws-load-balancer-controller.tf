@@ -15,7 +15,6 @@ locals {
       allowed_cidrs             = ["0.0.0.0/0"]
       name_prefix               = "${var.cluster-name}-awslbc"
       vpa_enable                = false
-      vpa_only_recommend        = false
     },
     var.aws-load-balancer-controller
   )
@@ -55,7 +54,7 @@ resource "kubernetes_namespace" "aws-load-balancer-controller" {
   metadata {
     labels = merge({
       name = local.aws-load-balancer-controller["namespace"]
-      }, local.aws-load-balancer-controller["vpa_only_recommend"] && local.aws-load-balancer-controller["vpa_enable"] ? {
+      }, local.vpa["vpa_only_recommend"] && local.aws-load-balancer-controller["vpa_enable"] ? {
       "goldilocks.fairwinds.com/enabled" = "true"
     } : {})
 

@@ -269,3 +269,9 @@ variable "victoria-metrics-k8s-stack" {
   type        = any
   default     = {}
 }
+
+variable "vpa" {
+  description = "Customize VPA/Goldilocks charts, see `vpa.tf` for supported values"
+  type        = any
+  default     = {}
+}

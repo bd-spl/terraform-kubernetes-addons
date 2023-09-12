@@ -51,6 +51,7 @@ dashboard:
           - ${local.vpa["goldilocks_fqdn"]}
 VALUES
 
+  # FIXME: When vpa_only_recommend=false, do we need admission controller to auto-apply recommended resources onto newly/re-created pods?
   values_vpa = <<VALUES
 nameOverride: "${local.vpa["name_goldilocks"]}"
 priorityClassName: ${local.priority-class["create"] ? kubernetes_priority_class.kubernetes_addons[0].metadata[0].name : ""}
@@ -157,6 +158,9 @@ resource "helm_release" "vpa" {
   ]
 }
 
+# NOTE: always deploy goldilocks alongside vpa - if core addons have no use of it, other workloads may still need it
+# TODO: secure access to VPA recommender UI (Goldilocks), if it allows changing anything for pods resources.
+# Or may be leave it open for infra-only access, for everyone, if it only recommends new values for requests/limits resources.
 resource "helm_release" "goldilocks" {
   count                 = local.vpa["enabled"] ? 1 : 0
   repository            = local.vpa["repository_goldilocks"]

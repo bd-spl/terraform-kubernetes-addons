@@ -14,7 +14,6 @@ locals {
       default_network_policy    = true
       name_prefix               = "${var.cluster-name}-cluster-autoscaler"
       vpa_enable                = false
-      vpa_only_recommend        = false
     },
     var.cluster-autoscaler
   )
@@ -114,7 +113,7 @@ resource "kubernetes_namespace" "cluster-autoscaler" {
   metadata {
     labels = merge({
       name = local.cluster-autoscaler["namespace"]
-      }, local.cluster-autoscaler["vpa_only_recommend"] && local.cluster-autoscaler["vpa_enable"] ? {
+      }, local.vpa["vpa_only_recommend"] && local.cluster-autoscaler["vpa_enable"] ? {
       "goldilocks.fairwinds.com/enabled" = "true"
     } : {})
 

@@ -52,8 +52,7 @@ locals {
         idp  = ""
         auth = ""
       }
-      vpa_enable         = false
-      vpa_only_recommend = false
+      vpa_enable = false
     },
     var.dex
   )
@@ -219,7 +218,7 @@ resource "kubernetes_namespace" "dex" {
   metadata {
     labels = merge({
       name = local.dex["namespace"]
-      }, local.dex["vpa_only_recommend"] && local.dex["vpa_enable"] ? {
+      }, local.vpa["vpa_only_recommend"] && local.dex["vpa_enable"] ? {
       "goldilocks.fairwinds.com/enabled" = "true"
     } : {})
 

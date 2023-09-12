@@ -265,6 +265,7 @@ No modules.
 | <a name="input_traefik"></a> [traefik](#input\_traefik) | Customize traefik chart, see `traefik.tf` for supported values | `any` | `{}` | no |
 | <a name="input_vault"></a> [vault](#input\_vault) | Customize Hashicorp Vault chart, see `vault.tf` for supported values | `any` | `{}` | no |
 | <a name="input_victoria-metrics-k8s-stack"></a> [victoria-metrics-k8s-stack](#input\_victoria-metrics-k8s-stack) | Customize Victoria Metrics chart, see `victoria-metrics-k8s-stack.tf` for supported values | `any` | `{}` | no |
+| <a name="input_vpa"></a> [vpa](#input\_vpa) | Customize VPA/Goldilocks charts, see `vpa.tf` for supported values | `any` | `{}` | no |
 
 ## Outputs
 

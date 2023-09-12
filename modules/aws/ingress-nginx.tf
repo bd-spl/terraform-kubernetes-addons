@@ -17,7 +17,6 @@ locals {
       ingress_cidrs           = ["0.0.0.0/0"]
       allowed_cidrs           = ["0.0.0.0/0"]
       vpa_enable              = false
-      vpa_only_recommend      = false
     },
     var.ingress-nginx
   )
@@ -143,7 +142,7 @@ resource "kubernetes_namespace" "ingress-nginx" {
       # to prevent service outage. Acceptable values: enabled | disabled
       # More details - https://kubernetes-sigs.github.io/aws-load-balancer-controller/v2.5/deploy/pod_readiness_gate/
       "elbv2.k8s.aws/pod-readiness-gate-inject" = local.ingress-nginx-internal["albc_pod_readiness_gate"]
-      }, local.ingress-nginx["vpa_only_recommend"] && local.ingress-nginx["vpa_enable"] ? {
+      }, local.vpa["vpa_only_recommend"] && local.ingress-nginx["vpa_enable"] ? {
       "goldilocks.fairwinds.com/enabled" = "true"
     } : {})
 

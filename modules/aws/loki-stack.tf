@@ -22,7 +22,6 @@ locals {
       create_grafana_ds_cm      = true
       name_prefix               = "${var.cluster-name}-loki"
       vpa_enable                = false
-      vpa_only_recommend        = false
     },
     var.loki-stack
   )
@@ -87,7 +86,7 @@ resource "kubernetes_namespace" "loki-stack" {
     labels = merge({
       name                               = local.loki-stack["namespace"]
       "${local.labels_prefix}/component" = "monitoring"
-      }, local.loki-stack["vpa_only_recommend"] && local.loki-stack["vpa_enable"] ? {
+      }, local.vpa["vpa_only_recommend"] && local.loki-stack["vpa_enable"] ? {
       "goldilocks.fairwinds.com/enabled" = "true"
     } : {})
 

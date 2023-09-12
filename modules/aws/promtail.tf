@@ -16,7 +16,6 @@ locals {
       tls_key                = null
       default_network_policy = false
       vpa_enable             = false
-      vpa_only_recommend     = false
     },
     var.promtail
   )
@@ -81,7 +80,7 @@ resource "kubernetes_namespace" "promtail" {
     labels = merge({
       name                               = local.promtail["namespace"]
       "${local.labels_prefix}/component" = "monitoring"
-      }, local.promtail["vpa_only_recommend"] && local.promtail["vpa_enable"] ? {
+      }, local.vpa["vpa_only_recommend"] && local.promtail["vpa_enable"] ? {
       "goldilocks.fairwinds.com/enabled" = "true"
     } : {})
 

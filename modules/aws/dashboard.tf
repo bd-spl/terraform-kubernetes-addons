@@ -13,7 +13,6 @@ locals {
       default_network_policy = true
       allow_cluster_view     = false
       vpa_enable             = false
-      vpa_only_recommend     = false
     },
     var.dashboard
   )
@@ -56,7 +55,7 @@ resource "kubernetes_namespace" "dashboard" {
   metadata {
     labels = merge({
       name = local.dashboard["namespace"]
-      }, local.dashboard["vpa_only_recommend"] && local.dashboard["vpa_enable"] ? {
+      }, local.vpa["vpa_only_recommend"] && local.dashboard["vpa_enable"] ? {
       "goldilocks.fairwinds.com/enabled" = "true"
     } : {})
 
