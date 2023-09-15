@@ -27,7 +27,7 @@ resource "kubernetes_namespace" "reloader" {
   metadata {
     labels = merge({
       name = local.reloader["namespace"]
-      }, local.reloader["vpa_only_recommend"] && local.reloader["vpa_enable"] ? {
+      }, local.vpa["vpa_only_recommend"] && local.reloader["vpa_enable"] ? {
       "goldilocks.fairwinds.com/enabled" = "true"
     } : {})
 

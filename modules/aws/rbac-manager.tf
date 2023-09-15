@@ -32,7 +32,7 @@ resource "kubernetes_namespace" "rbac-manager" {
   metadata {
     labels = merge({
       name = local.rbac-manager["namespace"]
-      }, local.rbac-manager["vpa_only_recommend"] && local.rbac-manager["vpa_enable"] ? {
+      }, local.vpa["vpa_only_recommend"] && local.rbac-manager["vpa_enable"] ? {
       "goldilocks.fairwinds.com/enabled" = "true"
     } : {})
 
