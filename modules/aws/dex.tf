@@ -30,6 +30,7 @@ locals {
       ldap_user_filter          = "(objectClass=posixAccount)" # person?
       ldap_group_filter         = "(objectClass=groupOfNames)" # group?
       ldap_acc_secretname       = "ldap-acc-secret"
+      cluster_name              = "EKS"
       cluster_api_endpoint      = ""
       cluster_ca_pem            = ""
       oauth_client_secretname   = "oauth-client-secret"
