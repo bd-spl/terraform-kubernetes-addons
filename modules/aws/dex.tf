@@ -175,7 +175,7 @@ resources: ${jsonencode(local.dex["resources"])}
 ${yamldecode(jsonencode(local.dex["hpa"]))}
 config:
   clusters:
-    - name: "EKS"
+    - name: "${local.dex["cluster_name"]}"
       short_description: "EKS cluster SSO"
       description: "EKS cluster SSO authenticator for LDAP Login"
       issuer: https://${local.dex["idp_fqdn"]}
