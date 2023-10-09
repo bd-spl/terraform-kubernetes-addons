@@ -54,3 +54,12 @@ See also the AWS EKS addons ``*.tf`` files contents to learn how to use this mod
 # Terraform docs
 
 [Deploy](./TFDOCS.md)
+
+# Known issue
+
+If kustomize provider fails to apply for cert-manager deployment,
+remove the immutable jobs and retry the deploy command:
+```
+kubectl delete job gateway-api-admission -n gateway-system --ignore-not-found
+kubectl delete job gateway-api-admission-patch -n gateway-system --ignore-not-found
+```

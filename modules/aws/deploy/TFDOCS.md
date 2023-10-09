@@ -50,6 +50,7 @@ No modules.
 | <a name="input_images_repos"></a> [images\_repos](#input\_images\_repos) | Containers repos data from ECR upload module for the target addon | `map(any)` | `{}` | no |
 | <a name="input_kustomizations"></a> [kustomizations](#input\_kustomizations) | kustomizations for the target addon | `map(any)` | `{}` | no |
 | <a name="input_kustomizations_images_map"></a> [kustomizations\_images\_map](#input\_kustomizations\_images\_map) | containers images mappings for the target addon to kustomize it after the paths get rewritten for ECR | `map(any)` | `{}` | no |
+| <a name="input_kustomize_external"></a> [kustomize\_external](#input\_kustomize\_external) | Apply with Kustomize or kubectl -k | `bool` | `false` | no |
 | <a name="input_kustomize_resources"></a> [kustomize\_resources](#input\_kustomize\_resources) | kustomization resources for the target addon | `list(any)` | `[]` | no |
 | <a name="input_kustomize_resources_manifests_version"></a> [kustomize\_resources\_manifests\_version](#input\_kustomize\_resources\_manifests\_version) | the target addon's manifests versions to be used as kustomize resources | `string` | `null` | no |
 | <a name="input_name"></a> [name](#input\_name) | n/a | `string` | `null` | no |

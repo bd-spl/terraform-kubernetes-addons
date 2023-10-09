@@ -29,6 +29,12 @@ variable "kustomizations" {
   default     = {}
 }
 
+variable "kustomize_external" {
+  description = "Apply with Kustomize or kubectl -k"
+  type        = bool
+  default     = false
+}
+
 variable "kustomize_resources" {
   description = "kustomization resources for the target addon"
   type        = list(any)
