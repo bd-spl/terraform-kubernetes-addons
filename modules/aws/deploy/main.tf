@@ -62,14 +62,14 @@ resource "helm_release" "this" {
   reuse_values          = var.reuse_values
   skip_crds             = var.skip_crds
   verify                = var.verify
-  values = [
-    yamlencode(
-      merge(
-        try(yamldecode(local.extra_values), {}),
-        try(yamldecode(data.template_file.extra_values_patched.0.rendered), {})
-      )
-    )
-  ]
+  # TODO(bogdando) document extra_values/extra_tpl use cases in the deploy module examples
+  # NOTE: both extra_tpl and extra_values items' contents cannot overlap,
+  # so 'extraArgs' must be defined in extra_values (if no templates in it),
+  # or in extra_tpl, if it contains templated vars.
+  values = flatten(concat(
+    [local.extra_values],
+    [length(local.extra_tpl) > 0 ? data.template_file.extra_values_patched.0.rendered : ""]
+  ))
 
   # NOTE: No data type resource for helm_release available yet. So wrapping the resource in-place
   dynamic "set" {

@@ -176,7 +176,6 @@ module "deploy_cert-manager" {
   EOT
   # Extra manager data
   extra_tpl           = local.cert-manager.extra_tpl
-  extra_values        = local.cert-manager.extra_values
   images_data         = local.cert-manager["images_data"]
   images_repos        = local.cert-manager["images_repos"]
   containers_versions = local.cert-manager["containers_versions"]
@@ -200,7 +199,10 @@ module "deploy_cert-manager" {
   reuse_values          = local.cert-manager["reuse_values"]
   skip_crds             = local.cert-manager["skip_crds"]
   verify                = local.cert-manager["verify"]
-  values                = [local.values_cert-manager]
+  values = [
+    local.values_cert-manager,
+    local.cert-manager["extra_values"]
+  ]
 
   namespace = kubernetes_namespace.cert-manager.*.metadata.0.name[count.index]
 

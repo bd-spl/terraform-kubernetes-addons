@@ -7,13 +7,17 @@ variable "helm_deploy" {
 variable "images_data" {
   description = "Containers images data from ECR prepare module for the target addon"
   type        = map(any)
-  default     = {}
+  default = {
+    containers = {}
+  }
 }
 
 variable "images_repos" {
   description = "Containers repos data from ECR upload module for the target addon"
   type        = map(any)
-  default     = {}
+  default = {
+    repos = {}
+  }
 }
 
 variable "containers_versions" {
@@ -61,15 +65,9 @@ variable "kustomizations_images_map" {
 
 ## Arguments for Extra manager
 variable "extra_tpl" {
-  description = "the target addon's extra values template to override containers images after the paths get rewritten for ECR"
+  description = "Extra Helm values templated for the target addon's to override containers images with prepared data"
   type        = map(any)
   default     = {}
-}
-
-variable "extra_values" {
-  description = "extra values (YAML as text) to merge it with the given Helm values"
-  type        = string
-  default     = ""
 }
 
 ## Arguments for Helm manager

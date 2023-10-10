@@ -7,7 +7,7 @@ locals {
   images_data                           = var.images_data
   images_repos                          = var.images_repos
   extra_tpl                             = var.extra_tpl
-  extra_values                          = var.extra_values
+  extra_values                          = var.values
 
   ## prepare data for Extra manager of the target addon
   containers_data = {

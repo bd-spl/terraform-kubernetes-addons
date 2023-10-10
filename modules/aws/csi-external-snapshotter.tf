@@ -54,7 +54,7 @@ module "deploy_csi-external-snapshotter" {
   kustomize_resources_manifests_version = local.csi-external-snapshotter_manifests_version
   # Extra manager data
   extra_tpl           = local.csi-external-snapshotter.extra_tpl
-  extra_values        = local.csi-external-snapshotter.extra_values
+  values              = [local.csi-external-snapshotter.extra_values]
   images_data         = local.csi-external-snapshotter["images_data"]
   images_repos        = local.csi-external-snapshotter["images_repos"]
   containers_versions = local.csi-external-snapshotter.containers_versions

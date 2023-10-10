@@ -42,12 +42,11 @@ No modules.
 | <a name="input_dependency_update"></a> [dependency\_update](#input\_dependency\_update) | n/a | `bool` | `null` | no |
 | <a name="input_disable_crd_hooks"></a> [disable\_crd\_hooks](#input\_disable\_crd\_hooks) | n/a | `bool` | `null` | no |
 | <a name="input_disable_webhooks"></a> [disable\_webhooks](#input\_disable\_webhooks) | n/a | `bool` | `null` | no |
-| <a name="input_extra_tpl"></a> [extra\_tpl](#input\_extra\_tpl) | the target addon's extra values template to override containers images after the paths get rewritten for ECR | `map(any)` | `{}` | no |
-| <a name="input_extra_values"></a> [extra\_values](#input\_extra\_values) | extra values (YAML as text) to merge it with the given Helm values | `string` | `""` | no |
+| <a name="input_extra_tpl"></a> [extra\_tpl](#input\_extra\_tpl) | Extra Helm values templated for the target addon's to override containers images with prepared data | `map(any)` | `{}` | no |
 | <a name="input_force_update"></a> [force\_update](#input\_force\_update) | n/a | `bool` | `null` | no |
 | <a name="input_helm_deploy"></a> [helm\_deploy](#input\_helm\_deploy) | Whether to deploy with Helm manager | `bool` | `true` | no |
-| <a name="input_images_data"></a> [images\_data](#input\_images\_data) | Containers images data from ECR prepare module for the target addon | `map(any)` | `{}` | no |
-| <a name="input_images_repos"></a> [images\_repos](#input\_images\_repos) | Containers repos data from ECR upload module for the target addon | `map(any)` | `{}` | no |
+| <a name="input_images_data"></a> [images\_data](#input\_images\_data) | Containers images data from ECR prepare module for the target addon | `map(any)` | <pre>{<br>  "containers": {}<br>}</pre> | no |
+| <a name="input_images_repos"></a> [images\_repos](#input\_images\_repos) | Containers repos data from ECR upload module for the target addon | `map(any)` | <pre>{<br>  "repos": {}<br>}</pre> | no |
 | <a name="input_kustomizations"></a> [kustomizations](#input\_kustomizations) | kustomizations for the target addon | `map(any)` | `{}` | no |
 | <a name="input_kustomizations_images_map"></a> [kustomizations\_images\_map](#input\_kustomizations\_images\_map) | containers images mappings for the target addon to kustomize it after the paths get rewritten for ECR | `map(any)` | `{}` | no |
 | <a name="input_kustomize_external"></a> [kustomize\_external](#input\_kustomize\_external) | Apply with Kustomize or kubectl -k | `bool` | `false` | no |
