@@ -169,6 +169,11 @@ module "deploy_cert-manager" {
   kustomizations_images_map             = local.cert-manager.kustomizations_images_map
   kustomize_resources                   = local.cert-manager.resources
   kustomize_resources_manifests_version = local.cert-manager_manifests_version
+  # Delete immutable jobs, before applying changes to its containers images with kustomize
+  kustomize_workarounds = <<-EOT
+    kubectl delete job gateway-api-admission -n gateway-system --ignore-not-found
+    kubectl delete job gateway-api-admission-patch -n gateway-system --ignore-not-found
+  EOT
   # Extra manager data
   extra_tpl           = local.cert-manager.extra_tpl
   extra_values        = local.cert-manager.extra_values

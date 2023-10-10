@@ -23,6 +23,7 @@ resource "null_resource" "kustomize" {
   # NOTE: cannot update Jobs' spec immutable container images data
   provisioner "local-exec" {
     command = <<-EOT
+    ${var.kustomize_workarounds}
     ${var.kustomize_external ? "kustomize build ./kustomization-${each.key}/kustomization | kubectl apply -f -" : "kubectl apply -k ./kustomization-${each.key}/kustomization"}
   EOT
   }

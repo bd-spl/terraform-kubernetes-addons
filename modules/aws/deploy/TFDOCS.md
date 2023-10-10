@@ -53,6 +53,7 @@ No modules.
 | <a name="input_kustomize_external"></a> [kustomize\_external](#input\_kustomize\_external) | Apply with Kustomize or kubectl -k | `bool` | `false` | no |
 | <a name="input_kustomize_resources"></a> [kustomize\_resources](#input\_kustomize\_resources) | kustomization resources for the target addon | `list(any)` | `[]` | no |
 | <a name="input_kustomize_resources_manifests_version"></a> [kustomize\_resources\_manifests\_version](#input\_kustomize\_resources\_manifests\_version) | the target addon's manifests versions to be used as kustomize resources | `string` | `null` | no |
+| <a name="input_kustomize_workarounds"></a> [kustomize\_workarounds](#input\_kustomize\_workarounds) | Apply commands before applying kustomizations | `string` | `""` | no |
 | <a name="input_name"></a> [name](#input\_name) | n/a | `string` | `null` | no |
 | <a name="input_namespace"></a> [namespace](#input\_namespace) | n/a | `string` | `null` | no |
 | <a name="input_recreate_pods"></a> [recreate\_pods](#input\_recreate\_pods) | n/a | `bool` | `null` | no |

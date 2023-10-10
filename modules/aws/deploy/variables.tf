@@ -35,6 +35,12 @@ variable "kustomize_external" {
   default     = false
 }
 
+variable "kustomize_workarounds" {
+  description = "Apply commands before applying kustomizations"
+  type        = string
+  default     = ""
+}
+
 variable "kustomize_resources" {
   description = "kustomization resources for the target addon"
   type        = list(any)
