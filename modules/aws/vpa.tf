@@ -25,6 +25,7 @@ locals {
       }
       vpa_enable         = false
       vpa_only_recommend = false
+      use_deploy_module  = true
       images_data = {
         goldilocks = {}
         vpa        = {}
@@ -93,7 +94,7 @@ resource "kubernetes_namespace" "vpa" {
 }
 
 module "deploy_vpa" {
-  count                 = local.vpa["enabled"] ? 1 : 0
+  count                 = local.vpa["enabled"] && local.vpa["use_deploy_module"] ? 1 : 0
   source                = "./deploy"
   images_data           = local.vpa["images_data"]["vpa"]
   images_repos          = local.vpa["images_repos"]["vpa"]
@@ -133,7 +134,7 @@ module "deploy_vpa" {
 # TODO: secure access to VPA recommender UI (Goldilocks), if it allows changing anything for pods resources.
 # Or may be leave it open for infra-only access, for everyone, if it only recommends new values for requests/limits resources.
 module "deploy_goldilocks" {
-  count                 = local.vpa["enabled"] ? 1 : 0
+  count                 = local.vpa["enabled"] && local.vpa["use_deploy_module"] ? 1 : 0
   source                = "./deploy"
   images_data           = local.vpa["images_data"]["goldilocks"]
   images_repos          = local.vpa["images_repos"]["goldilocks"]
@@ -247,4 +248,162 @@ resource "kubernetes_network_policy" "vpa_allow_monitoring" {
 
     policy_types = ["Ingress"]
   }
+}
+
+# FIXME
+resource "helm_release" "vpa" {
+  count                 = local.vpa["enabled"] && !local.vpa["use_deploy_module"] ? 1 : 0
+  repository            = local.vpa["repository_vpa"]
+  name                  = local.vpa["name_vpa"]
+  chart                 = local.vpa["chart_vpa"]
+  version               = local.vpa["chart_version_vpa"]
+  timeout               = local.vpa["timeout"]
+  force_update          = local.vpa["force_update"]
+  recreate_pods         = local.vpa["recreate_pods"]
+  wait                  = local.vpa["wait"]
+  atomic                = local.vpa["atomic"]
+  cleanup_on_fail       = local.vpa["cleanup_on_fail"]
+  dependency_update     = local.vpa["dependency_update"]
+  disable_crd_hooks     = local.vpa["disable_crd_hooks"]
+  disable_webhooks      = local.vpa["disable_webhooks"]
+  render_subchart_notes = local.vpa["render_subchart_notes"]
+  replace               = local.vpa["replace"]
+  reset_values          = local.vpa["reset_values"]
+  reuse_values          = local.vpa["reuse_values"]
+  skip_crds             = local.vpa["skip_crds"]
+  verify                = local.vpa["verify"]
+  values = [
+    local.values_vpa,
+    local.vpa["extra_values"]["vpa"]
+  ]
+
+  dynamic "set" {
+    for_each = {
+      for c, v in local.vpa["images_data"].vpa.containers :
+      c => v if length(v.rewrite_values.tag) > 0 && try(v.manager, "helm") == "helm"
+    }
+    content {
+      name  = set.value.rewrite_values.tag.name
+      value = try(local.vpa["containers_versions"]["vpa"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
+    }
+  }
+  dynamic "set" {
+    for_each = {
+      for c, v in local.vpa["images_data"].vpa.containers :
+      c => v if try(v.manager, "helm") == "helm"
+    }
+    content {
+      name = set.value.rewrite_values.image.name
+      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
+        try(local.vpa["images_repos"].vpa.repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url, "")}${set.value.rewrite_values.image.tail
+        }" : set.value.ecr_prepare_images ? try(
+        local.vpa["images_repos"].vpa.repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].name, ""
+      ) : set.value.rewrite_values.image.value
+    }
+  }
+  dynamic "set" {
+    for_each = {
+      for c, v in local.vpa["images_data"].vpa.containers :
+      c => v if length(v.rewrite_values.registry) > 0 && try(v.manager, "helm") == "helm"
+    }
+    content {
+      name = set.value.rewrite_values.registry.name
+      # when unset, it should be replaced with the one prepared on ECR
+      value = set.value.rewrite_values.registry.value != "" ? set.value.rewrite_values.registry.value : split(
+        "/", try(local.vpa["images_repos"].vpa.repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url, "")
+      )[0]
+    }
+  }
+
+  namespace = kubernetes_namespace.vpa.*.metadata.0.name[count.index]
+
+  depends_on = [
+    helm_release.ingress-nginx,
+  ]
+}
+
+# NOTE: always deploy goldilocks alongside vpa - if core addons have no use of it, other workloads may still need it
+# TODO: secure access to VPA recommender UI (Goldilocks), if it allows changing anything for pods resources.
+# Or may be leave it open for infra-only access, for everyone, if it only recommends new values for requests/limits resources.
+resource "helm_release" "goldilocks" {
+  count                 = local.vpa["enabled"] && !local.vpa["use_deploy_module"] ? 1 : 0
+  repository            = local.vpa["repository_goldilocks"]
+  name                  = local.vpa["name_goldilocks"]
+  chart                 = local.vpa["chart_goldilocks"]
+  version               = local.vpa["chart_version_goldilocks"]
+  timeout               = local.vpa["timeout"]
+  force_update          = local.vpa["force_update"]
+  recreate_pods         = local.vpa["recreate_pods"]
+  wait                  = local.vpa["wait"]
+  atomic                = local.vpa["atomic"]
+  cleanup_on_fail       = local.vpa["cleanup_on_fail"]
+  dependency_update     = local.vpa["dependency_update"]
+  disable_crd_hooks     = local.vpa["disable_crd_hooks"]
+  disable_webhooks      = local.vpa["disable_webhooks"]
+  render_subchart_notes = local.vpa["render_subchart_notes"]
+  replace               = local.vpa["replace"]
+  reset_values          = local.vpa["reset_values"]
+  reuse_values          = local.vpa["reuse_values"]
+  skip_crds             = local.vpa["skip_crds"]
+  verify                = local.vpa["verify"]
+  values = [
+    local.values_goldilocks,
+    local.vpa["extra_values"]["goldilocks"]
+  ]
+
+  dynamic "set" {
+    for_each = {
+      for c, v in local.vpa["images_data"].goldilocks.containers :
+      c => v if length(v.rewrite_values.tag) > 0 && try(v.manager, "helm") == "helm"
+    }
+    content {
+      name  = set.value.rewrite_values.tag.name
+      value = try(local.vpa["containers_versions"]["goldilocks"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
+    }
+  }
+  dynamic "set" {
+    for_each = {
+      for c, v in local.vpa["images_data"].goldilocks.containers :
+      c => v if try(v.manager, "helm") == "helm"
+    }
+    content {
+      name = set.value.rewrite_values.image.name
+      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
+        try(local.vpa["images_repos"].goldilocks.repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url, "")}${set.value.rewrite_values.image.tail
+        }" : set.value.ecr_prepare_images ? try(
+        local.vpa["images_repos"].goldilocks.repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].name, ""
+      ) : set.value.rewrite_values.image.value
+    }
+  }
+  dynamic "set" {
+    for_each = {
+      for c, v in local.vpa["images_data"].goldilocks.containers :
+      c => v if length(v.rewrite_values.registry) > 0 && try(v.manager, "helm") == "helm"
+    }
+    content {
+      name = set.value.rewrite_values.registry.name
+      # when unset, it should be replaced with the one prepared on ECR
+      value = set.value.rewrite_values.registry.value != "" ? set.value.rewrite_values.registry.value : split(
+        "/", try(local.vpa["images_repos"].goldilocks.repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url, "")
+      )[0]
+    }
+  }
+
+  namespace = kubernetes_namespace.vpa.*.metadata.0.name[count.index]
+
+  depends_on = [
+    helm_release.vpa
+  ]
 }

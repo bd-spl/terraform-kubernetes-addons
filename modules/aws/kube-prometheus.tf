@@ -33,6 +33,7 @@ locals {
       infra_ca_data                     = [{ name = "ipa", pem = "" }]
       create_secrets                    = true
       vpa_enable                        = false
+      use_deploy_module                 = true
       images_data                       = {}
       images_repos                      = {}
       containers_versions               = {}
@@ -486,7 +487,7 @@ resource "random_password" "grafana_password" {
 }
 
 module "deploy_kube-prometheus-stack" {
-  count                 = local.kube-prometheus-stack["enabled"] ? 1 : 0
+  count                 = local.kube-prometheus-stack["enabled"] && local.kube-prometheus-stack["use_deploy_module"] ? 1 : 0
   source                = "./deploy"
   images_data           = local.kube-prometheus-stack["images_data"]
   images_repos          = local.kube-prometheus-stack["images_repos"]
@@ -685,4 +686,100 @@ resource "kubernetes_secret" "grafana_infra_ca_secret" {
 output "grafana_password" {
   value     = element(concat(random_password.grafana_password.*.result, [""]), 0)
   sensitive = true
+}
+
+# FIXME
+resource "helm_release" "kube-prometheus-stack" {
+  count                 = local.kube-prometheus-stack["enabled"] && !local.kube-prometheus-stack["use_deploy_module"] ? 1 : 0
+  repository            = local.kube-prometheus-stack["repository"]
+  name                  = local.kube-prometheus-stack["name"]
+  chart                 = local.kube-prometheus-stack["chart"]
+  version               = local.kube-prometheus-stack["chart_version"]
+  timeout               = local.kube-prometheus-stack["timeout"]
+  force_update          = local.kube-prometheus-stack["force_update"]
+  recreate_pods         = local.kube-prometheus-stack["recreate_pods"]
+  wait                  = local.kube-prometheus-stack["wait"]
+  atomic                = local.kube-prometheus-stack["atomic"]
+  cleanup_on_fail       = local.kube-prometheus-stack["cleanup_on_fail"]
+  dependency_update     = local.kube-prometheus-stack["dependency_update"]
+  disable_crd_hooks     = local.kube-prometheus-stack["disable_crd_hooks"]
+  disable_webhooks      = local.kube-prometheus-stack["disable_webhooks"]
+  render_subchart_notes = local.kube-prometheus-stack["render_subchart_notes"]
+  replace               = local.kube-prometheus-stack["replace"]
+  reset_values          = local.kube-prometheus-stack["reset_values"]
+  reuse_values          = local.kube-prometheus-stack["reuse_values"]
+  skip_crds             = local.kube-prometheus-stack["skip_crds"]
+  verify                = local.kube-prometheus-stack["verify"]
+  values = compact([
+    local.values_kube-prometheus-stack,
+    local.kong["enabled"] ? local.values_dashboard_kong : null,
+    local.cert-manager["enabled"] ? local.values_dashboard_cert-manager : null,
+    local.cluster-autoscaler["enabled"] ? local.values_dashboard_cluster-autoscaler : null,
+    local.ingress-nginx["enabled"] ? local.values_dashboard_ingress-nginx : null,
+    local.thanos["enabled"] ? local.values_dashboard_thanos : null,
+    local.values_dashboard_node_exporter,
+    local.kube-prometheus-stack["thanos_sidecar_enabled"] ? local.values_thanos_sidecar : null,
+    local.kube-prometheus-stack["thanos_sidecar_enabled"] ? local.values_grafana_ds : null,
+    local.kube-prometheus-stack["default_global_requests"] ? local.values_kps_global_requests : null,
+    local.kube-prometheus-stack["default_global_limits"] ? local.values_kps_global_limits : null,
+    local.kube-prometheus-stack["ldap_enabled"] ? local.values_grafana_ldap : null,
+    local.kube-prometheus-stack["extra_values"]
+  ])
+
+  set_sensitive {
+    name  = "grafana.adminPassword"
+    value = join(",", random_password.grafana_password.*.result)
+  }
+
+  dynamic "set" {
+    for_each = {
+      for c, v in local.kube-prometheus-stack["images_data"].containers :
+      c => v if length(v.rewrite_values.tag) > 0 && try(v.manager, "helm") == "helm"
+    }
+    content {
+      name  = set.value.rewrite_values.tag.name
+      value = try(local.kube-prometheus-stack["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
+    }
+  }
+  dynamic "set" {
+    for_each = {
+      for c, v in local.kube-prometheus-stack["images_data"].containers :
+      c => v if try(v.manager, "helm") == "helm"
+    }
+    content {
+      name = set.value.rewrite_values.image.name
+      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
+        try(local.kube-prometheus-stack["images_repos"].repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url, "")}${set.value.rewrite_values.image.tail
+        }" : set.value.ecr_prepare_images ? try(
+        local.kube-prometheus-stack["images_repos"].repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].name, ""
+      ) : set.value.rewrite_values.image.value
+    }
+  }
+  dynamic "set" {
+    for_each = {
+      for c, v in local.kube-prometheus-stack["images_data"].containers :
+      c => v if length(v.rewrite_values.registry) > 0 && try(v.manager, "helm") == "helm"
+    }
+    content {
+      name = set.value.rewrite_values.registry.name
+      # when unset, it should be replaced with the one prepared on ECR
+      value = set.value.rewrite_values.registry.value != "" ? set.value.rewrite_values.registry.value : split(
+        "/", try(local.kube-prometheus-stack["images_repos"].repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url, "")
+      )[0]
+    }
+  }
+
+  namespace = kubernetes_namespace.kube-prometheus-stack.*.metadata.0.name[count.index]
+
+  depends_on = [
+    helm_release.ingress-nginx,
+    helm_release.cluster-autoscaler,
+    kubectl_manifest.prometheus-operator_crds
+  ]
 }

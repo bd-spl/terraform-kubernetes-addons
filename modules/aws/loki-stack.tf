@@ -22,6 +22,7 @@ locals {
       create_grafana_ds_cm      = true
       name_prefix               = "${var.cluster-name}-loki"
       vpa_enable                = false
+      use_deploy_module         = true
       images_data               = {}
       images_repos              = {}
       containers_versions       = {}
@@ -123,7 +124,7 @@ resource "kubernetes_config_map" "loki-stack_grafana_ds" {
 }
 
 module "deploy_loki-stack" {
-  count                 = local.loki-stack["enabled"] ? 1 : 0
+  count                 = local.loki-stack["enabled"] && local.loki-stack["use_deploy_module"] ? 1 : 0
   source                = "./deploy"
   images_data           = local.loki-stack["images_data"]
   images_repos          = local.loki-stack["images_repos"]
@@ -338,4 +339,82 @@ output "promtail-key" {
 output "promtail-cert" {
   value     = element(concat(tls_locally_signed_cert.promtail-cert[*].cert_pem, [""]), 0)
   sensitive = true
+}
+
+# FIXME
+resource "helm_release" "loki-stack" {
+  count                 = local.loki-stack["enabled"] && !local.loki-stack["use_deploy_module"] ? 1 : 0
+  repository            = local.loki-stack["repository"]
+  name                  = local.loki-stack["name"]
+  chart                 = local.loki-stack["chart"]
+  version               = local.loki-stack["chart_version"]
+  timeout               = local.loki-stack["timeout"]
+  force_update          = local.loki-stack["force_update"]
+  recreate_pods         = local.loki-stack["recreate_pods"]
+  wait                  = local.loki-stack["wait"]
+  atomic                = local.loki-stack["atomic"]
+  cleanup_on_fail       = local.loki-stack["cleanup_on_fail"]
+  dependency_update     = local.loki-stack["dependency_update"]
+  disable_crd_hooks     = local.loki-stack["disable_crd_hooks"]
+  disable_webhooks      = local.loki-stack["disable_webhooks"]
+  render_subchart_notes = local.loki-stack["render_subchart_notes"]
+  replace               = local.loki-stack["replace"]
+  reset_values          = local.loki-stack["reset_values"]
+  reuse_values          = local.loki-stack["reuse_values"]
+  skip_crds             = local.loki-stack["skip_crds"]
+  verify                = local.loki-stack["verify"]
+  values = [
+    local.values_loki-stack,
+    local.loki-stack["extra_values"]
+  ]
+
+  dynamic "set" {
+    for_each = {
+      for c, v in local.loki-stack["images_data"].containers :
+      c => v if length(v.rewrite_values.tag) > 0 && try(v.manager, "helm") == "helm"
+    }
+    content {
+      name  = set.value.rewrite_values.tag.name
+      value = try(local.loki-stack["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
+    }
+  }
+  dynamic "set" {
+    for_each = {
+      for c, v in local.loki-stack["images_data"].containers :
+      c => v if try(v.manager, "helm") == "helm"
+    }
+    content {
+      name = set.value.rewrite_values.image.name
+      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
+        try(local.loki-stack["images_repos"].repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url, "")}${set.value.rewrite_values.image.tail
+        }" : set.value.ecr_prepare_images ? try(
+        local.loki-stack["images_repos"].repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].name, ""
+      ) : set.value.rewrite_values.image.value
+    }
+  }
+  dynamic "set" {
+    for_each = {
+      for c, v in local.loki-stack["images_data"].containers :
+      c => v if length(v.rewrite_values.registry) > 0 && try(v.manager, "helm") == "helm"
+    }
+    content {
+      name = set.value.rewrite_values.registry.name
+      # when unset, it should be replaced with the one prepared on ECR
+      value = set.value.rewrite_values.registry.value != "" ? set.value.rewrite_values.registry.value : split(
+        "/", try(local.loki-stack["images_repos"].repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url, "")
+      )[0]
+    }
+  }
+
+  namespace = local.loki-stack["create_ns"] ? kubernetes_namespace.loki-stack.*.metadata.0.name[count.index] : local.loki-stack["namespace"]
+
+  depends_on = [
+    kubectl_manifest.prometheus-operator_crds
+  ]
 }

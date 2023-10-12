@@ -15,6 +15,7 @@ locals {
       allowed_cidrs             = ["0.0.0.0/0"]
       name_prefix               = "${var.cluster-name}-awslbc"
       vpa_enable                = false
+      use_deploy_module         = true
       images_data               = {}
       images_repos              = {}
       containers_versions       = {}
@@ -66,7 +67,7 @@ resource "kubernetes_namespace" "aws-load-balancer-controller" {
 }
 
 module "deploy_aws-load-balancer-controller" {
-  count                 = local.aws-load-balancer-controller["enabled"] ? 1 : 0
+  count                 = local.aws-load-balancer-controller["enabled"] && local.aws-load-balancer-controller["use_deploy_module"] ? 1 : 0
   source                = "./deploy"
   images_data           = local.aws-load-balancer-controller["images_data"]
   images_repos          = local.aws-load-balancer-controller["images_repos"]
@@ -174,4 +175,78 @@ resource "kubernetes_network_policy" "aws-load-balancer-controller_allow_control
 
     policy_types = ["Ingress"]
   }
+}
+
+# FIXME
+resource "helm_release" "aws-load-balancer-controller" {
+  count                 = local.aws-load-balancer-controller["enabled"] && !local.aws-load-balancer-controller["use_deploy_module"] ? 1 : 0
+  repository            = local.aws-load-balancer-controller["repository"]
+  name                  = local.aws-load-balancer-controller["name"]
+  chart                 = local.aws-load-balancer-controller["chart"]
+  version               = local.aws-load-balancer-controller["chart_version"]
+  timeout               = local.aws-load-balancer-controller["timeout"]
+  force_update          = local.aws-load-balancer-controller["force_update"]
+  recreate_pods         = local.aws-load-balancer-controller["recreate_pods"]
+  wait                  = local.aws-load-balancer-controller["wait"]
+  atomic                = local.aws-load-balancer-controller["atomic"]
+  cleanup_on_fail       = local.aws-load-balancer-controller["cleanup_on_fail"]
+  dependency_update     = local.aws-load-balancer-controller["dependency_update"]
+  disable_crd_hooks     = local.aws-load-balancer-controller["disable_crd_hooks"]
+  disable_webhooks      = local.aws-load-balancer-controller["disable_webhooks"]
+  render_subchart_notes = local.aws-load-balancer-controller["render_subchart_notes"]
+  replace               = local.aws-load-balancer-controller["replace"]
+  reset_values          = local.aws-load-balancer-controller["reset_values"]
+  reuse_values          = local.aws-load-balancer-controller["reuse_values"]
+  skip_crds             = local.aws-load-balancer-controller["skip_crds"]
+  verify                = local.aws-load-balancer-controller["verify"]
+  values = [
+    local.values_aws-load-balancer-controller,
+    local.aws-load-balancer-controller["extra_values"]
+  ]
+
+  dynamic "set" {
+    for_each = {
+      for c, v in local.aws-load-balancer-controller["images_data"].containers :
+      c => v if length(v.rewrite_values.tag) > 0 && try(v.manager, "helm") == "helm"
+    }
+    content {
+      name  = set.value.rewrite_values.tag.name
+      value = try(local.aws-load-balancer-controller["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
+    }
+  }
+  dynamic "set" {
+    for_each = {
+      for c, v in local.aws-load-balancer-controller["images_data"].containers :
+      c => v if try(v.manager, "helm") == "helm"
+    }
+    content {
+      name = set.value.rewrite_values.image.name
+      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
+        try(local.aws-load-balancer-controller["images_repos"].repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url, "")}${set.value.rewrite_values.image.tail
+        }" : set.value.ecr_prepare_images ? try(
+        local.aws-load-balancer-controller["images_repos"].repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].name, ""
+      ) : set.value.rewrite_values.image.value
+    }
+  }
+  dynamic "set" {
+    for_each = {
+      for c, v in local.aws-load-balancer-controller["images_data"].containers :
+      c => v if length(v.rewrite_values.registry) > 0 && try(v.manager, "helm") == "helm"
+    }
+    content {
+      name = set.value.rewrite_values.registry.name
+      # when unset, it should be replaced with the one prepared on ECR
+      value = set.value.rewrite_values.registry.value != "" ? set.value.rewrite_values.registry.value : split(
+        "/", try(local.aws-load-balancer-controller["images_repos"].repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url, "")
+      )[0]
+    }
+  }
+
+  namespace = kubernetes_namespace.aws-load-balancer-controller.*.metadata.0.name[count.index]
 }

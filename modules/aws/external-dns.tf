@@ -15,8 +15,9 @@ locals {
       default_network_policy    = true
       name_prefix               = var.cluster-name
       vpa_enable                = false
-      images_data               = {}
-      images_repos              = {}
+      use_deploy_module         = true
+      images_data               = { containers = {} }
+      images_repos              = { repos = {} }
       containers_versions       = {}
     },
     v,
@@ -104,10 +105,10 @@ resource "kubernetes_namespace" "external-dns" {
 }
 
 module "deploy_external-dns" {
-  for_each              = { for k, v in local.external-dns : k => v if v["enabled"] }
+  for_each              = { for k, v in local.external-dns : k => v if v["enabled"] && v["use_deploy_module"] }
   source                = "./deploy"
-  images_data           = local.external-dns["images_data"][each.key]
-  images_repos          = local.external-dns["images_repos"][each.key]
+  images_data           = each.value["images_data"]
+  images_repos          = each.value["images_repos"]
   containers_versions   = each.value["containers_versions"]
   repository            = each.value["repository"]
   name                  = each.value["name"]
@@ -210,4 +211,82 @@ resource "kubernetes_network_policy" "external-dns_allow_monitoring" {
 
     policy_types = ["Ingress"]
   }
+}
+
+# FIXME
+resource "helm_release" "external-dns" {
+  for_each              = { for k, v in local.external-dns : k => v if v["enabled"] && !v["use_deploy_module"] }
+  repository            = each.value["repository"]
+  name                  = each.value["name"]
+  chart                 = each.value["chart"]
+  version               = each.value["chart_version"]
+  timeout               = each.value["timeout"]
+  force_update          = each.value["force_update"]
+  recreate_pods         = each.value["recreate_pods"]
+  wait                  = each.value["wait"]
+  atomic                = each.value["atomic"]
+  cleanup_on_fail       = each.value["cleanup_on_fail"]
+  dependency_update     = each.value["dependency_update"]
+  disable_crd_hooks     = each.value["disable_crd_hooks"]
+  disable_webhooks      = each.value["disable_webhooks"]
+  render_subchart_notes = each.value["render_subchart_notes"]
+  replace               = each.value["replace"]
+  reset_values          = each.value["reset_values"]
+  reuse_values          = each.value["reuse_values"]
+  skip_crds             = each.value["skip_crds"]
+  verify                = each.value["verify"]
+  values = [
+    local.values_external-dns[each.key]["values"],
+    each.value["extra_values"]
+  ]
+
+  dynamic "set" {
+    for_each = {
+      for c, d in try(each.value["images_data"].containers, {}) :
+      c => d if length(d.rewrite_values.tag) > 0 && try(d.manager, "helm") == "helm"
+    }
+    content {
+      name  = set.value.rewrite_values.tag.name
+      value = try(each.value["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
+    }
+  }
+  dynamic "set" {
+    for_each = {
+      for c, d in try(each.value["images_data"].containers, {}) :
+      c => d if try(d.manager, "helm") == "helm"
+    }
+    content {
+      name = set.value.rewrite_values.image.name
+      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
+        try(each.value["images_repos"].repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url, "")}${set.value.rewrite_values.image.tail
+        }" : set.value.ecr_prepare_images ? try(
+        each.value["images_repos"].repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].name, ""
+      ) : set.value.rewrite_values.image.value
+    }
+  }
+  dynamic "set" {
+    for_each = {
+      for c, d in try(each.value["images_data"].containers, {}) :
+      c => d if length(d.rewrite_values.registry) > 0 && try(d.manager, "helm") == "helm"
+    }
+    content {
+      name = set.value.rewrite_values.registry.name
+      # when unset, it should be replaced with the one prepared on ECR
+      value = set.value.rewrite_values.registry.value != "" ? set.value.rewrite_values.registry.value : split(
+        "/", try(each.value["images_repos"].repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url, "")
+      )[0]
+    }
+  }
+
+  namespace = kubernetes_namespace.external-dns[each.key].metadata.0.name
+
+  depends_on = [
+    kubectl_manifest.prometheus-operator_crds
+  ]
 }

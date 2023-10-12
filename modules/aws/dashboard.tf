@@ -13,6 +13,7 @@ locals {
       default_network_policy = true
       allow_cluster_view     = false
       vpa_enable             = false
+      use_deploy_module      = true
       images_data            = {}
       images_repos           = {}
       containers_versions    = {}
@@ -67,7 +68,7 @@ resource "kubernetes_namespace" "dashboard" {
 }
 
 module "deploy_dashboard" {
-  count                 = local.dashboard["enabled"] ? 1 : 0
+  count                 = local.dashboard["enabled"] && local.dashboard["use_deploy_module"] ? 1 : 0
   source                = "./deploy"
   images_data           = local.dashboard["images_data"]
   images_repos          = local.dashboard["images_repos"]
@@ -173,4 +174,82 @@ resource "kubernetes_network_policy" "dashboard_allow_monitoring" {
 
     policy_types = ["Ingress"]
   }
+}
+
+# FIXME
+resource "helm_release" "dashboard" {
+  count                 = local.dashboard["enabled"] && !local.dashboard["use_deploy_module"] ? 1 : 0
+  repository            = local.dashboard["repository"]
+  name                  = local.dashboard["name"]
+  chart                 = local.dashboard["chart"]
+  version               = local.dashboard["chart_version"]
+  timeout               = local.dashboard["timeout"]
+  force_update          = local.dashboard["force_update"]
+  recreate_pods         = local.dashboard["recreate_pods"]
+  wait                  = local.dashboard["wait"]
+  atomic                = local.dashboard["atomic"]
+  cleanup_on_fail       = local.dashboard["cleanup_on_fail"]
+  dependency_update     = local.dashboard["dependency_update"]
+  disable_crd_hooks     = local.dashboard["disable_crd_hooks"]
+  disable_webhooks      = local.dashboard["disable_webhooks"]
+  render_subchart_notes = local.dashboard["render_subchart_notes"]
+  replace               = local.dashboard["replace"]
+  reset_values          = local.dashboard["reset_values"]
+  reuse_values          = local.dashboard["reuse_values"]
+  skip_crds             = local.dashboard["skip_crds"]
+  verify                = local.dashboard["verify"]
+  values = [
+    local.values_dashboard,
+    local.dashboard["extra_values"]
+  ]
+
+  dynamic "set" {
+    for_each = {
+      for c, v in local.dashboard["images_data"].containers :
+      c => v if length(v.rewrite_values.tag) > 0 && try(v.manager, "helm") == "helm"
+    }
+    content {
+      name  = set.value.rewrite_values.tag.name
+      value = try(local.dashboard["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
+    }
+  }
+  dynamic "set" {
+    for_each = {
+      for c, v in local.dashboard["images_data"].containers :
+      c => v if try(v.manager, "helm") == "helm"
+    }
+    content {
+      name = set.value.rewrite_values.image.name
+      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
+        try(local.dashboard["images_repos"].repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url, "")}${set.value.rewrite_values.image.tail
+        }" : set.value.ecr_prepare_images ? try(
+        local.dashboard["images_repos"].repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].name, ""
+      ) : set.value.rewrite_values.image.value
+    }
+  }
+  dynamic "set" {
+    for_each = {
+      for c, v in local.dashboard["images_data"].containers :
+      c => v if length(v.rewrite_values.registry) > 0 && try(v.manager, "helm") == "helm"
+    }
+    content {
+      name = set.value.rewrite_values.registry.name
+      # when unset, it should be replaced with the one prepared on ECR
+      value = set.value.rewrite_values.registry.value != "" ? set.value.rewrite_values.registry.value : split(
+        "/", try(local.dashboard["images_repos"].repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url, "")
+      )[0]
+    }
+  }
+
+  namespace = kubernetes_namespace.dashboard.*.metadata.0.name[count.index]
+
+  depends_on = [
+    helm_release.ingress-nginx
+  ]
 }

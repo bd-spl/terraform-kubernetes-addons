@@ -38,6 +38,7 @@ locals {
         VOLUME_SNAPSHOT_CLASS
       name_prefix               = "${var.cluster-name}-aws-ebs-csi-driver"
       vpa_enable                = false
+      use_deploy_module         = true
       images_data               = {}
       images_repos              = {}
       containers_versions       = {}
@@ -118,7 +119,7 @@ resource "kubernetes_namespace" "aws-ebs-csi-driver" {
 }
 
 module "deploy_aws-ebs-csi-driver" {
-  count  = local.aws-ebs-csi-driver["enabled"] ? 1 : 0
+  count  = local.aws-ebs-csi-driver["enabled"] && local.aws-ebs-csi-driver["use_deploy_module"] ? 1 : 0
   source = "./deploy"
   # NOTE: must also process containers data for csi-external-snapshotter
   #dependencies          = [for _, d in local.helm_dependencies : d if d.name == "aws-ebs-csi-driver" || d.name == "csi-external-snapshotter"]
@@ -231,7 +232,88 @@ resource "kubectl_manifest" "aws-ebs-csi-driver_vsc" {
   yaml_body = local.aws-ebs-csi-driver.volume_snapshot_class
 
   depends_on = [
-    module.deploy_aws-ebs-csi-driver
+    module.deploy_aws-ebs-csi-driver,
+    # FIXME
+    null_resource.csi-external-snapshotter-kustomize,
+    helm_release.aws-ebs-csi-driver
   ]
   server_side_apply = true
+}
+
+# FIXME
+resource "helm_release" "aws-ebs-csi-driver" {
+  count                 = local.aws-ebs-csi-driver["enabled"] && !local.aws-ebs-csi-driver["use_deploy_module"] ? 1 : 0
+  repository            = local.aws-ebs-csi-driver["repository"]
+  name                  = local.aws-ebs-csi-driver["name"]
+  chart                 = local.aws-ebs-csi-driver["chart"]
+  version               = local.aws-ebs-csi-driver["chart_version"]
+  timeout               = local.aws-ebs-csi-driver["timeout"]
+  force_update          = local.aws-ebs-csi-driver["force_update"]
+  recreate_pods         = local.aws-ebs-csi-driver["recreate_pods"]
+  wait                  = local.aws-ebs-csi-driver["wait"]
+  atomic                = local.aws-ebs-csi-driver["atomic"]
+  cleanup_on_fail       = local.aws-ebs-csi-driver["cleanup_on_fail"]
+  dependency_update     = local.aws-ebs-csi-driver["dependency_update"]
+  disable_crd_hooks     = local.aws-ebs-csi-driver["disable_crd_hooks"]
+  disable_webhooks      = local.aws-ebs-csi-driver["disable_webhooks"]
+  render_subchart_notes = local.aws-ebs-csi-driver["render_subchart_notes"]
+  replace               = local.aws-ebs-csi-driver["replace"]
+  reset_values          = local.aws-ebs-csi-driver["reset_values"]
+  reuse_values          = local.aws-ebs-csi-driver["reuse_values"]
+  skip_crds             = local.aws-ebs-csi-driver["skip_crds"]
+  verify                = local.aws-ebs-csi-driver["verify"]
+  values = [
+    local.values_aws-ebs-csi-driver,
+    local.aws-ebs-csi-driver["extra_values"]
+  ]
+
+  dynamic "set" {
+    for_each = {
+      for c, v in local.aws-ebs-csi-driver["images_data"].containers :
+      c => v if length(v.rewrite_values.tag) > 0 && try(v.manager, "helm") == "helm"
+    }
+    content {
+      name  = set.value.rewrite_values.tag.name
+      value = try(local.aws-ebs-csi-driver["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
+    }
+  }
+  dynamic "set" {
+    for_each = {
+      for c, v in local.aws-ebs-csi-driver["images_data"].containers :
+      c => v if try(v.manager, "helm") == "helm"
+    }
+    content {
+      name = set.value.rewrite_values.image.name
+      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
+        try(local.aws-ebs-csi-driver["images_repos"].repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url, "")}${set.value.rewrite_values.image.tail
+        }" : set.value.ecr_prepare_images ? try(
+        local.aws-ebs-csi-driver["images_repos"].repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].name, ""
+      ) : set.value.rewrite_values.image.value
+    }
+  }
+  dynamic "set" {
+    for_each = {
+      for c, v in local.aws-ebs-csi-driver["images_data"].containers :
+      c => v if length(v.rewrite_values.registry) > 0 && try(v.manager, "helm") == "helm"
+    }
+    content {
+      name = set.value.rewrite_values.registry.name
+      # when unset, it should be replaced with the one prepared on ECR
+      value = set.value.rewrite_values.registry.value != "" ? set.value.rewrite_values.registry.value : split(
+        "/", try(local.aws-ebs-csi-driver["images_repos"].repos[
+          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
+        ].repository_url, "")
+      )[0]
+    }
+  }
+
+  namespace = local.aws-ebs-csi-driver["create_ns"] ? kubernetes_namespace.aws-ebs-csi-driver.*.metadata.0.name[count.index] : local.aws-ebs-csi-driver["namespace"]
+
+  depends_on = [
+    null_resource.csi-external-snapshotter-kustomize
+  ]
 }

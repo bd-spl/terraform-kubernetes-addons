@@ -13,7 +13,7 @@
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.20.1 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.21.1 |
 | <a name="provider_skopeo"></a> [skopeo](#provider\_skopeo) | 0.0.4 |
 
 ## Modules
