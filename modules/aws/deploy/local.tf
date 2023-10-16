@@ -4,6 +4,7 @@ locals {
   kustomize_resources_manifests_version = var.kustomize_resources_manifests_version
   kustomizations                        = var.kustomizations
   kustomizations_images_map             = var.kustomizations_images_map
+  kustomize_resources                   = var.kustomize_resources
   images_data                           = var.images_data
   images_repos                          = var.images_repos
   extra_tpl                             = var.extra_tpl
@@ -71,7 +72,7 @@ locals {
             resources = lookup(
               try(yamldecode(v), {}),
               "resources",
-              local.kustomize_resources_manifests_version
+              local.kustomize_resources
             )
           },
           length(lookup(try(yamldecode(v), {}), "images", {})) == 0 ? {} : {

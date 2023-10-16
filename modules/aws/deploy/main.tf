@@ -74,7 +74,7 @@ resource "helm_release" "this" {
   # NOTE: No data type resource for helm_release available yet. So wrapping the resource in-place
   dynamic "set" {
     for_each = {
-      for c, v in local.images_data.containers :
+      for c, v in try(local.images_data.containers, {}) :
       c => v if length(v.rewrite_values.tag) > 0 && try(v.manager, "helm") == "helm"
     }
     content {
@@ -84,7 +84,7 @@ resource "helm_release" "this" {
   }
   dynamic "set" {
     for_each = {
-      for c, v in local.images_data.containers :
+      for c, v in try(local.images_data.containers, {}) :
       c => v if try(v.manager, "helm") == "helm"
     }
     content {
@@ -102,7 +102,7 @@ resource "helm_release" "this" {
   }
   dynamic "set" {
     for_each = {
-      for c, v in local.images_data.containers :
+      for c, v in try(local.images_data.containers, {}) :
       c => v if length(v.rewrite_values.registry) > 0 && try(v.manager, "helm") == "helm"
     }
     content {
