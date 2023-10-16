@@ -56,12 +56,12 @@ locals {
       vpa_enable        = false
       use_deploy_module = true
       images_data = {
-        idp  = {}
-        auth = {}
+        idp  = { containers = {} }
+        auth = { containers = {} }
       }
       images_repos = {
-        idp  = {}
-        auth = {}
+        idp  = { repos = {} }
+        auth = { repos = {} }
       }
       containers_versions = {}
     },

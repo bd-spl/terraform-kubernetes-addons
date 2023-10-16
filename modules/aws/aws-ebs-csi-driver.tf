@@ -39,8 +39,8 @@ locals {
       name_prefix               = "${var.cluster-name}-aws-ebs-csi-driver"
       vpa_enable                = false
       use_deploy_module         = true
-      images_data               = {}
-      images_repos              = {}
+      images_data               = { containers = {} }
+      images_repos              = { repos = {} }
       containers_versions       = {}
     },
     var.aws-ebs-csi-driver

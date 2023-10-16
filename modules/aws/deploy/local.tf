@@ -12,7 +12,7 @@ locals {
 
   ## prepare data for Extra manager of the target addon
   containers_data = {
-    for k, v in local.images_data.containers :
+    for k, v in try(local.images_data.containers, {}) :
     v.rewrite_values.image.name => {
       tag = try(
         local.containers_versions[v.rewrite_values.tag.name],

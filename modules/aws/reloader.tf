@@ -14,8 +14,8 @@ locals {
       vpa_enable             = false
       vpa_only_recommend     = false
       use_deploy_module      = true
-      images_data            = {}
-      images_repos           = {}
+      images_data            = { containers = {} }
+      images_repos           = { repos = {} }
       containers_versions    = {}
     },
     var.reloader

@@ -27,12 +27,12 @@ locals {
       vpa_only_recommend = false
       use_deploy_module  = true
       images_data = {
-        goldilocks = {}
-        vpa        = {}
+        goldilocks = { containers = {} }
+        vpa        = { containers = {} }
       }
       images_repos = {
-        goldilocks = {}
-        vpa        = {}
+        goldilocks = { repos = {} }
+        vpa        = { repos = {} }
       }
       containers_versions = {}
 

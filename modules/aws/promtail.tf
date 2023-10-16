@@ -17,8 +17,8 @@ locals {
       default_network_policy = false
       vpa_enable             = false
       use_deploy_module      = true
-      images_data            = {}
-      images_repos           = {}
+      images_data            = { containers = {} }
+      images_repos           = { repos = {} }
       containers_versions    = {}
     },
     var.promtail

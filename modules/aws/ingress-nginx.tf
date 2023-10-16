@@ -18,8 +18,8 @@ locals {
       allowed_cidrs           = ["0.0.0.0/0"]
       vpa_enable              = false
       use_deploy_module       = true
-      images_data             = {}
-      images_repos            = {}
+      images_data             = { containers = {} }
+      images_repos            = { repos = {} }
       containers_versions     = {}
     },
     var.ingress-nginx
