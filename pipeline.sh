@@ -18,8 +18,8 @@ eval $LOGDEVALL > ${TMPDIR}/gitlogall
 # Omit commit messages from dev what already present in prod
 while read msg; do
 	[ -z "$msg" ] && break
-	if grep -q "$msg" ${TMPDIR}/gitlogprod ; then
-    grep -v "$msg" ${TMPDIR}/gitlogall > ${TMPDIR}/gitlogall_
+	if grep -qF "$msg" ${TMPDIR}/gitlogprod ; then
+    grep -vF "$msg" ${TMPDIR}/gitlogall > ${TMPDIR}/gitlogall_
   	mv -f ${TMPDIR}/gitlogall_ ${TMPDIR}/gitlogall
   fi
 done < "${TMPDIR}/gitlog"
