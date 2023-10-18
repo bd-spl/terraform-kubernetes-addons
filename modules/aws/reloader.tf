@@ -62,6 +62,7 @@ module "deploy_reloader" {
   replace               = local.reloader["replace"]
   reset_values          = local.reloader["reset_values"]
   reuse_values          = local.reloader["reuse_values"]
+  helm_upgrade          = local.reloader["helm_upgrade"]
   skip_crds             = local.reloader["skip_crds"]
   verify                = local.reloader["verify"]
   values = [

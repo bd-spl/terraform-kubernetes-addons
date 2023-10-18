@@ -321,6 +321,7 @@ module "deploy_dex" {
   replace               = local.dex["replace"]
   reset_values          = local.dex["reset_values"]
   reuse_values          = local.dex["reuse_values"]
+  helm_upgrade          = local.dex["helm_upgrade"]
   skip_crds             = local.dex["skip_crds"]
   verify                = local.dex["verify"]
   values = [
@@ -358,6 +359,7 @@ module "deploy_dex-k8s-authenticator" {
   replace               = local.dex["replace"]
   reset_values          = local.dex["reset_values"]
   reuse_values          = local.dex["reuse_values"]
+  helm_upgrade          = local.dex["helm_upgrade"]
   skip_crds             = local.dex["skip_crds"]
   verify                = local.dex["verify"]
   values = [

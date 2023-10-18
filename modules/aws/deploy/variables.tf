@@ -4,6 +4,17 @@ variable "helm_deploy" {
   default     = true
 }
 
+variable "helm_upgrade" {
+  description = "Whether to upgrade (no install) existing helm release (no support in upstream provider yet)"
+  type        = bool
+  default     = false
+}
+variable "helm_upgrade_install" {
+  description = "Whether to upgrade --install existing helm release (no support in upstream provider yet)"
+  type        = bool
+  default     = false
+}
+
 variable "images_data" {
   description = "Containers images data from ECR prepare module for the target addon"
   type        = map(any)

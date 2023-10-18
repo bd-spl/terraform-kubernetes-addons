@@ -177,6 +177,7 @@ module "deploy_ingress-nginx" {
   replace               = local.ingress-nginx["replace"]
   reset_values          = local.ingress-nginx["reset_values"]
   reuse_values          = local.ingress-nginx["reuse_values"]
+  helm_upgrade          = local.ingress-nginx["helm_upgrade"]
   skip_crds             = local.ingress-nginx["skip_crds"]
   verify                = local.ingress-nginx["verify"]
   values = [

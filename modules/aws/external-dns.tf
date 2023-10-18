@@ -127,6 +127,7 @@ module "deploy_external-dns" {
   replace               = each.value["replace"]
   reset_values          = each.value["reset_values"]
   reuse_values          = each.value["reuse_values"]
+  helm_upgrade          = each.value["helm_upgrade"]
   skip_crds             = each.value["skip_crds"]
   verify                = each.value["verify"]
   values = [

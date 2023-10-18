@@ -143,6 +143,7 @@ module "deploy_aws-ebs-csi-driver" {
   replace               = local.aws-ebs-csi-driver["replace"]
   reset_values          = local.aws-ebs-csi-driver["reset_values"]
   reuse_values          = local.aws-ebs-csi-driver["reuse_values"]
+  helm_upgrade          = local.admiralty["helm_upgrade"]
   skip_crds             = local.aws-ebs-csi-driver["skip_crds"]
   verify                = local.aws-ebs-csi-driver["verify"]
   values = [

@@ -45,6 +45,8 @@ No modules.
 | <a name="input_extra_tpl"></a> [extra\_tpl](#input\_extra\_tpl) | Extra Helm values templated for the target addon's to override containers images with prepared data | `map(any)` | `{}` | no |
 | <a name="input_force_update"></a> [force\_update](#input\_force\_update) | n/a | `bool` | `null` | no |
 | <a name="input_helm_deploy"></a> [helm\_deploy](#input\_helm\_deploy) | Whether to deploy with Helm manager | `bool` | `true` | no |
+| <a name="input_helm_upgrade"></a> [helm\_upgrade](#input\_helm\_upgrade) | Whether to upgrade (no install) existing helm release (no support in upstream provider yet) | `bool` | `false` | no |
+| <a name="input_helm_upgrade_install"></a> [helm\_upgrade\_install](#input\_helm\_upgrade\_install) | Whether to upgrade --install existing helm release (no support in upstream provider yet) | `bool` | `false` | no |
 | <a name="input_images_data"></a> [images\_data](#input\_images\_data) | Containers images data from ECR prepare module for the target addon | `map(any)` | <pre>{<br>  "containers": {}<br>}</pre> | no |
 | <a name="input_images_repos"></a> [images\_repos](#input\_images\_repos) | Containers repos data from ECR upload module for the target addon | `map(any)` | <pre>{<br>  "repos": {}<br>}</pre> | no |
 | <a name="input_kustomizations"></a> [kustomizations](#input\_kustomizations) | kustomizations for the target addon | `map(any)` | `{}` | no |

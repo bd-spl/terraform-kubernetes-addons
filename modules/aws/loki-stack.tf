@@ -146,6 +146,7 @@ module "deploy_loki-stack" {
   replace               = local.loki-stack["replace"]
   reset_values          = local.loki-stack["reset_values"]
   reuse_values          = local.loki-stack["reuse_values"]
+  helm_upgrade          = local.loki-stack["helm_upgrade"]
   skip_crds             = local.loki-stack["skip_crds"]
   verify                = local.loki-stack["verify"]
   values = [

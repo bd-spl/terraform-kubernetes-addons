@@ -61,6 +61,7 @@ module "deploy_node-problem-detector" {
   replace               = local.npd["replace"]
   reset_values          = local.npd["reset_values"]
   reuse_values          = local.npd["reuse_values"]
+  helm_upgrade          = local.npd["helm_upgrade"]
   skip_crds             = local.npd["skip_crds"]
   verify                = local.npd["verify"]
   values = [

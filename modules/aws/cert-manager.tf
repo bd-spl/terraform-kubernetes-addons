@@ -296,6 +296,7 @@ module "deploy_cert-manager" {
   replace               = local.cert-manager["replace"]
   reset_values          = local.cert-manager["reset_values"]
   reuse_values          = local.cert-manager["reuse_values"]
+  helm_upgrade          = local.cert-manager["helm_upgrade"]
   skip_crds             = local.cert-manager["skip_crds"]
   verify                = local.cert-manager["verify"]
   values = [

@@ -89,6 +89,7 @@ module "deploy_aws-load-balancer-controller" {
   replace               = local.aws-load-balancer-controller["replace"]
   reset_values          = local.aws-load-balancer-controller["reset_values"]
   reuse_values          = local.aws-load-balancer-controller["reuse_values"]
+  helm_upgrade          = local.aws-load-balancer-controller["helm_upgrade"]
   skip_crds             = local.aws-load-balancer-controller["skip_crds"]
   verify                = local.aws-load-balancer-controller["verify"]
   values = [

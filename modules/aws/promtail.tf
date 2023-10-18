@@ -115,6 +115,7 @@ module "deploy_promtail" {
   replace               = local.promtail["replace"]
   reset_values          = local.promtail["reset_values"]
   reuse_values          = local.promtail["reuse_values"]
+  helm_upgrade          = local.promtail["helm_upgrade"]
   skip_crds             = local.promtail["skip_crds"]
   verify                = local.promtail["verify"]
   values = compact([

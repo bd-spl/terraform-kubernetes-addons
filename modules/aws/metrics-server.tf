@@ -64,6 +64,7 @@ module "deploy_metrics-server" {
   replace               = local.metrics-server["replace"]
   reset_values          = local.metrics-server["reset_values"]
   reuse_values          = local.metrics-server["reuse_values"]
+  helm_upgrade          = local.metrics-server["helm_upgrade"]
   skip_crds             = local.metrics-server["skip_crds"]
   verify                = local.metrics-server["verify"]
   values = [

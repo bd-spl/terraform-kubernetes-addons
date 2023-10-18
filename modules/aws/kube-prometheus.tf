@@ -509,6 +509,7 @@ module "deploy_kube-prometheus-stack" {
   replace               = local.kube-prometheus-stack["replace"]
   reset_values          = local.kube-prometheus-stack["reset_values"]
   reuse_values          = local.kube-prometheus-stack["reuse_values"]
+  helm_upgrade          = local.kube-prometheus-stack["helm_upgrade"]
   skip_crds             = local.kube-prometheus-stack["skip_crds"]
   verify                = local.kube-prometheus-stack["verify"]
   values = compact([

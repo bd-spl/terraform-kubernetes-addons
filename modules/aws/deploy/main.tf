@@ -131,4 +131,10 @@ resource "helm_release" "this" {
     data.template_file.extra_values_patched,
     resource.null_resource.kustomize
   ]
+
+  # requires https://github.com/hashicorp/terraform-provider-helm/pull/1247
+  #upgrade {
+  #  enable  = var.helm_upgrade
+  #  install = var.helm_upgrade_install
+  #}
 }

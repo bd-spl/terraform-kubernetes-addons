@@ -116,6 +116,7 @@ module "deploy_vpa" {
   replace               = local.vpa["replace"]
   reset_values          = local.vpa["reset_values"]
   reuse_values          = local.vpa["reuse_values"]
+  helm_upgrade          = local.vpa["helm_upgrade"]
   skip_crds             = local.vpa["skip_crds"]
   verify                = local.vpa["verify"]
   values = [
@@ -156,6 +157,7 @@ module "deploy_goldilocks" {
   replace               = local.vpa["replace"]
   reset_values          = local.vpa["reset_values"]
   reuse_values          = local.vpa["reuse_values"]
+  helm_upgrade          = local.vpa["helm_upgrade"]
   skip_crds             = local.vpa["skip_crds"]
   verify                = local.vpa["verify"]
   values = [

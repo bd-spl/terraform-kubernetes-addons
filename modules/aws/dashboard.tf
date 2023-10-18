@@ -90,6 +90,7 @@ module "deploy_dashboard" {
   replace               = local.dashboard["replace"]
   reset_values          = local.dashboard["reset_values"]
   reuse_values          = local.dashboard["reuse_values"]
+  helm_upgrade          = local.dashboard["helm_upgrade"]
   skip_crds             = local.dashboard["skip_crds"]
   verify                = local.dashboard["verify"]
   values = [

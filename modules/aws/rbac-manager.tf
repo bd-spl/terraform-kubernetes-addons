@@ -67,6 +67,7 @@ module "deploy_rbac-manager" {
   replace               = local.rbac-manager["replace"]
   reset_values          = local.rbac-manager["reset_values"]
   reuse_values          = local.rbac-manager["reuse_values"]
+  helm_upgrade          = local.rbac-manager["helm_upgrade"]
   skip_crds             = local.rbac-manager["skip_crds"]
   verify                = local.rbac-manager["verify"]
   values = [

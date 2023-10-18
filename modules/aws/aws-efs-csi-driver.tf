@@ -155,6 +155,7 @@ module "deploy_aws-efs-csi-driver" {
   replace               = local.aws-efs-csi-driver["replace"]
   reset_values          = local.aws-efs-csi-driver["reset_values"]
   reuse_values          = local.aws-efs-csi-driver["reuse_values"]
+  helm_upgrade          = local.aws-efs-csi-driver["helm_upgrade"]
   skip_crds             = local.aws-efs-csi-driver["skip_crds"]
   verify                = local.aws-efs-csi-driver["verify"]
   values = [

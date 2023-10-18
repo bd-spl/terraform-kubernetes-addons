@@ -183,6 +183,7 @@ module "deploy_ingress-nginx-internal" {
   replace               = local.ingress-nginx-internal["replace"]
   reset_values          = local.ingress-nginx-internal["reset_values"]
   reuse_values          = local.ingress-nginx-internal["reuse_values"]
+  helm_upgrade          = local.ingress-nginx-internal["helm_upgrade"]
   skip_crds             = local.ingress-nginx-internal["skip_crds"]
   verify                = local.ingress-nginx-internal["verify"]
   values = [

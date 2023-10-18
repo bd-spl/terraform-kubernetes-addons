@@ -148,6 +148,7 @@ module "deploy_cluster-autoscaler" {
   replace               = local.cluster-autoscaler["replace"]
   reset_values          = local.cluster-autoscaler["reset_values"]
   reuse_values          = local.cluster-autoscaler["reuse_values"]
+  helm_upgrade          = local.cluster-autoscaler["helm_upgrade"]
   skip_crds             = local.cluster-autoscaler["skip_crds"]
   verify                = local.cluster-autoscaler["verify"]
   values = [
