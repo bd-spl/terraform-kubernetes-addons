@@ -53,8 +53,7 @@ locals {
         idp  = ""
         auth = ""
       }
-      vpa_enable        = false
-      use_deploy_module = true
+      vpa_enable = false
       images_data = {
         idp  = { containers = {} }
         auth = { containers = {} }
@@ -299,11 +298,11 @@ resource "kubernetes_secret" "infra_ca_secret" {
 }
 
 module "deploy_dex" {
-  count                 = local.dex["enabled"] && local.dex["use_deploy_module"] ? 1 : 0
   source                = "./deploy"
   images_data           = local.dex["images_data"]["idp"]
   images_repos          = local.dex["images_repos"]["idp"]
   containers_versions   = local.dex["containers_versions"]
+  count                 = local.dex["enabled"] ? 1 : 0
   repository            = local.dex["repository_idp"]
   name                  = local.dex["name_idp"]
   chart                 = local.dex["chart_idp"]
@@ -337,7 +336,7 @@ module "deploy_dex" {
 }
 
 module "deploy_dex-k8s-authenticator" {
-  count                 = local.dex["enabled"] && local.dex["use_deploy_module"] ? 1 : 0
+  count                 = local.dex["enabled"] ? 1 : 0
   source                = "./deploy"
   images_data           = local.dex["images_data"]["auth"]
   images_repos          = local.dex["images_repos"]["auth"]
@@ -397,8 +396,6 @@ resource "aws_eks_identity_provider_config" "dex" {
     kubernetes_network_policy.dex_allow_namespace,
     kubernetes_secret.oauth_client_secret,
     kubernetes_secret.ldap_acc_secret,
-    # FIXME
-    helm_release.dex-k8s-authenticator
   ]
 }
 
@@ -476,159 +473,4 @@ resource "kubernetes_network_policy" "dex_allow_monitoring" {
 
     policy_types = ["Ingress"]
   }
-}
-
-# FIXME
-resource "helm_release" "dex" {
-  count                 = local.dex["enabled"] && !local.dex["use_deploy_module"] ? 1 : 0
-  repository            = local.dex["repository_idp"]
-  name                  = local.dex["name_idp"]
-  chart                 = local.dex["chart_idp"]
-  version               = local.dex["chart_version_idp"]
-  timeout               = local.dex["timeout"]
-  force_update          = local.dex["force_update"]
-  recreate_pods         = local.dex["recreate_pods"]
-  wait                  = local.dex["wait"]
-  atomic                = local.dex["atomic"]
-  cleanup_on_fail       = local.dex["cleanup_on_fail"]
-  dependency_update     = local.dex["dependency_update"]
-  disable_crd_hooks     = local.dex["disable_crd_hooks"]
-  disable_webhooks      = local.dex["disable_webhooks"]
-  render_subchart_notes = local.dex["render_subchart_notes"]
-  replace               = local.dex["replace"]
-  reset_values          = local.dex["reset_values"]
-  reuse_values          = local.dex["reuse_values"]
-  skip_crds             = local.dex["skip_crds"]
-  verify                = local.dex["verify"]
-  values = [
-    local.values_dex_idp,
-    local.dex["extra_values"]["idp"]
-  ]
-
-  dynamic "set" {
-    for_each = {
-      for c, v in local.dex["images_data"].idp.containers :
-      c => v if length(v.rewrite_values.tag) > 0 && try(v.manager, "helm") == "helm"
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.dex["containers_versions"]["idp"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.dex["images_data"].idp.containers :
-      c => v if try(v.manager, "helm") == "helm"
-    }
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(local.dex["images_repos"].idp.repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        local.dex["images_repos"].idp.repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.dex["images_data"].idp.containers :
-      c => v if length(v.rewrite_values.registry) > 0 && try(v.manager, "helm") == "helm"
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != "" ? set.value.rewrite_values.registry.value : split(
-        "/", try(local.dex["images_repos"].idp.repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
-  namespace = kubernetes_namespace.dex.*.metadata.0.name[count.index]
-
-  depends_on = [
-    helm_release.ingress-nginx,
-  ]
-}
-
-resource "helm_release" "dex-k8s-authenticator" {
-  count                 = local.dex["enabled"] && !local.dex["use_deploy_module"] ? 1 : 0
-  repository            = local.dex["repository_auth"]
-  name                  = local.dex["name_auth"]
-  chart                 = local.dex["chart_auth"]
-  version               = local.dex["chart_version_auth"]
-  timeout               = local.dex["timeout"]
-  force_update          = local.dex["force_update"]
-  recreate_pods         = local.dex["recreate_pods"]
-  wait                  = local.dex["wait"]
-  atomic                = local.dex["atomic"]
-  cleanup_on_fail       = local.dex["cleanup_on_fail"]
-  dependency_update     = local.dex["dependency_update"]
-  disable_crd_hooks     = local.dex["disable_crd_hooks"]
-  disable_webhooks      = local.dex["disable_webhooks"]
-  render_subchart_notes = local.dex["render_subchart_notes"]
-  replace               = local.dex["replace"]
-  reset_values          = local.dex["reset_values"]
-  reuse_values          = local.dex["reuse_values"]
-  skip_crds             = local.dex["skip_crds"]
-  verify                = local.dex["verify"]
-  values = [
-    local.values_dex_auth,
-    local.dex["extra_values"]["auth"]
-  ]
-
-  dynamic "set" {
-    for_each = {
-      for c, v in local.dex["images_data"].auth.containers :
-      c => v if length(v.rewrite_values.tag) > 0 && try(v.manager, "helm") == "helm"
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.dex["containers_versions"]["auth"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.dex["images_data"].auth.containers :
-      c => v if try(v.manager, "helm") == "helm"
-    }
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(local.dex["images_repos"].auth.repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        local.dex["images_repos"].auth.repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.dex["images_data"].auth.containers :
-      c => v if length(v.rewrite_values.registry) > 0 && try(v.manager, "helm") == "helm"
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != "" ? set.value.rewrite_values.registry.value : split(
-        "/", try(local.dex["images_repos"].auth.repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
-  namespace = kubernetes_namespace.dex.*.metadata.0.name[count.index]
-
-  depends_on = [
-    helm_release.dex
-  ]
 }

@@ -14,7 +14,6 @@ locals {
       default_network_policy    = true
       name_prefix               = "${var.cluster-name}-cluster-autoscaler"
       vpa_enable                = false
-      use_deploy_module         = true
       images_data               = { containers = {} }
       images_repos              = { repos = {} }
       containers_versions       = {}
@@ -126,7 +125,7 @@ resource "kubernetes_namespace" "cluster-autoscaler" {
 }
 
 module "deploy_cluster-autoscaler" {
-  count                 = local.cluster-autoscaler["enabled"] && local.cluster-autoscaler["use_deploy_module"] ? 1 : 0
+  count                 = local.cluster-autoscaler["enabled"] ? 1 : 0
   source                = "./deploy"
   images_data           = local.cluster-autoscaler["images_data"]
   images_repos          = local.cluster-autoscaler["images_repos"]
@@ -229,82 +228,4 @@ resource "kubernetes_network_policy" "cluster-autoscaler_allow_monitoring" {
 
     policy_types = ["Ingress"]
   }
-}
-
-# FIXME
-resource "helm_release" "cluster-autoscaler" {
-  count                 = local.cluster-autoscaler["enabled"] && !local.cluster-autoscaler["use_deploy_module"] ? 1 : 0
-  repository            = local.cluster-autoscaler["repository"]
-  name                  = local.cluster-autoscaler["name"]
-  chart                 = local.cluster-autoscaler["chart"]
-  version               = local.cluster-autoscaler["chart_version"]
-  timeout               = local.cluster-autoscaler["timeout"]
-  force_update          = local.cluster-autoscaler["force_update"]
-  recreate_pods         = local.cluster-autoscaler["recreate_pods"]
-  wait                  = local.cluster-autoscaler["wait"]
-  atomic                = local.cluster-autoscaler["atomic"]
-  cleanup_on_fail       = local.cluster-autoscaler["cleanup_on_fail"]
-  dependency_update     = local.cluster-autoscaler["dependency_update"]
-  disable_crd_hooks     = local.cluster-autoscaler["disable_crd_hooks"]
-  disable_webhooks      = local.cluster-autoscaler["disable_webhooks"]
-  render_subchart_notes = local.cluster-autoscaler["render_subchart_notes"]
-  replace               = local.cluster-autoscaler["replace"]
-  reset_values          = local.cluster-autoscaler["reset_values"]
-  reuse_values          = local.cluster-autoscaler["reuse_values"]
-  skip_crds             = local.cluster-autoscaler["skip_crds"]
-  verify                = local.cluster-autoscaler["verify"]
-  values = [
-    local.values_cluster-autoscaler,
-    local.cluster-autoscaler["extra_values"]
-  ]
-
-  dynamic "set" {
-    for_each = {
-      for c, v in local.cluster-autoscaler["images_data"].containers :
-      c => v if length(v.rewrite_values.tag) > 0 && try(v.manager, "helm") == "helm"
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.cluster-autoscaler["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.cluster-autoscaler["images_data"].containers :
-      c => v if try(v.manager, "helm") == "helm"
-    }
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(local.cluster-autoscaler["images_repos"].repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        local.cluster-autoscaler["images_repos"].repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.cluster-autoscaler["images_data"].containers :
-      c => v if length(v.rewrite_values.registry) > 0 && try(v.manager, "helm") == "helm"
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != "" ? set.value.rewrite_values.registry.value : split(
-        "/", try(local.cluster-autoscaler["images_repos"].repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
-  namespace = kubernetes_namespace.cluster-autoscaler.*.metadata.0.name[count.index]
-
-  depends_on = [
-    kubectl_manifest.prometheus-operator_crds
-  ]
 }

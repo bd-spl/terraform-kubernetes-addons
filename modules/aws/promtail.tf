@@ -16,7 +16,6 @@ locals {
       tls_key                = null
       default_network_policy = false
       vpa_enable             = false
-      use_deploy_module      = true
       images_data            = { containers = {} }
       images_repos           = { repos = {} }
       containers_versions    = {}
@@ -93,7 +92,7 @@ resource "kubernetes_namespace" "promtail" {
 }
 
 module "deploy_promtail" {
-  count                 = local.promtail["enabled"] && local.promtail["use_deploy_module"] ? 1 : 0
+  count                 = local.promtail["enabled"] ? 1 : 0
   source                = "./deploy"
   images_data           = local.promtail["images_data"]
   images_repos          = local.promtail["images_repos"]
@@ -214,86 +213,4 @@ resource "kubernetes_network_policy" "promtail_allow_ingress" {
 
     policy_types = ["Ingress"]
   }
-}
-
-# FIXME
-resource "helm_release" "promtail" {
-  count                 = local.promtail["enabled"] && !local.promtail["use_deploy_module"] ? 1 : 0
-  repository            = local.promtail["repository"]
-  name                  = local.promtail["name"]
-  chart                 = local.promtail["chart"]
-  version               = local.promtail["chart_version"]
-  timeout               = local.promtail["timeout"]
-  force_update          = local.promtail["force_update"]
-  recreate_pods         = local.promtail["recreate_pods"]
-  wait                  = local.promtail["wait"]
-  atomic                = local.promtail["atomic"]
-  cleanup_on_fail       = local.promtail["cleanup_on_fail"]
-  dependency_update     = local.promtail["dependency_update"]
-  disable_crd_hooks     = local.promtail["disable_crd_hooks"]
-  disable_webhooks      = local.promtail["disable_webhooks"]
-  render_subchart_notes = local.promtail["render_subchart_notes"]
-  replace               = local.promtail["replace"]
-  reset_values          = local.promtail["reset_values"]
-  reuse_values          = local.promtail["reuse_values"]
-  skip_crds             = local.promtail["skip_crds"]
-  verify                = local.promtail["verify"]
-  values = compact([
-    local.values_promtail,
-    local.promtail["use_tls"] ? local.values_promtail_tls : "",
-    local.promtail["extra_values"]
-  ])
-
-  dynamic "set" {
-    for_each = {
-      for c, v in local.promtail["images_data"].containers :
-      c => v if length(v.rewrite_values.tag) > 0 && try(v.manager, "helm") == "helm"
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.promtail["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.promtail["images_data"].containers :
-      c => v if try(v.manager, "helm") == "helm"
-    }
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(local.promtail["images_repos"].repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        local.promtail["images_repos"].repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.promtail["images_data"].containers :
-      c => v if length(v.rewrite_values.registry) > 0 && try(v.manager, "helm") == "helm"
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != "" ? set.value.rewrite_values.registry.value : split(
-        "/", try(local.promtail["images_repos"].repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
-  namespace = local.promtail["namespace"]
-
-  depends_on = [
-    kubectl_manifest.prometheus-operator_crds,
-    helm_release.loki-stack,
-    kubernetes_secret.loki-stack-ca,
-    kubernetes_secret.promtail-tls
-  ]
 }

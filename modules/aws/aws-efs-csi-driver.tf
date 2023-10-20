@@ -27,7 +27,6 @@ locals {
       sg_input_ingress_with_source_security_group_id = []
       name_prefix                                    = "${var.cluster-name}-aws-efs-csi-driver"
       vpa_enable                                     = false
-      use_deploy_module                              = true
       images_data                                    = { containers = {} }
       images_repos                                   = { repos = {} }
       containers_versions                            = {}
@@ -133,7 +132,7 @@ module "security-group-efs-csi-driver" {
 }
 
 module "deploy_aws-efs-csi-driver" {
-  count                 = local.aws-efs-csi-driver["enabled"] && local.aws-efs-csi-driver["use_deploy_module"] ? 1 : 0
+  count                 = local.aws-efs-csi-driver["enabled"] ? 1 : 0
   source                = "./deploy"
   images_data           = local.aws-efs-csi-driver["images_data"]
   images_repos          = local.aws-efs-csi-driver["images_repos"]
@@ -221,78 +220,4 @@ resource "kubernetes_network_policy" "aws-efs-csi-driver_allow_namespace" {
 
     policy_types = ["Ingress"]
   }
-}
-
-# FIXME
-resource "helm_release" "aws-efs-csi-driver" {
-  count                 = local.aws-efs-csi-driver["enabled"] && !local.aws-efs-csi-driver["use_deploy_module"] ? 1 : 0
-  repository            = local.aws-efs-csi-driver["repository"]
-  name                  = local.aws-efs-csi-driver["name"]
-  chart                 = local.aws-efs-csi-driver["chart"]
-  version               = local.aws-efs-csi-driver["chart_version"]
-  timeout               = local.aws-efs-csi-driver["timeout"]
-  force_update          = local.aws-efs-csi-driver["force_update"]
-  recreate_pods         = local.aws-efs-csi-driver["recreate_pods"]
-  wait                  = local.aws-efs-csi-driver["wait"]
-  atomic                = local.aws-efs-csi-driver["atomic"]
-  cleanup_on_fail       = local.aws-efs-csi-driver["cleanup_on_fail"]
-  dependency_update     = local.aws-efs-csi-driver["dependency_update"]
-  disable_crd_hooks     = local.aws-efs-csi-driver["disable_crd_hooks"]
-  disable_webhooks      = local.aws-efs-csi-driver["disable_webhooks"]
-  render_subchart_notes = local.aws-efs-csi-driver["render_subchart_notes"]
-  replace               = local.aws-efs-csi-driver["replace"]
-  reset_values          = local.aws-efs-csi-driver["reset_values"]
-  reuse_values          = local.aws-efs-csi-driver["reuse_values"]
-  skip_crds             = local.aws-efs-csi-driver["skip_crds"]
-  verify                = local.aws-efs-csi-driver["verify"]
-  values = [
-    local.values_aws-efs-csi-driver,
-    local.aws-efs-csi-driver["extra_values"]
-  ]
-
-  dynamic "set" {
-    for_each = {
-      for c, v in local.aws-efs-csi-driver["images_data"].containers :
-      c => v if length(v.rewrite_values.tag) > 0 && try(v.manager, "helm") == "helm"
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.aws-efs-csi-driver["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.aws-efs-csi-driver["images_data"].containers :
-      c => v if try(v.manager, "helm") == "helm"
-    }
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(local.aws-efs-csi-driver["images_repos"].repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        local.aws-efs-csi-driver["images_repos"].repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.aws-efs-csi-driver["images_data"].containers :
-      c => v if length(v.rewrite_values.registry) > 0 && try(v.manager, "helm") == "helm"
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != "" ? set.value.rewrite_values.registry.value : split(
-        "/", try(local.aws-efs-csi-driver["images_repos"].repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
-  namespace = local.aws-efs-csi-driver["create_ns"] ? kubernetes_namespace.aws-efs-csi-driver.*.metadata.0.name[count.index] : local.aws-efs-csi-driver["namespace"]
 }

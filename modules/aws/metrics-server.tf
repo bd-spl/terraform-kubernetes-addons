@@ -11,7 +11,6 @@ locals {
       default_network_policy = true
       allowed_cidrs          = ["0.0.0.0/0"]
       vpa_enable             = false
-      use_deploy_module      = true
       images_data            = { containers = {} }
       images_repos           = { repos = {} }
       containers_versions    = {}
@@ -42,7 +41,7 @@ resource "kubernetes_namespace" "metrics-server" {
 }
 
 module "deploy_metrics-server" {
-  count                 = local.metrics-server["enabled"] && local.metrics-server["use_deploy_module"] ? 1 : 0
+  count                 = local.metrics-server["enabled"] ? 1 : 0
   source                = "./deploy"
   images_data           = local.metrics-server["images_data"]
   images_repos          = local.metrics-server["images_repos"]
@@ -151,78 +150,4 @@ resource "kubernetes_network_policy" "metrics-server_allow_control_plane" {
 
     policy_types = ["Ingress"]
   }
-}
-
-# FIXME
-resource "helm_release" "metrics-server" {
-  count                 = local.metrics-server["enabled"] && !local.metrics-server["use_deploy_module"] ? 1 : 0
-  repository            = local.metrics-server["repository"]
-  name                  = local.metrics-server["name"]
-  chart                 = local.metrics-server["chart"]
-  version               = local.metrics-server["chart_version"]
-  timeout               = local.metrics-server["timeout"]
-  force_update          = local.metrics-server["force_update"]
-  recreate_pods         = local.metrics-server["recreate_pods"]
-  wait                  = local.metrics-server["wait"]
-  atomic                = local.metrics-server["atomic"]
-  cleanup_on_fail       = local.metrics-server["cleanup_on_fail"]
-  dependency_update     = local.metrics-server["dependency_update"]
-  disable_crd_hooks     = local.metrics-server["disable_crd_hooks"]
-  disable_webhooks      = local.metrics-server["disable_webhooks"]
-  render_subchart_notes = local.metrics-server["render_subchart_notes"]
-  replace               = local.metrics-server["replace"]
-  reset_values          = local.metrics-server["reset_values"]
-  reuse_values          = local.metrics-server["reuse_values"]
-  skip_crds             = local.metrics-server["skip_crds"]
-  verify                = local.metrics-server["verify"]
-  values = [
-    local.values_metrics-server,
-    local.metrics-server["extra_values"]
-  ]
-
-  dynamic "set" {
-    for_each = {
-      for c, v in local.metrics-server["images_data"].containers :
-      c => v if length(v.rewrite_values.tag) > 0 && try(v.manager, "helm") == "helm"
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.metrics-server["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.metrics-server["images_data"].containers :
-      c => v if try(v.manager, "helm") == "helm"
-    }
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(local.metrics-server["images_repos"].repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        local.metrics-server["images_repos"].repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.metrics-server["images_data"].containers :
-      c => v if length(v.rewrite_values.registry) > 0 && try(v.manager, "helm") == "helm"
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != "" ? set.value.rewrite_values.registry.value : split(
-        "/", try(local.metrics-server["images_repos"].repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
-  namespace = kubernetes_namespace.metrics-server.*.metadata.0.name[count.index]
 }

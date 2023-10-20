@@ -17,7 +17,6 @@ locals {
       ingress_cidrs           = ["0.0.0.0/0"]
       allowed_cidrs           = ["0.0.0.0/0"]
       vpa_enable              = false
-      use_deploy_module       = true
       images_data             = { containers = {} }
       images_repos            = { repos = {} }
       containers_versions     = {}
@@ -155,7 +154,7 @@ resource "kubernetes_namespace" "ingress-nginx" {
 }
 
 module "deploy_ingress-nginx" {
-  count                 = local.ingress-nginx["enabled"] && local.ingress-nginx["use_deploy_module"] ? 1 : 0
+  count                 = local.ingress-nginx["enabled"] ? 1 : 0
   source                = "./deploy"
   images_data           = local.ingress-nginx["images_data"]
   images_repos          = local.ingress-nginx["images_repos"]
@@ -340,82 +339,4 @@ resource "kubernetes_network_policy" "ingress-nginx_allow_control_plane" {
 
     policy_types = ["Ingress"]
   }
-}
-
-# FIXME
-resource "helm_release" "ingress-nginx" {
-  count                 = local.ingress-nginx["enabled"] && !local.ingress-nginx["use_deploy_module"] ? 1 : 0
-  repository            = local.ingress-nginx["repository"]
-  name                  = local.ingress-nginx["name"]
-  chart                 = local.ingress-nginx["chart"]
-  version               = local.ingress-nginx["chart_version"]
-  timeout               = local.ingress-nginx["timeout"]
-  force_update          = local.ingress-nginx["force_update"]
-  recreate_pods         = local.ingress-nginx["recreate_pods"]
-  wait                  = local.ingress-nginx["wait"]
-  atomic                = local.ingress-nginx["atomic"]
-  cleanup_on_fail       = local.ingress-nginx["cleanup_on_fail"]
-  dependency_update     = local.ingress-nginx["dependency_update"]
-  disable_crd_hooks     = local.ingress-nginx["disable_crd_hooks"]
-  disable_webhooks      = local.ingress-nginx["disable_webhooks"]
-  render_subchart_notes = local.ingress-nginx["render_subchart_notes"]
-  replace               = local.ingress-nginx["replace"]
-  reset_values          = local.ingress-nginx["reset_values"]
-  reuse_values          = local.ingress-nginx["reuse_values"]
-  skip_crds             = local.ingress-nginx["skip_crds"]
-  verify                = local.ingress-nginx["verify"]
-  values = [
-    local.ingress-nginx["use_nlb_ip"] ? local.values_ingress-nginx_nlb_ip : local.ingress-nginx["use_nlb"] ? local.values_ingress-nginx_nlb : local.ingress-nginx["use_l7"] ? local.values_ingress-nginx_l7 : local.values_ingress-nginx_l4,
-    local.ingress-nginx["extra_values"],
-  ]
-
-  dynamic "set" {
-    for_each = {
-      for c, v in local.ingress-nginx["images_data"].containers :
-      c => v if length(v.rewrite_values.tag) > 0 && try(v.manager, "helm") == "helm"
-    }
-    content {
-      name  = set.value.rewrite_values.tag.name
-      value = try(local.ingress-nginx["containers_versions"][set.value.rewrite_values.tag.name], set.value.rewrite_values.tag.value)
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.ingress-nginx["images_data"].containers :
-      c => v if try(v.manager, "helm") == "helm"
-    }
-    content {
-      name = set.value.rewrite_values.image.name
-      value = set.value.ecr_prepare_images && set.value.source_provided ? "${
-        try(local.ingress-nginx["images_repos"].repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")}${set.value.rewrite_values.image.tail
-        }" : set.value.ecr_prepare_images ? try(
-        local.ingress-nginx["images_repos"].repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].name, ""
-      ) : set.value.rewrite_values.image.value
-    }
-  }
-  dynamic "set" {
-    for_each = {
-      for c, v in local.ingress-nginx["images_data"].containers :
-      c => v if length(v.rewrite_values.registry) > 0 && try(v.manager, "helm") == "helm"
-    }
-    content {
-      name = set.value.rewrite_values.registry.name
-      # when unset, it should be replaced with the one prepared on ECR
-      value = set.value.rewrite_values.registry.value != "" ? set.value.rewrite_values.registry.value : split(
-        "/", try(local.ingress-nginx["images_repos"].repos[
-          format("%s.%s", split(".", set.key)[0], split(".", set.key)[2])
-        ].repository_url, "")
-      )[0]
-    }
-  }
-
-  namespace = kubernetes_namespace.ingress-nginx.*.metadata.0.name[count.index]
-
-  depends_on = [
-    kubectl_manifest.prometheus-operator_crds
-  ]
 }
