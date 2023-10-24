@@ -7,7 +7,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "traefik")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "traefik")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "traefik")].version
-      namespace              = "traefik"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "traefik")].namespace, "traefik")
       enabled                = false
       ingress_cidrs          = ["0.0.0.0/0"]
       default_network_policy = true

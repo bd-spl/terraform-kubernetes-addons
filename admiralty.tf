@@ -6,7 +6,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "admiralty")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "admiralty")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "admiralty")].version
-      namespace              = "admiralty"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "admiralty")].namespace, "admiralty")
       enabled                = false
       create_ns              = true
       default_network_policy = true

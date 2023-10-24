@@ -7,7 +7,7 @@ locals {
       chart                     = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].name
       repository                = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].repository
       chart_version             = local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].version
-      namespace                 = "cert-manager"
+      namespace                 = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "cert-manager")].namespace, "cert-manager")
       service_account_name      = "cert-manager"
       enabled                   = false
       default_network_policy    = true

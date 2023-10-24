@@ -10,7 +10,7 @@ locals {
       chart_goldilocks         = local.helm_dependencies[index(local.helm_dependencies.*.name, "goldilocks")].name
       repository_goldilocks    = local.helm_dependencies[index(local.helm_dependencies.*.name, "goldilocks")].repository
       chart_version_goldilocks = local.helm_dependencies[index(local.helm_dependencies.*.name, "goldilocks")].version
-      namespace                = "vpa"
+      namespace                = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "vpa")].namespace, "vpa")
       enabled                  = false
       default_network_policy   = true
       skip_crds                = false

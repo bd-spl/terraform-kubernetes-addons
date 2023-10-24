@@ -6,7 +6,7 @@ locals {
       chart         = local.helm_dependencies[index(local.helm_dependencies.*.name, "aws-ebs-csi-driver")].name
       repository    = local.helm_dependencies[index(local.helm_dependencies.*.name, "aws-ebs-csi-driver")].repository
       chart_version = local.helm_dependencies[index(local.helm_dependencies.*.name, "aws-ebs-csi-driver")].version
-      namespace     = "kube-system"
+      namespace     = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "aws-ebs-csi-driver")].namespace, "kube-system")
       create_ns     = false
       service_account_names = {
         controller = "ebs-csi-controller-sa"

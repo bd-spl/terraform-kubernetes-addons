@@ -7,7 +7,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "reloader")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "reloader")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "reloader")].version
-      namespace              = "reloader"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "reloader")].namespace, "reloader")
       service_account_name   = "reloader"
       default_network_policy = true
       enabled                = false

@@ -7,7 +7,7 @@ locals {
       chart                            = local.helm_dependencies[index(local.helm_dependencies.*.name, "aws-for-fluent-bit")].name
       repository                       = local.helm_dependencies[index(local.helm_dependencies.*.name, "aws-for-fluent-bit")].repository
       chart_version                    = local.helm_dependencies[index(local.helm_dependencies.*.name, "aws-for-fluent-bit")].version
-      namespace                        = "aws-for-fluent-bit"
+      namespace                        = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "aws-for-fluent-bit")].namespace, "aws-for-fluent-bit")
       service_account_name             = "aws-for-fluent-bit"
       create_iam_resources_irsa        = true
       enabled                          = false

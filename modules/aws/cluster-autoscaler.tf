@@ -6,7 +6,7 @@ locals {
       chart                     = local.helm_dependencies[index(local.helm_dependencies.*.name, "cluster-autoscaler")].name
       repository                = local.helm_dependencies[index(local.helm_dependencies.*.name, "cluster-autoscaler")].repository
       chart_version             = local.helm_dependencies[index(local.helm_dependencies.*.name, "cluster-autoscaler")].version
-      namespace                 = "cluster-autoscaler"
+      namespace                 = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "cluster-autoscaler")].namespace, "cluster-autoscaler")
       service_account_name      = "cluster-autoscaler"
       create_iam_resources_irsa = true
       enabled                   = false

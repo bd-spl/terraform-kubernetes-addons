@@ -6,7 +6,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "strimzi-kafka-operator")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "strimzi-kafka-operator")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "strimzi-kafka-operator")].version
-      namespace              = "strimzi-kafka-operator"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "strimzi-kafka-operator")].namespace, "strimzi-kafka-operator")
       enabled                = false
       create_ns              = true
       default_network_policy = true

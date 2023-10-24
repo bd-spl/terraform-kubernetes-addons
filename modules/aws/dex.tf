@@ -10,7 +10,7 @@ locals {
       chart_auth                = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].name
       repository_auth           = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].repository
       chart_version_auth        = local.helm_dependencies[index(local.helm_dependencies.*.name, "dex-k8s-authenticator")].version
-      namespace                 = "dex"
+      namespace                 = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "dex")].namespace, "dex")
       enabled                   = false
       default_network_policy    = true
       skip_crds                 = false

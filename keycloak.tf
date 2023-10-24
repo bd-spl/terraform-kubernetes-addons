@@ -6,7 +6,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "keycloak")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "keycloak")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "keycloak")].version
-      namespace              = "keycloak"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "keycloak")].namespace, "keycloak")
       enabled                = false
       default_network_policy = true
     },

@@ -6,7 +6,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "tigera-operator")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "tigera-operator")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "tigera-operator")].version
-      namespace              = "tigera-operator"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "tigera-operator")].namespace, "tigera-operator")
       create_ns              = true
       enabled                = false
       default_network_policy = true

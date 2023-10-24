@@ -6,7 +6,7 @@ locals {
       chart                     = local.helm_dependencies[index(local.helm_dependencies.*.name, "prometheus-cloudwatch-exporter")].name
       repository                = local.helm_dependencies[index(local.helm_dependencies.*.name, "prometheus-cloudwatch-exporter")].repository
       chart_version             = local.helm_dependencies[index(local.helm_dependencies.*.name, "prometheus-cloudwatch-exporter")].version
-      namespace                 = "monitoring"
+      namespace                 = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "prometheus-cloudwatch-exporter")].namespace, "monitoring")
       create_ns                 = false
       enabled                   = false
       default_network_policy    = true

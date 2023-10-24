@@ -6,7 +6,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "kyverno")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "kyverno")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "kyverno")].version
-      namespace              = "kyverno"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "kyverno")].namespace, "kyverno")
       create_ns              = false
       enabled                = false
       default_network_policy = true
@@ -24,7 +24,7 @@ VALUES
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "kyverno-crds")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "kyverno-crds")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "kyverno-crds")].version
-      namespace              = "kyverno"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "kyverno-crds")].namespace, "kyverno")
       create_ns              = false
       enabled                = local.kyverno["enabled"] && !local.kyverno["skip_crds"]
       default_network_policy = true

@@ -6,7 +6,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "istio-operator")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "istio-operator")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "istio-operator")].version
-      namespace              = "istio-system"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "istio-operator")].namespace, "istio-system")
       enabled                = false
       version                = "1.7.4"
       default_network_policy = true

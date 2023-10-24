@@ -7,7 +7,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "promtail")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "promtail")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "promtail")].version
-      namespace              = "monitoring"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "promtail")].namespace, "monitoring")
       create_ns              = false
       enabled                = false
       loki_address           = "http://${local.loki-stack["name"]}-write:3100/loki/api/v1/push"

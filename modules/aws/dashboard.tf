@@ -7,7 +7,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "kubernetes-dashboard")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "kubernetes-dashboard")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "kubernetes-dashboard")].version
-      namespace              = "dashboard"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "kubernetes-dashboard")].namespace, "dashboard")
       service_account_name   = "dashboard"
       enabled                = false
       default_network_policy = true

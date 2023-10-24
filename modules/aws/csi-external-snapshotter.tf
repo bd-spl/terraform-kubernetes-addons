@@ -5,7 +5,7 @@ locals {
   csi-external-snapshotter = merge(
     {
       create_ns                 = false
-      namespace                 = "csi-snapshotter"
+      namespace                 = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "csi-external-snapshotter")].namespace, "csi-snapshotter")
       enabled                   = false
       extra_values              = ""
       extra_tpl                 = {}

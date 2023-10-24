@@ -7,7 +7,7 @@ locals {
       repository                = local.helm_dependencies[index(local.helm_dependencies.*.name, "external-dns")].repository
       chart_version             = local.helm_dependencies[index(local.helm_dependencies.*.name, "external-dns")].version
       name                      = k
-      namespace                 = k
+      namespace                 = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "external-dns")].namespace, k)
       service_account_name      = "external-dns"
       enabled                   = false
       create_iam_resources_irsa = true

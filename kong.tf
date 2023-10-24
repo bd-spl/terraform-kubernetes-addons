@@ -7,7 +7,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "kong")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "kong")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "kong")].version
-      namespace              = "kong"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "kong")].namespace, "kong")
       enabled                = false
       default_network_policy = true
       ingress_cidrs          = ["0.0.0.0/0"]

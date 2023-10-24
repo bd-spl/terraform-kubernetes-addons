@@ -6,7 +6,7 @@ locals {
       chart              = local.helm_dependencies[index(local.helm_dependencies.*.name, "linkerd2")].name
       repository         = local.helm_dependencies[index(local.helm_dependencies.*.name, "linkerd2")].repository
       chart_version      = local.helm_dependencies[index(local.helm_dependencies.*.name, "linkerd2")].version
-      namespace          = "linkerd"
+      namespace          = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "linkerd2")].namespace, "linkerd")
       create_ns          = true
       enabled            = false
       trust_anchor_pem   = null

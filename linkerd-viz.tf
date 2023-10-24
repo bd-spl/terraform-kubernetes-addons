@@ -6,7 +6,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "linkerd-viz")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "linkerd-viz")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "linkerd-viz")].version
-      namespace              = "linkerd-viz"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "linkerd-viz")].namespace, "linkerd-viz")
       create_ns              = true
       enabled                = local.linkerd2.enabled
       default_network_policy = true

@@ -7,7 +7,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "rbac-manager")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "rbac-manager")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "rbac-manager")].version
-      namespace              = "rbac-manager"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "rbac-manager")].namespace, "rbac-manager")
       service_account_name   = "rbac-manager"
       enabled                = false
       default_network_policy = true

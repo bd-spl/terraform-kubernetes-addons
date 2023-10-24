@@ -28,20 +28,29 @@ provide containers data in the same file and similar format.
 
 Supported containers images data managers are: ``helm`` (default), ``kustomize``, and ``extra``.
 
-An example ``helm-dependencies.yaml`` contents snippet:
+### Containers images data examples
+
+An example ``helm-dependencies.yaml`` contents snippet (extended with cutom data types):
 ```
-...
+apiVersion: v2
+dependencies:
 - name: foo-addon-charts
+  repository: https://foo-addon-charts.io
+  version: 1.2.3
   containers:
     # Examples for Helm manager (default)
     app.foo.spec.containers.frontend:
       # results in custom.io/prod/foo:v1.1 copied as <ECR repo>/foo:v1.1,
       # then its helm values updated via the 'helm set' interface
-      manager: helm # default. Allowed: helm, kustomize, extra (WIP)
+      manager: helm # default. Allowed: helm, kustomize, extra
+      # updater script will discover .appVersion via helm search CLI based on that.
+      # if not provided, it will poke .ver.version to the most recent tag
+      chart: foo-addon-charts
       name:
         uri: foo # sets image for helm as app.foo.spec.containers.frontend.uri
       ver:
-        # use 'skopeo list-tags' to pick the best value from available tags
+        # whenever executed, updater script replaces it with the best value
+        # that matches appVersion of its Helm release version (1.2.3)
         version: v1.1 # sets tag for helm as app.foo.spec.containers.frontend.version
 
       # Optional ECR settings (not for helm), override the addons module vars
@@ -106,6 +115,7 @@ An example ``helm-dependencies.yaml`` contents snippet:
       # rewrites ${acme-http01-solver-image-repo} and/or ${acme-http01-solver-image-tag}
       # templates (need to be escaped \$${...} in extra_values),
       # in foo-addon-charts.extra_values.extraArgs, with the prepared ECR image URI
+      chart: bar-addon-charts # updater script will pick appVersion from another addon defined next to this one (not shown here)
       manager: extra
       name: {repository: ..., ...}
 
@@ -183,3 +193,29 @@ Required for Helm charts containers images sources and versions info is provided
   # https://github.dev/FairwindsOps/charts/blob/master/stable/goldilocks/values.yaml
   - name: goldilocks
 ```
+
+### Containers images data lifecycle
+
+Rennovate proposes updates for the Helm release ``version`` values in ``helm-dependencies.yaml``.
+
+There is a [helper script](../../update_containers_tags.sh) for updating containers images tags
+in that file to follow the Helm charts version updates (by default), or just picking most recent tags instead.
+
+Addons controlled with Helm manager should specify ``chart: <addon name>`` to discover `AppVersion` for conainer(s),
+marked with that attribute. `AppVersion` is searched by the updater script, for a given Helm release ``version``
+value of an addon, after adding helm repo by its repository URL. Required Helm repos will be installed
+by the updater script, by calling it by each addon name and helm repository URL:
+
+```bash
+$ helm repo add cert-manager https://charts.jetstack.io
+$ helm repo add cert-manager-csi-driver https://charts.jetstack.io
+$ helm repo add aws-ebs-csi-driver https://kubernetes-sigs.github.io/aws-ebs-csi-driver
+$ helm repo add aws-efs-csi-driver https://kubernetes-sigs.github.io/aws-efs-csi-driver
+```
+
+`AppVersion` often holds the recommended container image tag for the main application, or sidecars.
+The updater script discovers that information, or picks the most recent tags in the source
+images repositories.
+
+Only containers marked with the ``chart`` value will get the `AppVersion` tag recommendations instead
+of fetching the most recent tag.

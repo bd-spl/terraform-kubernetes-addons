@@ -7,7 +7,7 @@ locals {
       chart                   = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx-internal")].chart
       repository              = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx-internal")].repository
       chart_version           = local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx-internal")].version
-      namespace               = "ingress-nginx-internal"
+      namespace               = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "ingress-nginx-internal")].namespace, "ingress-nginx-internal")
       use_nlb                 = false
       use_nlb_ip              = false
       use_l7                  = false

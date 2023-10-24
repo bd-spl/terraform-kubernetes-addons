@@ -7,7 +7,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "sealed-secrets")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "sealed-secrets")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "sealed-secrets")].version
-      namespace              = "sealed-secrets"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "sealed-secrets")].namespace, "sealed-secrets")
       enabled                = false
       default_network_policy = true
     },

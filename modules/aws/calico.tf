@@ -7,7 +7,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "aws-calico")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "aws-calico")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "aws-calico")].version
-      namespace              = "kube-system"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "aws-calico")].namespace, "kube-system")
       enabled                = false
       default_network_policy = true
       create_ns              = false

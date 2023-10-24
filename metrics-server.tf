@@ -6,7 +6,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "metrics-server")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "metrics-server")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "metrics-server")].version
-      namespace              = "metrics-server"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "metrics-server")].namespace, "metrics-server")
       enabled                = false
       default_network_policy = true
       allowed_cidrs          = ["0.0.0.0/0"]

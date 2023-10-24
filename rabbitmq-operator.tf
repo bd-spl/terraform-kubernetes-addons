@@ -6,7 +6,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "rabbitmq-cluster-operator")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "rabbitmq-cluster-operator")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "rabbitmq-cluster-operator")].version
-      namespace              = "rabbitmq-operator"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "rabbitmq-cluster-operator")].namespace, "rabbitmq-operator")
       create_ns              = true
       enabled                = false
       default_network_policy = true

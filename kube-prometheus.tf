@@ -7,7 +7,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "kube-prometheus-stack")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "kube-prometheus-stack")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "kube-prometheus-stack")].version
-      namespace              = "monitoring"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "kube-prometheus-stack")].namespace, "monitoring")
       enabled                = false
       allowed_cidrs          = ["0.0.0.0/0"]
       default_network_policy = true

@@ -7,7 +7,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "flux")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "flux")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "flux")].version
-      namespace              = "flux"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "flux")].namespace, "flux")
       service_account_name   = "flux"
       enabled                = false
       default_network_policy = true

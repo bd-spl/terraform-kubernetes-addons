@@ -6,7 +6,7 @@ locals {
       chart                  = local.helm_dependencies[index(local.helm_dependencies.*.name, "node-problem-detector")].name
       repository             = local.helm_dependencies[index(local.helm_dependencies.*.name, "node-problem-detector")].repository
       chart_version          = local.helm_dependencies[index(local.helm_dependencies.*.name, "node-problem-detector")].version
-      namespace              = "node-problem-detector"
+      namespace              = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "node-problem-detector")].namespace, "node-problem-detector")
       enabled                = false
       default_network_policy = true
     },

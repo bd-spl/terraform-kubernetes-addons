@@ -6,7 +6,7 @@ locals {
       chart                     = local.helm_dependencies[index(local.helm_dependencies.*.name, "vault")].name
       repository                = local.helm_dependencies[index(local.helm_dependencies.*.name, "vault")].repository
       chart_version             = local.helm_dependencies[index(local.helm_dependencies.*.name, "vault")].version
-      namespace                 = "vault"
+      namespace                 = try(local.helm_dependencies[index(local.helm_dependencies.*.name, "vault")].namespace, "vault")
       service_account_name      = "vault"
       create_iam_resources_irsa = true
       enabled                   = false
