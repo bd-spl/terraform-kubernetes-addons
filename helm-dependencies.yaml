@@ -118,14 +118,14 @@ dependencies:
         repository: quay.io/jetstack/cert-manager-acmesolver
       source: quay.io/jetstack
       ver:
-        tag: v1.12.1
+        tag: v1.12.2
     cainjector.image:
       chart: cert-manager
       name:
         repository: quay.io/jetstack/cert-manager-cainjector
       source: quay.io/jetstack
       ver:
-        tag: v1.12.1
+        tag: v1.12.2
     extraArgs.acme-http01-solver-image:
       chart: cert-manager
       manager: extra
@@ -133,7 +133,7 @@ dependencies:
         repository: quay.io/jetstack/cert-manager-acmesolver
       source: quay.io/jetstack
       ver:
-        tag: v1.12.1
+        tag: v1.12.2
     gateway-api-admission.create_or_patch:
       manager: kustomize
       name:
@@ -154,21 +154,21 @@ dependencies:
         repository: quay.io/jetstack/cert-manager-controller
       source: quay.io/jetstack
       ver:
-        tag: v1.12.1
+        tag: v1.12.2
     startupapicheck.image:
       chart: cert-manager
       name:
         repository: quay.io/jetstack/cert-manager-ctl
       source: quay.io/jetstack
       ver:
-        tag: v1.12.1
+        tag: v1.12.2
     webhook.image:
       chart: cert-manager
       name:
         repository: quay.io/jetstack/cert-manager-webhook
       source: quay.io/jetstack
       ver:
-        tag: v1.12.1
+        tag: v1.12.2
   manifests_version: v0.5.1
   name: cert-manager
   namespace: cert-manager
@@ -179,6 +179,7 @@ dependencies:
   version: v0.5.0
 - containers:
     image:
+      chart: cluster-autoscaler
       name:
         repository: k8s.gcr.io/autoscaling/cluster-autoscaler
       source: k8s.gcr.io/autoscaling
@@ -190,6 +191,7 @@ dependencies:
   version: 9.29.1
 - containers:
     image:
+      chart: external-dns
       name:
         repository: k8s.gcr.io/external-dns/external-dns
       source: k8s.gcr.io/external-dns
@@ -388,11 +390,12 @@ dependencies:
   version: 21.12.4
 - containers:
     loki.image:
+      chart: loki
       name:
         repository: docker.io/grafana/loki
       source: docker.io/grafana
       ver:
-        tag: 2.8.3
+        tag: 2.8.2
     nginx-unprivileged.image:
       name:
         repository: docker.io/nginxinc/nginx-unprivileged
@@ -405,17 +408,19 @@ dependencies:
   version: 5.8.11
 - containers:
     promtail.image:
+      chart: promtail
       name:
         repository: docker.io/grafana/promtail
       source: docker.io/grafana
       ver:
-        tag: 2.8.3
+        tag: 2.8.2
   name: promtail
   namespace: monitoring
   repository: https://grafana.github.io/helm-charts
   version: 6.11.8
 - containers:
     image:
+      chart: metrics-server
       name:
         repository: k8s.gcr.io/metrics-server/metrics-server
       source: k8s.gcr.io/metrics-server
@@ -427,6 +432,7 @@ dependencies:
   version: 3.10.0
 - containers:
     image:
+      chart: node-problem-detector
       name:
         repository: k8s.gcr.io/node-problem-detector/node-problem-detector
       source: k8s.gcr.io/node-problem-detector
@@ -494,6 +500,7 @@ dependencies:
   version: 0.17.4
 - containers:
     image:
+      chart: dex
       name:
         repository: ghcr.io/dexidp/dex
       source: ghcr.io/dexidp
@@ -505,6 +512,7 @@ dependencies:
   version: 0.15.2
 - containers:
     image:
+      chart: dex-k8s-authenticator
       name:
         repository: mintel/dex-k8s-authenticator
       source: mintel
@@ -515,6 +523,7 @@ dependencies:
   version: 0.0.2
 - containers:
     image:
+      chart: kubernetes-dashboard
       name:
         repository: kubernetesui/dashboard
       source: kubernetesui
@@ -532,6 +541,7 @@ dependencies:
   version: 6.0.7
 - containers:
     image:
+      chart: rbac-manager
       name:
         repository: quay.io/reactiveops/rbac-manager
       source: quay.io/reactiveops
@@ -543,6 +553,7 @@ dependencies:
   version: 1.17.2
 - containers:
     image:
+      chart: reloader
       name:
         repository: ghcr.io/stakater/reloader
       source: ghcr.io/stakater
@@ -582,10 +593,11 @@ dependencies:
       ver:
         tag: v6.2.2
   manifests_version: v6.0.1
-  namespace: csi-snapshotter
   name: csi-external-snapshotter
+  namespace: csi-snapshotter
 - containers:
     recommender.image:
+      chart: vpa
       name:
         repository: registry.k8s.io/autoscaling/vpa-recommender
       source: registry.k8s.io/autoscaling
@@ -596,6 +608,7 @@ dependencies:
         repository: bitnami/kubectl
       source: bitnami
     updater.image:
+      chart: vpa
       name:
         repository: registry.k8s.io/autoscaling/vpa-updater
       source: registry.k8s.io/autoscaling
@@ -607,6 +620,7 @@ dependencies:
   version: 2.5.1
 - containers:
     image:
+      chart: goldilocks
       name:
         repository: us-docker.pkg.dev/fairwinds-ops/oss/goldilocks
       source: us-docker.pkg.dev/fairwinds-ops/oss
