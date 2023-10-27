@@ -4,8 +4,9 @@
 # Examples:
 #  # updates containers tags info to the recommended versions (Helm specific),
 #  # or take the most recent versions, when no such data could be discovered.
-#  ./update_containers_tags.sh -a
-#
+#  ./update_containers_tags.sh -a # can't use -i / -n with -a
+#  # ignore containers w/o chart info, never update to the most recent tag but AppVersion only
+#  ./update_containers_tags.sh -a --helm # can't use --helm with --recent
 #  ./update_containers_tags.sh -a --recent # update all versions to the most recent tags
 #  ./update_containers_tags.sh -n dex # update containers versions for dex only
 #  ./update_containers_tags.sh -i webhook # update all webhooks containers tags, consider AppVesions, if any discoverable
@@ -20,13 +21,16 @@ usage(){
          in helm-dependencies.yaml.
     --recent - ignore version tags recommended by Helm charts
          AppVersion, prefer most recent tags intead.
+    --helm - never propose most recent tags, ignore containers
+         without chart info provided.
     -n X - match images by an addon name pattern.
     -i Y - match images by a given name pattern
          (imageRegistry/imageNamespace/imageName).
 EOF
 }
 
-mode=auto # consider AppVersion info, whenever discoverable
+mode=auto  # consider AppVersion info, whenever discoverable, or fallback to most recent tags
+helm=unset
 all=unset # update tags for all containers
 scoped=unset
 
@@ -37,6 +41,7 @@ while (( $# )); do
     '-i') shift; scoped=true; i="${1}" ;;
     '-n') shift; scoped=true; n="${1}" ;;
     '--recent') mode=recent ;;
+    '--helm') helm=true ;;
     '-a') all=true; i=".*"; n=".*" ;;
     *) usage >&2; exit 22;;
   esac
@@ -45,6 +50,11 @@ done
 
 if [ "$all" = "true" ] && [ "$scoped" = "true" ]; then
   echo "ERROR - cannot use -a with other options but --recent"
+  usage >&2; exit 22
+fi
+
+if [ "$mode" = "recent" ] && [ "$helm" = "true" ]; then
+  echo "ERROR - can use either --recent or --helm"
   usage >&2; exit 22
 fi
 
@@ -77,6 +87,7 @@ function update() {
   if [ $rc -eq 0 ]; then
     echo "DEBUG - $image: patched image tag (chart=$chart) at JSONpath: $json_path, with $patch"
     mv -f helm-dependencies_.yaml helm-dependencies.yaml
+    sed -ri '/^$/d' helm-dependencies.yaml
     echo "$chart $image $json_path" >> /tmp/teks_ecr_containers_patched_images.txt
   else
     echo "ERROR: - $image: failed patching image tag (chart=$chart) at JSONpath: $json_path with $patch"
@@ -118,7 +129,8 @@ rm -f /tmp/teks_ecr_containers_patched_images.txt
 touch /tmp/teks_ecr_containers_patched_images.txt
 while read chart image; do
   if [ "$chart" = "null" ]; then
-    type="not managed by Helm"
+    [ "$helm" = "true" ] && continue # skip containers w/o chart info in helm mode
+    type="not managed by Helm" # mark such ones as appropriate for mode auto
   else
     type=$chart
   fi
@@ -130,7 +142,11 @@ while read chart image; do
   TAGS=$(podman run --rm quay.io/skopeo/stable list-tags --tls-verify=true --authfile=/auth.json $c 2>/dev/null)
 
   # skip updating matched images, when it contains unrelated Helm charts data (leave them out for the next iterations)
-  matchlist=$(grep " $image " /tmp/teks_ecr_containers_paths_eval.txt | grep -E "^(null|$chart) " | awk '!/ null/ {print $NF}')
+  if [ "$helm" = "true" ]; then
+    matchlist=$(grep " $image " /tmp/teks_ecr_containers_paths_eval.txt | grep -E "^$chart " | awk '!/ null/ {print $NF}')
+  else
+    matchlist=$(grep " $image " /tmp/teks_ecr_containers_paths_eval.txt | grep -E "^(null|$chart) " | awk '!/ null/ {print $NF}')
+  fi
   if [ -z "$matchlist" ]; then
     echo "ERROR - $image: (type) unexpected error: no image data matched"
     continue
@@ -163,6 +179,7 @@ while read chart image; do
       echo "WARNING - $image: ($type) couldn't discover AppVersion from Helm release $helm_release: fetching a recent tag for it instead"
     fi
 
+    [ "$helm" = "true" ] && continue
     # omit/strip improperly formatted versions, like '1.2.3-foo' and 'latest', for loose sorting
     echo "DEBUG - $image: ($type) getting the most recent tag value"
     latest=$(jq -r '.Tags[] | select(.|test("^v?[0-9][0-9]*\\."))' <<< $TAGS | jq -Rn '[inputs]' | python -c "import io; import json; import sys; from packaging.version import parse as P; print(sorted(json.load(io.TextIOWrapper(sys.stdin.buffer, encoding='utf-8')),key=P)[-1])")
