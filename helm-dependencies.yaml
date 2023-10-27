@@ -95,7 +95,7 @@ dependencies:
         repository: public.ecr.aws/eks/aws-load-balancer-controller
       source: public.ecr.aws/eks
       ver:
-        tag: v2.5.4
+        tag: v2.6.1
   name: aws-load-balancer-controller
   repository: https://aws.github.io/eks-charts
   version: 1.6.1
