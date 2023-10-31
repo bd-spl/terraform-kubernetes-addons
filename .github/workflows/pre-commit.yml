@@ -79,7 +79,7 @@ jobs:
 
     - name: 'asdf:install'
 
-      uses: asdf-vm/actions/install@v3.0.0
+      uses: asdf-vm/actions/install@v3.0.2
 
     - uses: actions/setup-python@v4
       
