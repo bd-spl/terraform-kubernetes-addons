@@ -536,7 +536,7 @@ dependencies:
       ver:
         tag: v1.0.9
   name: kubernetes-dashboard
-  namespace: kubernetes-dashboard
+  namespace: dashboard
   repository: https://kubernetes.github.io/dashboard
   version: 6.0.7
 - containers:
