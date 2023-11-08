@@ -1,5 +1,6 @@
 {
   "extends": [
+    ":enablePreCommit",
     ":separateMajorReleases",
     ":ignoreUnstable",
     ":prImmediately",
@@ -25,7 +26,11 @@
   "automergeComment": "renovate:merge",
   "helmv3": {
     "enabled": true,
-    "fileMatch": ["(^|/)helm-dependencies.yaml$"]
+    "fileMatch": ["(^|/)helm-dependencies\\.yaml$"]
+  },
+  "pre-commit": {
+    "enabled": true,
+    "fileMatch": ["(^|/)helm-dependencies\\.yaml$|(^|/)\\.pre-commit-config\\.ya?ml$|(^|/)update_containers_tags\\.sh$"]
   },
   "reviewersFromCodeOwners": true,
   "prHourlyLimit": 0,

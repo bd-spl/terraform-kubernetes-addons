@@ -1,6 +1,14 @@
 repos:
+- repo: local
+  hooks:
+    - id: update_containers_tags
+      name: update_containers_tags.sh
+      description: Update containers tags to match helm releases
+      entry: /bin/bash -c $* -- eval /bin/git --no-pager diff --staged --exit-code helm-dependencies.yaml || ./update_containers_tags.sh -a --helm && /bin/git add helm-dependencies.yaml
+      language: script
+      pass_filenames: false
 - repo: https://github.com/antonbabenko/pre-commit-terraform
-  rev: v1.83.4
+  rev: v1.83.5
   hooks:
     - id: terraform_fmt
     - id: terraform_validate
@@ -18,7 +26,7 @@ repos:
         - --args=--disable-rule=terraform_unused_declarations # do not enable it
 # Also check docs for submodules
 - repo: https://github.com/antonbabenko/pre-commit-terraform
-  rev: v1.83.4
+  rev: v1.83.5
   hooks:
     - id: terraform_docs
       args:
@@ -27,7 +35,7 @@ repos:
         - --hook-config=--add-to-exiting-file=false
         - --hook-config=--create-file-if-not-exist=true
 - repo: https://github.com/pre-commit/pre-commit-hooks
-  rev: v4.4.0
+  rev: v4.5.0
   hooks:
     - id: check-merge-conflict
     - id: end-of-file-fixer
