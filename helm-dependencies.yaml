@@ -89,7 +89,7 @@ dependencies:
   name: aws-efs-csi-driver
   namespace: efs-csi
   repository: https://kubernetes-sigs.github.io/aws-efs-csi-driver
-  version: 2.4.7
+  version: 2.4.9
 - name: aws-for-fluent-bit
   repository: https://aws.github.io/eks-charts
   version: 0.1.28
@@ -104,7 +104,7 @@ dependencies:
   name: aws-load-balancer-controller
   namespace: aws-load-balancer-controller
   repository: https://aws.github.io/eks-charts
-  version: 1.6.1
+  version: 1.6.2
 - name: aws-node-termination-handler
   repository: https://aws.github.io/eks-charts
   version: 0.21.0
@@ -173,7 +173,7 @@ dependencies:
   name: cert-manager
   namespace: cert-manager
   repository: https://charts.jetstack.io
-  version: v1.12.2
+  version: v1.12.6
 - name: cert-manager-csi-driver
   repository: https://charts.jetstack.io
   version: v0.5.0
@@ -188,7 +188,7 @@ dependencies:
   name: cluster-autoscaler
   namespace: cluster-autoscaler
   repository: https://kubernetes.github.io/autoscaler
-  version: 9.29.1
+  version: 9.29.4
 - containers:
     image:
       chart: external-dns
@@ -200,7 +200,7 @@ dependencies:
   name: external-dns
   namespace: freeipa
   repository: https://kubernetes-sigs.github.io/external-dns/
-  version: 1.13.0
+  version: 1.13.1
 - name: flux
   repository: https://charts.fluxcd.io
   version: 1.13.3
@@ -230,7 +230,7 @@ dependencies:
   name: ingress-nginx
   namespace: ingress-nginx
   repository: https://kubernetes.github.io/ingress-nginx
-  version: 4.7.1
+  version: 4.7.3
 - chart: ingress-nginx
   containers:
     controller.admissionWebhooks.patch.image:
@@ -372,7 +372,7 @@ dependencies:
   name: kube-prometheus-stack
   namespace: monitoring
   repository: https://prometheus-community.github.io/helm-charts
-  version: 48.2.0
+  version: 48.2.3
 - name: kyverno
   repository: https://kyverno.github.io/kyverno/
   version: 3.0.5
@@ -417,7 +417,7 @@ dependencies:
   name: promtail
   namespace: monitoring
   repository: https://grafana.github.io/helm-charts
-  version: 6.11.8
+  version: 6.11.9
 - containers:
     image:
       chart: metrics-server
@@ -441,7 +441,7 @@ dependencies:
   name: node-problem-detector
   namespace: node-problem-detector
   repository: https://charts.deliveryhero.io/
-  version: 2.3.5
+  version: 2.3.11
 - name: prometheus-adapter
   repository: https://prometheus-community.github.io/helm-charts
   version: 4.3.1
@@ -509,7 +509,7 @@ dependencies:
   name: dex
   namespace: dex
   repository: https://charts.dexidp.io
-  version: 0.15.2
+  version: 0.15.3
 - containers:
     image:
       chart: dex-k8s-authenticator
@@ -538,7 +538,7 @@ dependencies:
   name: kubernetes-dashboard
   namespace: dashboard
   repository: https://kubernetes.github.io/dashboard
-  version: 6.0.7
+  version: 6.0.8
 - containers:
     image:
       chart: rbac-manager
@@ -550,7 +550,7 @@ dependencies:
   name: rbac-manager
   namespace: rbac-manager
   repository: https://charts.fairwinds.com/stable
-  version: 1.17.2
+  version: 1.17.6
 - containers:
     image:
       chart: reloader
@@ -562,7 +562,7 @@ dependencies:
   name: reloader
   namespace: reloader
   repository: https://stakater.github.io/stakater-charts
-  version: 1.0.38
+  version: 1.0.51
 - containers:
     setup-csi-snapshotter.csi-provisioner:
       manager: kustomize
