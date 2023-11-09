@@ -1,6 +1,6 @@
 #!/bin/bash
 # Fetch containers images data from helm-dependencies.yaml and update tags info
-# Requires: jq, yq, pyyaml, podman; pypi: packaging
+# Requires: pypi: jq, yq, pyyaml, packaging; packages: podman
 # Examples:
 #  # updates containers tags info to the recommended versions (Helm specific),
 #  # or take the most recent versions, when no such data could be discovered.
@@ -70,7 +70,7 @@ function update() {
   local new_tag
   local patch
   # tag could be "v?$app_version", so we need to pick a real one from the list of tags fetched with skopeo
-  new_tag=$(jq -r '.Tags[]' <<< $TAGS | grep -E -m1 "^v?${new_tag}$")
+  new_tag=$(jq -r '.Tags[]' <<< $TAGS | grep -E "^v?${new_tag}$" | head -1)
   grep -q "${new_tag}$" <<< $tag  # FIXME: reject downgrades, at least for mode=recent?
   if [ $? -eq 0 ]; then
     echo "INFO - $image: no updates available for $new_tag (chart=$chart)"
@@ -140,6 +140,11 @@ while read chart image; do
   # we always need the list of actual tags for future checks
   echo "DEBUG - $image: fetching tags info with skopeo"
   TAGS=$(podman run --rm quay.io/skopeo/stable list-tags --tls-verify=true --authfile=/auth.json $c 2>/dev/null)
+  rc=$?
+  if [ -z "$TAGS" ] || [ $rc -ne 0 ]; then
+    echo "CRITICAL - Failed fetching tags info"
+    exit 1
+  fi
 
   # skip updating matched images, when it contains unrelated Helm charts data (leave them out for the next iterations)
   if [ "$helm" = "true" ]; then
