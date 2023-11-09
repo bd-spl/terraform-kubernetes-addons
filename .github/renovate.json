@@ -34,9 +34,7 @@
     "enabled": true,
     "fileMatch": ["(^|/)helm-dependencies\\.yaml$|(^|/)\\.pre-commit-config\\.ya?ml$|(^|/)update_containers_tags\\.sh$"]
   },
-  {
-    "schedule": ["every weekend"]
-  },
+  "schedule": ["every weekend"],
   "reviewersFromCodeOwners": true,
   "prHourlyLimit": 0,
   "ignoreDeps": [
