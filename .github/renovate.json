@@ -17,7 +17,9 @@
     ":automergeDigest",
     ":automergePatch",
     ":automergeMinor",
-    ":dependencyDashboard"
+    ":dependencyDashboard",
+    "config:recommended",
+    ":rebaseStalePrs"
   ],
   "baseBranches": ["main"],
   "enabledManagers": ["helmv3", "github-actions", "pre-commit", "terraform"],
