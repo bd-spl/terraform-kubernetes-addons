@@ -113,12 +113,6 @@
         "semanticCommitScope": "tf",
         "semanticCommitType": "feat",
         "automerge": false
-      },
-      {
-        "description": "Auto merge minor fixes and patches",
-        "matchUpdateTypes": ["minor", "patch", "digest"],
-        "automerge": true,
-        "automergeType": "branch"
       }
     ]
 }
