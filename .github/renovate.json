@@ -32,6 +32,9 @@
     "enabled": true,
     "fileMatch": ["(^|/)helm-dependencies\\.yaml$|(^|/)\\.pre-commit-config\\.ya?ml$|(^|/)update_containers_tags\\.sh$"]
   },
+  {
+    "schedule": ["every weekend"]
+  },
   "reviewersFromCodeOwners": true,
   "prHourlyLimit": 0,
   "ignoreDeps": [
@@ -80,17 +83,29 @@
         "semanticCommitType": "chore"
       },
       {
+        "description": "Fixed Helm Releases",
         "matchManagers": ["helmv3"],
         "semanticCommitScope": "charts",
         "semanticCommitType": "fix",
-        "matchUpdateTypes": ["patch", "digest"]
+        "matchUpdateTypes": ["patch", "digest"],
+        "groupName": "helm fixes"
       },
       {
+        "description": "Featured Helm Releases",
         "matchManagers": ["helmv3"],
         "semanticCommitScope": "charts",
         "semanticCommitType": "feat",
-        "matchUpdateTypes": ["major", "minor"]
+        "matchUpdateTypes": ["major", "minor"],
+        "groupName": "helm features"
       },
+      {
+        "description": "All Helm Releases",
+        "matchPaths": ["(^|/)helm-dependencies\\.yaml$"],
+        "matchManagers": ["helmv3"],
+        "groupName": "helm releases",
+        "semanticCommitScope": "charts",
+        "semanticCommitType": "{{#if isPatch}}fix{{else}}feat{{/if}}"
+      },      
       {
         "matchManagers": ["terraform"],
         "semanticCommitScope": "tf",
