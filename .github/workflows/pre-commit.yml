@@ -8,6 +8,8 @@ on:
       - 'modules/aws/*'
       - 'modules/aws/*/*'
       - '.github/workflows'
+      - 'helm-dependencies.yaml'
+      - 'update_containers_tags.sh'
   # Enable it only for manual scheduling, while debugging jobs
   #workflow_dispatch:
 
@@ -91,3 +93,29 @@ jobs:
       uses: pre-commit/action@v3.0.0
       with:
         extra_args: --show-diff-on-failure --all-files
+    
+    - name: Update containers tags in-place
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+      run: |-
+        set +e
+        gh pr diff ${{ github.event.pull_request.number }} | grep -qE "^(--- a|\+\+\+ b).*helm-dependencies.yaml"
+        rc=$?
+        set -e
+        if [ $rc -eq 0 ]; then
+          gh pr checkout ${{ github.event.pull_request.number }}
+          set +e
+          git --no-pager log --no-merges --pretty=format:'%s' @ | head -1 | grep -qF "[updater-bot] update containers tags"
+          rc=$?
+          set -e
+          if [ $rc -ne 0 ]; then
+            pip install jq yq pyyaml packaging
+            ./update_containers_tags.sh -a --helm | grep -v DEBUG
+            git config --global user.email "updater-bot@example.com"
+            git config --global user.name "updater-bot"
+            git add helm-dependencies.yaml
+            set +e
+            git commit -m "[updater-bot] update containers tags" && git push
+            set -e
+          fi
+        fi
