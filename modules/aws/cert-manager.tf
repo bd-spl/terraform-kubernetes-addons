@@ -15,12 +15,28 @@ locals {
       enabled                   = false
       iam_policy_override       = null
       default_network_policy    = true
+      # DEPRECATED: proxy mode for private-only clusters, solvers can override it
+      acme_use_egress_proxy    = false
+      acme_egress_proxy_secret = ""
       acme_providers = [
+        /* Each provider may define extra solvers like this:
         {
           name          = "letsencrypt-staging"
           email         = "contact@acme.com"
           server        = "https://acme-staging-v02.api.letsencrypt.org/directory"
-          ingress_class = "nginx"
+          ingress_class = "nginx" # solvers' acme_http01_ingress_class overrides this
+          /* Each provider may define extra solvers like this:
+          solvers = [
+            {
+              acme_use_egress_proxy     = false
+              whitelist_source_range    = ""
+              acme_egress_proxy_secret  = ""
+              acme_http01_ingress_class = "nginx"
+              acme_dns_zones            = []
+              acme_dns_names            = []
+              #acme_match_labels = {} #TBD
+            }
+          ]
         },
         {
           name          = "letsencrypt"
@@ -28,12 +44,9 @@ locals {
           server        = "https://acme-v02.api.letsencrypt.org/directory"
           ingress_class = "nginx"
         }
+      */
       ]
-      acme_use_egress_proxy     = false
-      whitelist_source_range    = ""
-      acme_egress_proxy_secret  = ""
       acme_http01_enabled       = true
-      acme_http01_ingress_class = "nginx"
       acme_dns01_enabled        = true
       acme_skip_tls_verify      = false
       allowed_cidrs             = ["0.0.0.0/0"]
@@ -221,13 +234,21 @@ data "kubectl_path_documents" "cert-manager_cluster_issuers" {
     acme_server               = each.value.server
     acme_email                = each.value.email
     acme_provider             = each.value.name
-    acme_http01_ingress_class = lookup(each.value, "ingress_class", local.cert-manager["acme_http01_ingress_class"])
-    acme_http01_enabled       = lookup(each.value, "http01_enabled", local.cert-manager["acme_http01_enabled"])
-    acme_skip_tls_verify      = lookup(each.value, "skip_tls_verify", local.cert-manager["acme_skip_tls_verify"])
-    acme_dns01_enabled        = lookup(each.value, "dns01_enabled", local.cert-manager["acme_dns01_enabled"])
-    acme_use_egress_proxy     = lookup(each.value, "use_egress_proxy", local.cert-manager["acme_use_egress_proxy"])
-    whitelist_source_range    = lookup(each.value, "whitelist_source_range", local.cert-manager["whitelist_source_range"])
+    acme_use_egress_proxy     = local.cert-manager["acme_use_egress_proxy"]
     acme_egress_proxy_secret  = local.cert-manager["acme_egress_proxy_secret"]
+    acme_http01_ingress_class = each.value.ingress_class
+    # If no solvers provided, derive the provider's top-scope ingress-class to always create a solver for it
+    acme_http01_solvers = jsonencode(lookup(each.value, "solvers", [{
+      acme_http01_ingress_class = each.value.ingress_class
+      whitelist_source_range    = ""
+      acme_use_egress_proxy     = false
+      acme_egress_proxy_secret  = ""
+      acme_dns_zones            = []
+      acme_dns_names            = []
+    }]))
+    acme_http01_enabled  = lookup(each.value, "http01_enabled", local.cert-manager["acme_http01_enabled"])
+    acme_skip_tls_verify = lookup(each.value, "skip_tls_verify", local.cert-manager["acme_skip_tls_verify"])
+    acme_dns01_enabled   = lookup(each.value, "dns01_enabled", local.cert-manager["acme_dns01_enabled"])
   }
 }
 
