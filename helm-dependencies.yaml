@@ -13,7 +13,7 @@ dependencies:
         repository: public.ecr.aws/ebs-csi-driver/aws-ebs-csi-driver
       source: public.ecr.aws/ebs-csi-driver
       ver:
-        tag: v1.21.0
+        tag: v1.25.0
     sidecars.attacher.image:
       name:
         repository: public.ecr.aws/eks-distro/kubernetes-csi/external-attacher
@@ -67,7 +67,7 @@ dependencies:
         repository: docker.io/amazon/aws-efs-csi-driver
       source: docker.io/amazon
       ver:
-        tag: v1.6.0
+        tag: v1.7.1
     sidecars.csiProvisioner.image:
       name:
         repository: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner
@@ -118,14 +118,14 @@ dependencies:
         repository: quay.io/jetstack/cert-manager-acmesolver
       source: quay.io/jetstack
       ver:
-        tag: v1.12.6
+        tag: v1.13.2
     cainjector.image:
       chart: cert-manager
       name:
         repository: quay.io/jetstack/cert-manager-cainjector
       source: quay.io/jetstack
       ver:
-        tag: v1.12.6
+        tag: v1.13.2
     extraArgs.acme-http01-solver-image:
       chart: cert-manager
       manager: extra
@@ -133,7 +133,7 @@ dependencies:
         repository: quay.io/jetstack/cert-manager-acmesolver
       source: quay.io/jetstack
       ver:
-        tag: v1.12.6
+        tag: v1.13.2
     gateway-api-admission.create_or_patch:
       manager: kustomize
       name:
@@ -154,21 +154,21 @@ dependencies:
         repository: quay.io/jetstack/cert-manager-controller
       source: quay.io/jetstack
       ver:
-        tag: v1.12.6
+        tag: v1.13.2
     startupapicheck.image:
       chart: cert-manager
       name:
         repository: quay.io/jetstack/cert-manager-ctl
       source: quay.io/jetstack
       ver:
-        tag: v1.12.6
+        tag: v1.13.2
     webhook.image:
       chart: cert-manager
       name:
         repository: quay.io/jetstack/cert-manager-webhook
       source: quay.io/jetstack
       ver:
-        tag: v1.12.6
+        tag: v1.13.2
   manifests_version: v0.5.1
   name: cert-manager
   namespace: cert-manager
@@ -219,7 +219,7 @@ dependencies:
       registry:
         registry: registry.k8s.io
       ver:
-        tag: v1.8.4
+        tag: v1.9.4
     defaultBackend.image:
       name:
         image: defaultbackend-amd64
@@ -247,7 +247,7 @@ dependencies:
       registry:
         registry: registry.k8s.io
       ver:
-        tag: v1.8.4
+        tag: v1.9.4
     defaultBackend.image:
       name:
         image: defaultbackend-amd64
@@ -395,7 +395,7 @@ dependencies:
         repository: docker.io/grafana/loki
       source: docker.io/grafana
       ver:
-        tag: 2.8.2
+        tag: 2.9.2
     nginx-unprivileged.image:
       name:
         repository: docker.io/nginxinc/nginx-unprivileged
@@ -413,7 +413,7 @@ dependencies:
         repository: docker.io/grafana/promtail
       source: docker.io/grafana
       ver:
-        tag: 2.8.3
+        tag: 2.9.2
   name: promtail
   namespace: monitoring
   repository: https://grafana.github.io/helm-charts
@@ -546,7 +546,7 @@ dependencies:
         repository: quay.io/reactiveops/rbac-manager
       source: quay.io/reactiveops
       ver:
-        tag: v1.6.5
+        tag: v1.7.0
   name: rbac-manager
   namespace: rbac-manager
   repository: https://charts.fairwinds.com/stable
@@ -625,7 +625,7 @@ dependencies:
         repository: us-docker.pkg.dev/fairwinds-ops/oss/goldilocks
       source: us-docker.pkg.dev/fairwinds-ops/oss
       ver:
-        tag: v4.9.0
+        tag: v4.10.0
   name: goldilocks
   repository: https://charts.fairwinds.com/stable
   version: 7.3.1
