@@ -115,10 +115,7 @@ jobs:
             git config --global user.name "updater-bot"
             git add helm-dependencies.yaml
             set +e
-            pre-commit run --show-diff-on-failure --color=always --show-diff-on-failure --all-files
-            git add .
             git commit -m "[updater-bot] update containers tags" && git push
             set -e
-            pre-commit run --show-diff-on-failure --color=always --show-diff-on-failure --all-files
           fi
         fi
