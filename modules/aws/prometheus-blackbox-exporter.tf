@@ -10,6 +10,11 @@ locals {
       create_ns              = false
       enabled                = false
       default_network_policy = true
+      vpa_enable             = false
+      vpa_only_recommend     = false
+      images_data            = { containers = {} }
+      images_repos           = { repos = {} }
+      containers_versions    = {}
     },
     var.prometheus-blackbox-exporter
   )
@@ -25,21 +30,27 @@ resource "kubernetes_namespace" "prometheus-blackbox-exporter" {
   count = local.prometheus-blackbox-exporter["enabled"] && local.prometheus-blackbox-exporter["create_ns"] ? 1 : 0
 
   metadata {
-    labels = {
+    labels = merge({
       name                               = local.prometheus-blackbox-exporter["namespace"]
       "${local.labels_prefix}/component" = "monitoring"
-    }
+      }, local.vpa["vpa_only_recommend"] && local.prometheus-blackbox-exporter["vpa_enable"] ? {
+      "goldilocks.fairwinds.com/enabled" = "true"
+    } : {})
 
     name = local.prometheus-blackbox-exporter["namespace"]
   }
 }
 
-resource "helm_release" "prometheus-blackbox-exporter" {
+module "deploy_prometheus-blackbox-exporter" {
   count                 = local.prometheus-blackbox-exporter["enabled"] ? 1 : 0
+  source                = "./deploy"
+  images_data           = local.prometheus-blackbox-exporter["images_data"]
+  images_repos          = local.prometheus-blackbox-exporter["images_repos"]
+  containers_versions   = local.prometheus-blackbox-exporter["containers_versions"]
   repository            = local.prometheus-blackbox-exporter["repository"]
   name                  = local.prometheus-blackbox-exporter["name"]
   chart                 = local.prometheus-blackbox-exporter["chart"]
-  version               = local.prometheus-blackbox-exporter["chart_version"]
+  chart_version         = local.prometheus-blackbox-exporter["chart_version"]
   timeout               = local.prometheus-blackbox-exporter["timeout"]
   force_update          = local.prometheus-blackbox-exporter["force_update"]
   recreate_pods         = local.prometheus-blackbox-exporter["recreate_pods"]
@@ -94,6 +105,12 @@ resource "kubernetes_network_policy" "prometheus-blackbox-exporter_allow_namespa
     }
 
     ingress {
+
+      ports {
+        port     = "9115"
+        protocol = "TCP"
+      }
+
       from {
         namespace_selector {
           match_labels = {

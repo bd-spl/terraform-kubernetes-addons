@@ -50,6 +50,7 @@
 | <a name="module_deploy_loki-stack"></a> [deploy\_loki-stack](#module\_deploy\_loki-stack) | ./deploy | n/a |
 | <a name="module_deploy_metrics-server"></a> [deploy\_metrics-server](#module\_deploy\_metrics-server) | ./deploy | n/a |
 | <a name="module_deploy_node-problem-detector"></a> [deploy\_node-problem-detector](#module\_deploy\_node-problem-detector) | ./deploy | n/a |
+| <a name="module_deploy_prometheus-blackbox-exporter"></a> [deploy\_prometheus-blackbox-exporter](#module\_deploy\_prometheus-blackbox-exporter) | ./deploy | n/a |
 | <a name="module_deploy_promtail"></a> [deploy\_promtail](#module\_deploy\_promtail) | ./deploy | n/a |
 | <a name="module_deploy_rbac-manager"></a> [deploy\_rbac-manager](#module\_deploy\_rbac-manager) | ./deploy | n/a |
 | <a name="module_deploy_reloader"></a> [deploy\_reloader](#module\_deploy\_reloader) | ./deploy | n/a |
@@ -128,7 +129,6 @@
 | [helm_release.linkerd2](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.linkerd2-cni](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.prometheus-adapter](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
-| [helm_release.prometheus-blackbox-exporter](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.prometheus-cloudwatch-exporter](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.rabbitmq-operator](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.sealed-secrets](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |

@@ -193,6 +193,9 @@ Required for Helm charts containers images sources and versions info is provided
   # https://github.dev/FairwindsOps/charts/blob/master/stable/goldilocks/values.yaml
   - name: goldilocks
 
+  # https://github.com/prometheus-community/helm-charts/blob/main/charts/prometheus-blackbox-exporter/values.yaml
+  - name: prometheus-blackbox-exporter
+
   # https://github.com/stakater/Reloader/blob/master/deployments/kubernetes/chart/reloader/values.yaml
   - name: reloader
 ```

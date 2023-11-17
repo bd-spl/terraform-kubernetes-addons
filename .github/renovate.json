@@ -58,7 +58,6 @@
     "linkerd-viz",
     "prometheus-adapter",
     "prometheus-cloudwatch-exporter",
-    "prometheus-blackbox-exporter",
     "rabbitmq-cluster-operator",
     "scaleway-webhook",
     "sealed-secrets",

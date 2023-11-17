@@ -448,9 +448,18 @@ dependencies:
 - name: prometheus-cloudwatch-exporter
   repository: https://prometheus-community.github.io/helm-charts
   version: 0.25.1
-- name: prometheus-blackbox-exporter
+- containers:
+    image:
+      chart: prometheus-blackbox-exporter
+      name:
+        repository: prometheus/blackbox-exporter
+      registry:
+        registry: quay.io
+      ver:
+        tag: v0.24.0
+  name: prometheus-blackbox-exporter
   repository: https://prometheus-community.github.io/helm-charts
-  version: 7.12.0
+  version: 8.3.0
 - name: rabbitmq-cluster-operator
   repository: https://charts.bitnami.com/bitnami
   version: 3.6.5
