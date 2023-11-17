@@ -192,6 +192,9 @@ Required for Helm charts containers images sources and versions info is provided
 
   # https://github.dev/FairwindsOps/charts/blob/master/stable/goldilocks/values.yaml
   - name: goldilocks
+
+  # https://github.com/stakater/Reloader/blob/master/deployments/kubernetes/chart/reloader/values.yaml
+  - name: reloader
 ```
 
 ### Containers images data lifecycle

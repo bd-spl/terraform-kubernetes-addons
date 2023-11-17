@@ -131,7 +131,7 @@ resource "kubernetes_network_policy" "reloader_allow_monitoring" {
 
     ingress {
       ports {
-        port     = "8042"
+        port     = "9090"
         protocol = "TCP"
       }
 
