@@ -558,7 +558,7 @@ dependencies:
         repository: ghcr.io/stakater/reloader
       source: ghcr.io/stakater
       ver:
-        tag: v1.0.51
+        tag: v1.0.52
   name: reloader
   namespace: reloader
   repository: https://stakater.github.io/stakater-charts
