@@ -188,7 +188,7 @@ dependencies:
   name: cluster-autoscaler
   namespace: cluster-autoscaler
   repository: https://kubernetes.github.io/autoscaler
-  version: 9.29.4
+  version: 9.29.5
 - containers:
     image:
       chart: external-dns
@@ -562,7 +562,7 @@ dependencies:
   name: reloader
   namespace: reloader
   repository: https://stakater.github.io/stakater-charts
-  version: 1.0.51
+  version: 1.0.52
 - containers:
     setup-csi-snapshotter.csi-provisioner:
       manager: kustomize
