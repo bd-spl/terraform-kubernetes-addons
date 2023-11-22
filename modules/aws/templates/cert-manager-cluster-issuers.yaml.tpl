@@ -67,10 +67,10 @@ spec:
         %{ if lookup(solver, "acme_dns_zones", []) != [] || lookup(solver, "acme_dns_names", []) != [] || acme_dns01_enabled }
         selector:
           %{ if lookup(solver, "acme_dns_zones", []) != [] }
-          dnsZones: ${solver.acme_dns_zones}
+          dnsZones: ${jsonencode(solver.acme_dns_zones)}
           %{ endif }
           %{ if lookup(solver, "acme_dns_names", []) != [] }
-          dnsNames: ${solver.acme_dns_names}
+          dnsNames: ${jsonencode(solver.acme_dns_names)}
           %{ endif }
           %{ if acme_dns01_enabled }
           matchLabels:
