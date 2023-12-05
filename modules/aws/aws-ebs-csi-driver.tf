@@ -33,9 +33,10 @@ locals {
             name: csi-aws-vsc
             labels:
               velero.io/csi-volumesnapshot-class: "true"
+              snapshot.storage.kubernetes.io/is-default-class: "false"
           driver: ebs.csi.aws.com
-          deletionPolicy: Retain
         VOLUME_SNAPSHOT_CLASS
+      reclaim_policy            = "Delete"
       name_prefix               = "${var.cluster-name}-aws-ebs-csi-driver"
       vpa_enable                = false
       images_data               = { containers = {} }
@@ -161,6 +162,7 @@ resource "kubernetes_storage_class" "aws-ebs-csi-driver" {
       "storageclass.kubernetes.io/is-default-class" = tostring(local.aws-ebs-csi-driver["is_default_class"])
     }
   }
+  reclaim_policy         = local.aws-ebs-csi-driver.reclaim_policy
   storage_provisioner    = "ebs.csi.aws.com"
   volume_binding_mode    = "WaitForFirstConsumer"
   allow_volume_expansion = true
@@ -228,8 +230,11 @@ resource "aws_kms_alias" "aws-ebs-csi-driver" {
 }
 
 resource "kubectl_manifest" "aws-ebs-csi-driver_vsc" {
-  count     = local.aws-ebs-csi-driver.enabled && local.aws-ebs-csi-driver.volume_snapshot_class != null ? 1 : 0
-  yaml_body = local.aws-ebs-csi-driver.volume_snapshot_class
+  count = local.aws-ebs-csi-driver.enabled && local.aws-ebs-csi-driver.volume_snapshot_class != null ? 1 : 0
+  yaml_body = yamlencode(merge(
+    yamldecode(local.aws-ebs-csi-driver.volume_snapshot_class),
+    { deletionPolicy = local.aws-ebs-csi-driver.reclaim_policy })
+  )
 
   depends_on = [
     module.deploy_aws-ebs-csi-driver

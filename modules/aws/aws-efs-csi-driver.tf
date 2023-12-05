@@ -30,6 +30,17 @@ locals {
       images_data                                    = { containers = {} }
       images_repos                                   = { repos = {} }
       containers_versions                            = {}
+      volume_snapshot_class                          = <<-VOLUME_SNAPSHOT_CLASS
+          apiVersion: snapshot.storage.k8s.io/v1
+          kind: VolumeSnapshotClass
+          metadata:
+            name: csi-efs-aws-vsc
+            labels:
+              velero.io/csi-volumesnapshot-class: "true"
+              snapshot.storage.kubernetes.io/is-default-class: "true"
+          driver: efs.csi.aws.com
+        VOLUME_SNAPSHOT_CLASS
+      reclaim_policy                                 = "Delete"
     },
     var.aws-efs-csi-driver
   )
@@ -173,6 +184,7 @@ resource "kubernetes_storage_class" "aws-efs-csi-driver" {
       "storageclass.kubernetes.io/is-default-class" = tostring(local.aws-efs-csi-driver["is_default_class"])
     }
   }
+  reclaim_policy      = local.aws-efs-csi-driver.reclaim_policy
   storage_provisioner = "efs.csi.aws.com"
   parameters = {
     provisioningMode : "efs-ap"
@@ -220,4 +232,17 @@ resource "kubernetes_network_policy" "aws-efs-csi-driver_allow_namespace" {
 
     policy_types = ["Ingress"]
   }
+}
+
+resource "kubectl_manifest" "aws-efs-csi-driver_vsc" {
+  count = local.aws-efs-csi-driver.enabled && local.aws-efs-csi-driver.volume_snapshot_class != null ? 1 : 0
+  yaml_body = yamlencode(merge(
+    yamldecode(local.aws-efs-csi-driver.volume_snapshot_class),
+    { deletionPolicy = local.aws-efs-csi-driver.reclaim_policy })
+  )
+
+  depends_on = [
+    module.deploy_aws-efs-csi-driver
+  ]
+  server_side_apply = true
 }
