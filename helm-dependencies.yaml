@@ -67,7 +67,7 @@ dependencies:
         repository: docker.io/amazon/aws-efs-csi-driver
       source: docker.io/amazon
       ver:
-        tag: v1.7.1
+        tag: v1.7.2
     sidecars.csiProvisioner.image:
       name:
         repository: public.ecr.aws/eks-distro/kubernetes-csi/external-provisioner
