@@ -8,7 +8,7 @@ repos:
       language: script
       pass_filenames: false
 - repo: https://github.com/antonbabenko/pre-commit-terraform
-  rev: v1.83.6
+  rev: v1.86.0
   hooks:
     - id: terraform_fmt
     - id: terraform_validate
@@ -26,7 +26,7 @@ repos:
         - --args=--disable-rule=terraform_unused_declarations # do not enable it
 # Also check docs for submodules
 - repo: https://github.com/antonbabenko/pre-commit-terraform
-  rev: v1.83.6
+  rev: v1.86.0
   hooks:
     - id: terraform_docs
       args:
